@@ -1,14 +1,17 @@
 # eKta on Vercel
 
-The eKta app is an Expo Router project with a static Expo Web build for live deployment checks. The visual preview works in demo mode; Supabase credentials are optional.
+The app is an Expo Router project using Expo's static web output. The repository includes an explicit Vercel build configuration so it does not depend on framework auto-detection.
 
 - **GitHub repository:** `susankarkarmakar-pixel/ekta_`
 - **Build command:** `pnpm exec expo export --platform web`
 - **Output directory:** `dist`
-- **Package manager:** pnpm (keep Vercel's detected pnpm setting)
-- **Runtime:** static Expo Web output; native builds continue to use Expo.
+- **Framework preset:** Other (`framework: null` in `vercel.json`)
+- **Routes:** clean URLs with an SPA fallback for refresh/deep links
+- **Package manager:** pnpm
 
-Import the repository in Vercel and deploy the `main` branch. No service-role key belongs in Vercel or the client bundle. To switch from demo data to Supabase, add only `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` under Project Settings → Environment Variables.
+Deploy the `main` branch from the repository root. The same build command can be checked locally. Phone OTP is a demo flow; the preview uses seeded data unless browser-safe backend values are configured.
+
+Do not add Supabase service-role credentials to the client bundle. If a live backend is configured, only publishable client values belong in Expo/Vercel settings.
 
 ## Git author for deployments
 

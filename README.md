@@ -1,24 +1,22 @@
 # eKta — Made in India, for communities across India
 
-**eKta is being built in India for people across India.** It is a multilingual, neighborhood-first social network for sharing useful local updates, finding people nearby, and taking part in community life. The first working community is in Gazole, Malda, North Bengal; the product is being prepared to expand region by region rather than treating one language or one city as all of India.
+**eKta is being built in India for people across India.** It is a multilingual, neighborhood-first social network for useful local updates, community connections, and civic participation. The preview starts with a nationwide India feed and sample members from multiple states instead of centering on one city or region.
 
 ## Product direction
 
-Members should be able to read and contribute in the language they are most comfortable using. Local feeds should be discoverable by state, district, and neighborhood, while keeping moderation, privacy, and accessibility consistent across regions. Language expansion will happen one locale at a time with native-speaker review. A language is not marked as available until the essential screens and error states have been translated and checked.
+Members should be able to read and contribute in the language they are most comfortable using. Bengali and English are the complete interface languages today. English is the fallback on a fresh install, while each member can select Bengali and keep that preference. The other 21 languages in the Constitution's Eighth Schedule are staged for gradual, locally reviewed rollout [1]. That first rollout set is not a claim that the schedule includes every language or mother tongue spoken in India.
 
-The first national language rollout target is the 22 languages listed in the Constitution's Eighth Schedule [1]. Bengali and English are currently available in the interface. The other scheduled-language locales are staged in the app's language catalog and will be enabled progressively; the schedule is an initial rollout target, not a claim that it covers every language or mother tongue spoken in India.
+The target set is Assamese, Bengali, Gujarati, Hindi, Kannada, Kashmiri, Konkani, Malayalam, Manipuri (Meitei), Marathi, Nepali, Odia, Punjabi, Sanskrit, Sindhi, Tamil, Telugu, Urdu, Bodo, Santali, Maithili, and Dogri. English remains available as a bridge interface language.
 
-The scheduled-language target is: Assamese, Bengali, Gujarati, Hindi, Kannada, Kashmiri, Konkani, Malayalam, Manipuri (Meitei), Marathi, Nepali, Odia, Punjabi, Sanskrit, Sindhi, Tamil, Telugu, Urdu, Bodo, Santali, Maithili, and Dogri. English remains available as a bridge interface language.
+## Localization and regional rollout
 
-## Localization approach
+Language metadata lives in `lib/apongram/languages.ts`. It records locale tags, language IDs, native and English names, rollout state, scheduled-language membership, and text direction. Shared interface copy is centralized in `lib/apongram/types.ts`. A locale is shown as available only when its essential screens and error messages have a reviewed translation. Planned locales remain visible as coming later in Settings.
 
-Language metadata is kept in `lib/apongram/languages.ts`. It records each locale tag, language ID, English and native names, rollout status, scheduled-language membership, and text direction. UI copy stays in the central copy dictionary in `lib/apongram/types.ts`. Only complete, reviewed bundles should be promoted to `available`; planned languages remain visibly marked as coming later in Settings.
+For each rollout, translate interface and community-safety copy, have native speakers review wording, test long strings on small screens, verify search in that script, and check date/number formats. Urdu, Sindhi, and Kashmiri need right-to-left layout and script review before activation. More languages and scripts can be added beyond the first scheduled-language rollout as the community grows.
 
-When adding a language, translate the shared interface copy and community-safety text, review the Bengali/English strings for accidental mixed-language phrasing, test long labels and small screens, check search in that script, and verify date/number formatting. Urdu, Sindhi, and Kashmiri need explicit right-to-left layout and script review before activation. Native speakers should review wording and cultural context before a locale goes live.
+## Current preview and production work
 
-## Current preview and scope
-
-The current working interface has Bengali and English copy, a chronological feed, profiles, search/topics, follows, likes, comments, notifications, compose, settings, and a language rollout list. The visual preview uses seeded demo data when live backend credentials are absent. Phone OTP is a demo flow and does not send a real SMS. The first location shown in demo data is Gazole; national region selection, production authentication, moderation operations, and live data policies still need product/backend work before a public all-India launch.
+The demo feed contains sample posts from multiple Indian cities. Settings currently shows `India · all regions`; it is a display-only nationwide preference, not live state/district/neighborhood filtering. The preview uses seeded demo data when live backend credentials are absent. Phone OTP is a demo flow and does not send real SMS. Production authentication, region selection, moderation operations, and live data policies must be completed before public launch.
 
 Do not add Supabase service-role credentials to the app, GitHub, or a client bundle. Only publishable client credentials belong in Expo/Vercel configuration. Without live credentials the seeded preview remains available.
 
@@ -29,13 +27,13 @@ pnpm install
 pnpm dev
 ```
 
-For the same static web export used by Vercel:
+For the static web export used by Vercel:
 
 ```sh
 pnpm exec expo export --platform web
 ```
 
-The export is written to `dist`. Vercel build settings and repository-local Git author guidance are in [VERCEL.md](./VERCEL.md). The GitHub repository for this project is [`susankarkarmakar-pixel/ekta_`](https://github.com/susankarkarmakar-pixel/ekta_).
+The export is written to `dist`. Vercel build settings and repository-local Git author guidance are in [VERCEL.md](./VERCEL.md). The GitHub repository is [`susankarkarmakar-pixel/ekta_`](https://github.com/susankarkarmakar-pixel/ekta_).
 
 ## Visual asset
 

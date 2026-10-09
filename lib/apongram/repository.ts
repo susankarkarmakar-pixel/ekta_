@@ -21,7 +21,7 @@ export async function addComment(postId: string, body: string): Promise<Comment>
   return comment;
 }
 export async function createPost(body: string, imagePath?: string): Promise<Post> {
-  const post: Post = { id: `local-${Date.now()}`, author: currentUser, body, imageUrl: imagePath, createdAt: "now", location: "Gazole", tags: body.match(/#[\p{L}\d_]+/gu) ?? [], likes: 0, comments: 0, likedByMe: false };
+  const post: Post = { id: `local-${Date.now()}`, author: currentUser, body, imageUrl: imagePath, createdAt: "now", location: currentUser.region, tags: body.match(/#[\p{L}\d_]+/gu) ?? [], likes: 0, comments: 0, likedByMe: false };
   posts.unshift(post);
   if (supabaseConfig.isConfigured) { try { await supabaseFetch("posts", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ body, image_path: imagePath ?? null }) }); } catch { /* keep the local preview available */ } }
   return post;
