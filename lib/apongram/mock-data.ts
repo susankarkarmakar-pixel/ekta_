@@ -14,7 +14,7 @@ export const profiles: Profile[] = [
 
 export const posts: Post[] = [
   { id: "post-1", author: profiles[1], body: "আজ সকাল থেকে Gazole bus stand-এর কাছে নতুন জল supply line-এর কাজ শুরু হয়েছে। কাজ চলাকালীন ২ নম্বর lane-এ যান চলাচল ধীর হবে—দয়া করে একটু সময় হাতে রাখুন।", createdAt: "18 min", location: "Gazole bus stand", tags: ["Gazole", "জনসেবা"], likes: 42, comments: 8, likedByMe: false },
-  { id: "post-2", author: profiles[2], body: "আমাদের স্কুলের library-তে Bengali বইয়ের shelf নতুন করে সাজানো হচ্ছে। পুরনো কিন্তু ভালো বই থাকলে Saturday-তে নিয়ে আসুন—ছোট পাঠাগার, বড় স্বপ্ন।", createdAt: "1 h", location: "Gazole High School", tags: ["বই", "আমাদেরGazole"], likes: 67, comments: 14, likedByMe: true },
+  { id: "post-2", author: profiles[2], body: "আমাদের স্কুলের library-তে Bengali বইয়ের shelf নতুন করে সাজানো হচ্ছে। পুরনো কিন্তু ভালো বই থাকলে Saturday-তে নিয়ে আসুন—ছোট পাঠাগার, বড় স্বপ্ন।", createdAt: "1 h", location: "Gazole High School", tags: ["বই", "আমাদেরGazole"], likes: 67, comments: 14, likedByMe: true, imageUrl: "community-pottery" },
   { id: "post-3", author: profiles[3], body: "North Bengal-এর young volunteers-দের সঙ্গে আজকের clean-up drive-এর ছবিগুলো। ছোট ছোট জায়গা পরিষ্কার রাখলে আমাদের বাজারটাই বদলে যায়।", createdAt: "3 h", location: "Chanchal market", tags: ["স্বেচ্ছাসেবা", "Malda"], likes: 29, comments: 5, likedByMe: false },
 ];
 

@@ -25,3 +25,10 @@ pnpm dev
 ```
 
 Metro/Web runs on 8081 and the starter API on 3000. The selected GitHub mirror is `susankarkarmakar-pixel/ekta`.
+
+
+## Preview notes
+
+- The GitHub mirror selected for this work is `susankarkarmakar-pixel/ekta_`; Vercel setup is in [VERCEL.md](./VERCEL.md).
+- Without Supabase public credentials, the app uses seeded demo data. Phone OTP is a visual/demo flow and does not send a real SMS.
+- Feed image: “Vibrant Terracotta Pots at Local Market Display” by [Muhammad Shamaoon Malik on Pexels](https://www.pexels.com/photo/vibrant-terracotta-pots-at-local-market-display-30026678/). Used under the [Pexels license](https://www.pexels.com/license/).
