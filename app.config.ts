@@ -116,6 +116,13 @@ const config: ExpoConfig = {
       },
     ],
     [
+      "expo-image-picker",
+      {
+        photosPermission: "Allow $(PRODUCT_NAME) to choose photos for community posts.",
+        cameraPermission: "Allow $(PRODUCT_NAME) to take photos for community posts.",
+      },
+    ],
+    [
       "expo-video",
       {
         supportsBackgroundPlayback: true,

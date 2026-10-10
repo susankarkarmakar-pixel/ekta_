@@ -20,9 +20,9 @@ export async function addComment(postId: string, body: string): Promise<Comment>
   const post = posts.find((item) => item.id === postId); if (post) post.comments += 1;
   return comment;
 }
-export async function createPost(body: string, imagePath?: string): Promise<Post> {
-  const post: Post = { id: `local-${Date.now()}`, author: currentUser, body, imageUrl: imagePath, createdAt: "now", location: currentUser.region, tags: body.match(/#[\p{L}\d_]+/gu) ?? [], likes: 0, comments: 0, likedByMe: false };
+export async function createPost(body: string, imagePath?: string, videoPath?: string, isStory = false): Promise<Post> {
+  const post: Post = { id: `local-${Date.now()}`, author: currentUser, body, imageUrl: imagePath, videoUrl: videoPath, mediaType: videoPath ? "video" : imagePath ? "image" : undefined, isStory, storyExpiresAt: isStory ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined, createdAt: "now", location: currentUser.region, tags: body.match(/#[\p{L}\d_]+/gu) ?? [], likes: 0, comments: 0, likedByMe: false };
   posts.unshift(post);
-  if (supabaseConfig.isConfigured) { try { await supabaseFetch("posts", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ body, image_path: imagePath ?? null }) }); } catch { /* keep the local preview available */ } }
+  if (supabaseConfig.isConfigured) { try { await supabaseFetch("posts", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ body, image_path: imagePath ?? null, video_path: videoPath ?? null, is_story: isStory }) }); } catch { /* keep the local preview available */ } }
   return post;
 }

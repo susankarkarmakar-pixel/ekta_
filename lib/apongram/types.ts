@@ -1,7 +1,7 @@
 export type Language = "bn" | "en";
 
 export type Profile = { id: string; name: string; handle: string; bio: string; initials: string; avatarColor: string; avatarUrl?: string; region: string; followers: number; following: number; verified?: boolean };
-export type Post = { id: string; author: Profile; body: string; imageUrl?: string; createdAt: string; location: string; tags: string[]; likes: number; comments: number; likedByMe: boolean };
+export type Post = { id: string; author: Profile; body: string; imageUrl?: string; videoUrl?: string; mediaType?: "image" | "video"; isStory?: boolean; storyExpiresAt?: string; createdAt: string; location: string; tags: string[]; likes: number; comments: number; likedByMe: boolean };
 export type Comment = { id: string; author: Profile; body: string; createdAt: string };
 
 export const copy = {
