@@ -49,6 +49,14 @@ export default function CreateScreen() {
         : await ImagePicker.launchImageLibraryAsync({ mediaTypes: allowedTypes, videoMaxDuration: 60, allowsMultipleSelection: false, quality: 0.85, allowsEditing: mode !== "reel", aspect: [4, 3] });
       const asset = !result.canceled ? result.assets[0] : undefined;
       if (!asset?.uri) return;
+      if (mode === "reel" && asset.type !== "video") {
+        setError(language === "bn" ? "রিলের জন্য একটি ভিডিও বাছুন।" : "Please choose a video for your Reel.");
+        return;
+      }
+      if (mode === "post" && asset.type === "video") {
+        setError(language === "bn" ? "সাধারণ পোস্টে ছবি ব্যবহার করুন। ভিডিওর জন্য Reel বাছুন।" : "Use a photo for a regular post, or switch to Reel for video.");
+        return;
+      }
       if (asset.type === "video" && asset.duration && asset.duration > 60_000) {
         setError(language === "bn" ? "রিল বা স্টোরির ভিডিও ৬০ সেকেন্ডের মধ্যে রাখুন।" : "Reels and stories must be 60 seconds or shorter.");
         return;
