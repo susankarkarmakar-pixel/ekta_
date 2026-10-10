@@ -15,9 +15,14 @@ create table if not exists public.posts (
   author_id uuid references public.profiles(id) on delete cascade not null,
   body text not null check (char_length(body) between 1 and 500),
   image_path text,
+  video_path text,
+  is_story boolean not null default false,
   location text default 'Gazole',
   created_at timestamptz default now() not null
 );
+
+alter table public.posts add column if not exists video_path text;
+alter table public.posts add column if not exists is_story boolean not null default false;
 
 create table if not exists public.follows (follower_id uuid references public.profiles(id) on delete cascade, following_id uuid references public.profiles(id) on delete cascade, created_at timestamptz default now(), primary key (follower_id, following_id), check (follower_id <> following_id));
 create table if not exists public.likes (user_id uuid references public.profiles(id) on delete cascade, post_id uuid references public.posts(id) on delete cascade, created_at timestamptz default now(), primary key (user_id, post_id));
@@ -26,6 +31,7 @@ create table if not exists public.hashtags (post_id uuid references public.posts
 create table if not exists public.reports (id uuid primary key default gen_random_uuid(), reporter_id uuid references public.profiles(id) on delete cascade not null, post_id uuid references public.posts(id) on delete cascade, comment_id uuid references public.comments(id) on delete cascade, reason text default 'community-safety', created_at timestamptz default now() not null);
 
 create index if not exists posts_created_at_idx on public.posts (created_at desc);
+create index if not exists posts_reels_created_at_idx on public.posts (created_at desc) where video_path is not null and is_story = false;
 create index if not exists comments_post_id_idx on public.comments (post_id, created_at);
 create index if not exists hashtags_tag_idx on public.hashtags (tag);
 

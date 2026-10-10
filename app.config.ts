@@ -118,8 +118,8 @@ const config: ExpoConfig = {
     [
       "expo-image-picker",
       {
-        photosPermission: "Allow $(PRODUCT_NAME) to choose photos for community posts.",
-        cameraPermission: "Allow $(PRODUCT_NAME) to take photos for community posts.",
+        photosPermission: "Allow $(PRODUCT_NAME) to choose media for community posts and Reels.",
+        cameraPermission: "Allow $(PRODUCT_NAME) to capture photos and short community Reels.",
       },
     ],
     [
