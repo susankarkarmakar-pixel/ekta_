@@ -10,7 +10,7 @@ const TERRACOTTA = "#C85A3A";
 const COMMUNITY_IMAGE = require("@/assets/images/community-pottery.jpg");
 
 type CardCopy = { comments: string; likes: string; report: string; reported: string };
-function InlineVideo({ uri }: { uri: string }) {
+function InlineVideo({ uri }: { uri: string | number }) {
   const player = useVideoPlayer(uri, (instance) => { instance.loop = true; instance.muted = true; });
   return <VideoView player={player} style={styles.photo} contentFit="cover" nativeControls />;
 }

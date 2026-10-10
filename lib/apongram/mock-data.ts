@@ -1,7 +1,16 @@
 import type { Comment, Post, Profile } from "./types";
 
 export const currentUser: Profile = {
-  id: "me", name: "Asha Verma", handle: "asha.verma", bio: "Sharing useful community updates from across India.", initials: "AV", avatarColor: "#C85C3A", region: "India", followers: 248, following: 126, verified: true,
+  id: "me",
+  name: "Asha Verma",
+  handle: "asha.verma",
+  bio: "Sharing useful community updates from across India.",
+  initials: "AV",
+  avatarColor: "#C85C3A",
+  region: "India",
+  followers: 248,
+  following: 126,
+  verified: true,
 };
 
 export const profiles: Profile[] = [
@@ -16,6 +25,63 @@ export const posts: Post[] = [
   { id: "post-1", author: profiles[1], body: "A temporary traffic diversion is in place near the central market while the road is repaired. Please follow the signs and allow a little extra time.", createdAt: "18 min", location: "Jaipur, Rajasthan", tags: ["Public service", "Road update"], likes: 42, comments: 8, likedByMe: false },
   { id: "post-2", author: profiles[2], body: "Our neighborhood library is refreshing its shelves this weekend. If you have a good book to pass on, bring it along and help more people discover it.", createdAt: "1 h", location: "Mysuru, Karnataka", tags: ["Books", "Community"], likes: 67, comments: 14, likedByMe: true, imageUrl: "community-pottery" },
   { id: "post-3", author: profiles[3], body: "Volunteers are organizing a clean-up near the riverside this Sunday. Everyone is welcome to join for an hour and help keep our shared spaces clean.", createdAt: "3 h", location: "Hyderabad, Telangana", tags: ["Volunteering", "Local update"], likes: 29, comments: 5, likedByMe: false },
+];
+
+const demoCreator: Profile = {
+  id: "ekta-demo",
+  name: "eKta Demo",
+  handle: "ekta.demo",
+  bio: "Sample community clips for preview only.",
+  initials: "eK",
+  avatarColor: "#1F6F6B",
+  region: "India",
+  followers: 0,
+  following: 0,
+};
+
+export const demoReels: Post[] = [
+  {
+    id: "demo-reel-market",
+    author: demoCreator,
+    body: "A market morning is best shared slowly. #LocalMarket #Community",
+    videoUrl: "ekta-demo://market",
+    mediaType: "video",
+    isDemo: true,
+    createdAt: "demo",
+    location: "South Asia · sample clip",
+    tags: ["LocalMarket", "Community"],
+    likes: 184,
+    comments: 12,
+    likedByMe: false,
+  },
+  {
+    id: "demo-reel-cleanup",
+    author: demoCreator,
+    body: "Small hands, one cleaner neighbourhood. #Community #CleanUp",
+    videoUrl: "ekta-demo://cleanup",
+    mediaType: "video",
+    isDemo: true,
+    createdAt: "demo",
+    location: "Sample clip · Pexels",
+    tags: ["Community", "CleanUp"],
+    likes: 96,
+    comments: 8,
+    likedByMe: false,
+  },
+  {
+    id: "demo-reel-green",
+    author: demoCreator,
+    body: "A few new saplings can change a lane. #GreenNeighbourhood #Together",
+    videoUrl: "ekta-demo://planting",
+    mediaType: "video",
+    isDemo: true,
+    createdAt: "demo",
+    location: "Sample clip · Pexels",
+    tags: ["GreenNeighbourhood", "Together"],
+    likes: 73,
+    comments: 5,
+    likedByMe: false,
+  },
 ];
 
 export const commentsByPost: Record<string, Comment[]> = {

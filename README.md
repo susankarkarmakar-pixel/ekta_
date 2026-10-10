@@ -18,6 +18,10 @@ For each rollout, translate interface and community-safety copy, have native spe
 
 The demo feed contains sample posts from multiple Indian cities. Settings currently shows `India · all regions`; it is a display-only nationwide preference, not live state/district/neighborhood filtering. The preview uses seeded demo data when live backend credentials are absent. Phone OTP is a demo flow and does not send real SMS. Production authentication, region selection, moderation operations, and live data policies must be completed before public launch.
 
+The Reels preview includes short, compressed Pexels sample clips and an in-session video composer. Picker videos are local to the current device/session; the app does not upload them to Supabase Storage yet, so they are not durable live community media. Before production video publishing, add authenticated upload, bucket/file-size policies, durable public or signed playback URLs, and associated moderation rules.
+
+The [21-second Reels walkthrough](./assets/demo/reels-feature-demo.mp4) records the working feed, engagement and creator flow. The bundled stock clips are silent; selected creator videos retain their own audio and start muted in the viewer.
+
 Do not add Supabase service-role credentials to the app, GitHub, or a client bundle. Only publishable client credentials belong in Expo/Vercel configuration. Without live credentials the seeded preview remains available.
 
 ## Run locally
@@ -38,6 +42,8 @@ The export is written to `dist`. Vercel build settings and repository-local Git 
 ## Visual asset
 
 The feed pottery image is “Vibrant Terracotta Pots at Local Market Display” by [Muhammad Shamaoon Malik on Pexels](https://www.pexels.com/photo/vibrant-terracotta-pots-at-local-market-display-30026678/), used under the [Pexels license](https://www.pexels.com/license/).
+
+The Reel preview clips are demo-only footage from Pexels: [Indian street market (md Jahangir alam)](https://www.pexels.com/video/vibrant-indian-street-market-scene-35183816/), [community clean-up (Vitaly Gariev)](https://www.pexels.com/video/group-of-volunteers-cleaning-up-outdoors-31948659/), and [volunteer planting (Mikhail Nilov)](https://www.pexels.com/video/a-volunteer-holding-a-plant-8544138/). They are shortened/re-encoded for the app demo. Pexels allows free use and modification; attribution is not required, but is included here for clarity.
 
 ## References
 

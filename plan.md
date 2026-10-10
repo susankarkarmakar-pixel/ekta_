@@ -9,8 +9,8 @@ eKta হলো Malda/North Bengal-এর civic ও public-service community-র 
 - **মোবাইল runtime:** Manus-এর fixed Expo Router + React Native + TypeScript + NativeWind starter; portrait-first, one-handed interactions, Expo Web preview-সহ।
 - **ডেটা boundary:** `lib/apongram/repository.ts` একটি একক repository interface দেবে। Supabase environment variables থাকলে Supabase REST/SDK path ব্যবহার করবে; variables না থাকলে একই interface seeded demo data-তে fallback করবে, যাতে Preview অচল না হয়।
 - **Supabase:** `EXPO_PUBLIC_SUPABASE_URL` এবং `EXPO_PUBLIC_SUPABASE_ANON_KEY` protected runtime values হিসেবে ব্যবহার হবে। SQL migration-এ profiles, posts, follows, likes, comments, hashtags এবং reports-এর schema ও Row Level Security policy থাকবে। Phone OTP flow Supabase Auth-এর জন্য প্রস্তুত থাকবে।
-- **GitHub:** Manus-managed mobile project-এর canonical repository platform-managed থাকবে; selected GitHub repository `susankarkarmakar-pixel/ekta`-তে application source, Supabase migration ও README-এর একটি explicit mirror push করা হবে। এতে GitHub-এ code file থাকবে, কিন্তু managed Expo preview/build-এর source of truth অক্ষুণ্ণ থাকবে।
-- **Scope discipline:** DM, video, algorithmic recommendation ও advanced notifications Phase 1-এ থাকবে না। Moderation/report affordance, privacy cues এবং clear demo states থাকবে।
+- **GitHub:** এই কাজের নির্বাচিত repository `susankarkarmakar-pixel/ekta_`-তেই application source, Supabase migration ও README আপডেট হবে; managed Expo identifiers অক্ষুণ্ণ থাকবে।
+- **Scope discipline:** DM, algorithmic recommendation ও advanced notifications Phase 1-এ থাকবে না। User-requested Reels workflow-টি এবার Phase 1-এ যোগ হচ্ছে; curated demo content chronological থাকবে। Moderation/report affordance, privacy cues এবং স্পষ্ট demo states বজায় থাকবে।
 
 ## স্ক্রিন ও আচরণ
 
@@ -21,6 +21,17 @@ eKta হলো Malda/North Bengal-এর civic ও public-service community-র 
 5. **Profile:** current user ও community member profile, avatar, bio, follower/following count এবং follow/unfollow state।
 6. **OTP sign-in:** phone number entry, OTP verification, retry ও error-state UI; real Supabase Auth hook প্রস্তুত থাকবে।
 7. **Post detail:** visible likes/comments, threaded-on-post comment entry, report action এবং community-safety copy।
+8. **Reels:** আলাদা full-bleed, portrait video feed; প্রতি পেজে একটি Reel, উল্লম্ব swipe/paging, শুধু সক্রিয় item-এর autoplay ও loop, প্রথমে muted playback, tap-এ pause/resume, স্পষ্ট sound toggle, like/comment/share actions, creator/caption/location/tag overlay এবং empty/loading state। Bottom navigation ও Home-এর Stories rail—দুই জায়গা থেকেই Reels-এ যাওয়া যাবে।
+9. **Reel creation:** gallery বা camera থেকে শুধু video বাছাই/রেকর্ড; সর্বোচ্চ ৬০ সেকেন্ড, optional caption ও hashtags, muted preview, media বদলানো/সরানো, validation/error/success feedback এবং publish-এর পর Reels-এ যাওয়া। Reel ছাড়া caption-only submit হবে না; normal post-এ video type গ্রহণ হবে না।
+
+### Reel implementation and data boundary
+
+- Existing `CreateScreen`-এ post/reel/story mode ও `expo-image-picker` video selection ছিল; নতুন কাজটি সেই অসম্পূর্ণ affordance-কে discoverable, navigable, playable flow-এ সম্পূর্ণ করবে।
+- `app/(tabs)/reels.tsx`-এ React Native `FlatList` + `pagingEnabled`; visible viewability callback current index ঠিক করবে। প্রতিটি mounted video player current item হলে play, অন্যথায় pause/mute হবে, এবং tab blur-এ সব playback থামবে। অতিরিক্ত player preloading/recommendation যোগ হবে না।
+- `getReels()` repository method seeded sample Reels-কে user-created, non-story video posts-এর সঙ্গে দেবে; sample ordering deterministic থাকবে। Likes/comments demo session-এ optimistic local state হবে; share OS share sheet-এ যাবে।
+- তিনটি compact, portrait-friendly Pexels MP4 শুধু sample Reel content এবং walkthrough-এ থাকবে; README-তে creator/source link ও license উল্লেখ থাকবে। এগুলো user/community-upload নয়—UI-তে sample/demo content বলে দেখাতে হবে।
+- Composer সর্বোচ্চ ৬০-সেকেন্ড ভিডিও বাছাইয়ের Expo API-ই পুনর্ব্যবহার করবে। বর্তমান preview/demo data boundary-তে নির্বাচিত video URI app session-এর local content; repository-তে raw `file://` URI-কে public hosted media হিসেবে দাবি করা যাবে না। Supabase SQL-এ `video_path` এবং `is_story` field/index যোগ হবে, কিন্তু authenticated Storage upload/public URL lifecycle এই task-এ চালু নয়; production upload-কে আলাদা secure Supabase Auth + Storage policy work হিসেবে স্পষ্টভাবে চিহ্নিত রাখতে হবে।
+- নতুন runtime dependency নয়: বিদ্যমান `expo-video`, `expo-image-picker`, React Native `Share`, React Native `Modal` ও navigation ব্যবহার হবে।
 
 ## Design system
 
@@ -40,8 +51,9 @@ eKta হলো Malda/North Bengal-এর civic ও public-service community-র 
 
 ```text
 app/
-  (tabs)/_layout.tsx        # Home, Discover, Create, Alerts, Profile tabs
+  (tabs)/_layout.tsx        # Home, Reels, Discover, Create, Alerts, Profile tabs
   (tabs)/index.tsx           # Feed and composer
+  (tabs)/reels.tsx           # Full-screen vertical Reels feed and controls
   (tabs)/discover.tsx        # Search, users, topics
   (tabs)/create.tsx          # New post flow
   (tabs)/alerts.tsx          # Basic alerts/empty state
@@ -49,19 +61,20 @@ app/
   post/[id].tsx              # Post detail, comments, report
   auth/phone.tsx             # Phone + OTP flow
 components/
-  apongram/                  # Brand header, avatar, post card, topic chips, sheets
+  apongram/                  # Brand header, avatar, post card, topic chips, Reel card/sheets
 lib/apongram/
   types.ts                   # Domain types and translations
-  mock-data.ts               # Realistic Bengali civic seed content
-  repository.ts              # Supabase-or-demo repository interface
+  mock-data.ts               # Realistic civic seed content and sample Reels
+  repository.ts              # Supabase-or-demo feed and Reel queries
   supabase.ts                # Browser-safe client and env detection
 supabase/
   migrations/001_apongram.sql # Schema, indexes, RLS, storage notes
 assets/images/               # Native launcher/splash/favicon identity
+assets/videos/               # Compressed licensed demo-only sample Reel clips
 plan.md                      # This plan and design decisions
 TODO.md                      # Outcome-based acceptance clauses
 ```
 
 ## Serving and dependencies
 
-Metro/Web listens on the fixed 8081 port and the starter API on 3000. The Supabase client is browser-safe and never receives a service-role key; only URL + anon key are public runtime values. Database and storage writes are gated by Supabase Auth/RLS in production. Preview remains useful in demo mode when protected values are not yet present. The app will use the existing React Native/NativeWind dependencies and add only the smallest required Supabase client dependency.
+Metro/Web listens on the fixed 8081 port and the starter API on 3000. The Supabase client is browser-safe and never receives a service-role key; only URL + anon key are public runtime values. Database and storage writes are gated by Supabase Auth/RLS in production. Preview remains useful in demo mode when protected values are not yet present. Reel media selection, local preview and seeded playback are demo-ready; a real user video needs authenticated upload to a policy-protected Storage bucket before the post can be treated as durable/live. The app uses existing React Native/NativeWind dependencies and adds none for this feature.
