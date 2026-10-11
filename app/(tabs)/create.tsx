@@ -1,4 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
+import { useAudioPlayer } from "expo-audio";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
@@ -12,6 +13,7 @@ import { applyImageFilter, type ImageFilter } from "@/lib/apongram/image-filters
 import { currentUser } from "@/lib/apongram/mock-data";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
 import type { VideoCompression } from "@/lib/apongram/types";
+import { musicTracks } from "@/lib/apongram/music";
 
 /* Expo Video trim preview uses its imperative currentTime API. */
 /* eslint-disable react-hooks/immutability */
@@ -21,8 +23,9 @@ type PublishMode = "post" | "reel" | "story";
 type CaptureSource = "gallery" | "camera";
 type MediaType = "image" | "video";
 
-function VideoPreview({ uri, start, end }: { uri: string; start: number; end: number }) {
-  const player = useVideoPlayer(uri, (instance) => { instance.loop = true; instance.muted = true; });
+function VideoPreview({ uri, start, end, volume }: { uri: string; start: number; end: number; volume: number }) {
+  const player = useVideoPlayer(uri, (instance) => { instance.loop = true; instance.muted = false; });
+  useEffect(() => { player.volume = volume; }, [player, volume]);
   useEffect(() => {
     player.currentTime = start;
     player.timeUpdateEventInterval = 0.25;
@@ -52,6 +55,11 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
   const [trimStart, setTrimStart] = useState("0");
   const [trimEnd, setTrimEnd] = useState("60");
   const [compression, setCompression] = useState<VideoCompression>("balanced");
+  const [musicTrackId, setMusicTrackId] = useState<string | null>(null);
+  const [musicVolume, setMusicVolume] = useState(0.7);
+  const [originalVolume, setOriginalVolume] = useState(0.25);
+  const selectedTrack = musicTracks.find((track) => track.id === musicTrackId);
+  const musicPlayer = useAudioPlayer(selectedTrack?.source);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -59,6 +67,12 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
   const canPublish = mode === "reel"
     ? mediaType === "video" && Boolean(mediaUri)
     : Boolean(body.trim() || mediaUri);
+
+  useEffect(() => {
+    musicPlayer.loop = true;
+    musicPlayer.volume = musicVolume;
+    if (!selectedTrack) musicPlayer.pause();
+  }, [musicPlayer, musicVolume, selectedTrack]);
 
   const chooseMedia = async (source: CaptureSource) => {
     setError("");
@@ -92,6 +106,8 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
       setMediaUri(asset.uri);
       setMediaType(asset.type === "video" ? "video" : "image");
       setActiveFilter(null);
+      setMusicTrackId(null);
+      musicPlayer.pause();
       if (asset.type === "video") {
         const duration = Math.max(1, Math.min(60, Math.ceil((asset.duration ?? 60_000) / 1000)));
         setVideoDuration(duration); setTrimStart("0"); setTrimEnd(String(duration)); setCompression("balanced");
@@ -149,6 +165,7 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
         mediaType === "video" ? mediaUri ?? undefined : undefined,
         mode === "story",
         videoOptions,
+        selectedTrack ? { trackId: selectedTrack.id, musicVolume, originalVolume } : undefined,
       );
       setSaved(true);
       setTimeout(() => router.replace(mode === "reel" ? "/(tabs)/reels" : "/(tabs)"), 550);
@@ -179,7 +196,7 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
 
         <View style={styles.modeBar}>
           {(["post", "reel", "story"] as PublishMode[]).map((item) => (
-            <Pressable key={item} onPress={() => { setMode(item); setMediaUri(null); setMediaType(null); setError(""); setSaved(false); }} style={[styles.modeButton, mode === item && styles.modeActive]}>
+            <Pressable key={item} onPress={() => { setMode(item); setMediaUri(null); setMediaType(null); setMusicTrackId(null); musicPlayer.pause(); setError(""); setSaved(false); }} style={[styles.modeButton, mode === item && styles.modeActive]}>
               <MaterialIcons name={item === "post" ? "edit" : item === "reel" ? "movie" : "auto-stories"} size={16} color={mode === item ? "#FFF" : C.terra} />
               <Text style={[styles.modeText, mode === item && styles.modeTextActive]}>{item === "post" ? (language === "bn" ? "পোস্ট" : "Post") : item === "reel" ? copy.reels : (language === "bn" ? "স্টোরি" : "Story")}</Text>
             </Pressable>
@@ -219,10 +236,11 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
               <Pressable onPress={() => { setMediaUri(null); setMediaType(null); }} disabled={busy}><Text style={styles.remove}>{language === "bn" ? "সরান" : "Remove"}</Text></Pressable>
             </View>
             <View style={styles.preview}>
-              {mediaType === "video" ? <VideoPreview uri={mediaUri} start={Math.max(0, Number(trimStart) || 0)} end={Math.max(1, Number(trimEnd) || videoDuration)} /> : <Image source={{ uri: mediaUri }} style={styles.previewImage} resizeMode="cover" />}
+              {mediaType === "video" ? <VideoPreview uri={mediaUri} start={Math.max(0, Number(trimStart) || 0)} end={Math.max(1, Number(trimEnd) || videoDuration)} volume={originalVolume} /> : <Image source={{ uri: mediaUri }} style={styles.previewImage} resizeMode="cover" />}
               <View style={styles.previewOverlay}><MaterialIcons name="check-circle" size={18} color="#FFF" /><Text style={styles.previewText}>{mode === "story" ? (language === "bn" ? "২৪ ঘণ্টার স্টোরি" : "24-hour Story") : (language === "bn" ? "প্রকাশের জন্য প্রস্তুত" : "Ready to publish")}</Text></View>
             </View>
             {mediaType === "video" && mode === "reel" ? <View style={styles.trimPanel}><View style={styles.trimHeader}><Text style={styles.trimTitle}>{language === "bn" ? "রিল সম্পাদনা" : "Edit Reel"}</Text><Text style={styles.trimMeta}>{language === "bn" ? `মোট ${videoDuration} সেকেন্ড` : `Up to ${videoDuration}s`}</Text></View><View style={styles.trimFields}><View style={styles.trimField}><Text style={styles.trimLabel}>{language === "bn" ? "শুরু" : "Start"}</Text><TextInput value={trimStart} onChangeText={setTrimStart} keyboardType="decimal-pad" style={styles.trimInput} /></View><Text style={styles.trimDash}>–</Text><View style={styles.trimField}><Text style={styles.trimLabel}>{language === "bn" ? "শেষ" : "End"}</Text><TextInput value={trimEnd} onChangeText={setTrimEnd} keyboardType="decimal-pad" style={styles.trimInput} /></View><Text style={styles.seconds}>sec</Text></View><Text style={styles.compressionLabel}>{language === "bn" ? "কম্প্রেশন" : "Compression"}</Text><View style={styles.compressionRow}>{(["high", "balanced", "dataSaver"] as VideoCompression[]).map((profile) => <Pressable key={profile} onPress={() => setCompression(profile)} style={[styles.compressionButton, compression === profile && styles.filterActive]}><Text style={[styles.compressionText, compression === profile && styles.filterTextActive]}>{profile === "high" ? "High" : profile === "balanced" ? "Balanced" : "Data saver"}</Text></Pressable>)}</View><Text style={styles.trimNote}>{language === "bn" ? "এই রেঞ্জ ও কম্প্রেশন প্রোফাইল আপলোডে ব্যবহার হবে।" : "This trim range and compression profile will be applied at upload."}</Text></View> : null}
+            {(mode === "reel" || mode === "story") ? <View style={styles.musicPanel}><View style={styles.musicHeader}><View><Text style={styles.trimTitle}>{language === "bn" ? "সঙ্গীত যোগ করুন" : "Add music"}</Text><Text style={styles.trimMeta}>{selectedTrack ? selectedTrack.title : (language === "bn" ? "একটি ট্র্যাক বাছুন" : "Choose a track")}</Text></View>{selectedTrack ? <Pressable onPress={() => musicPlayer.playing ? musicPlayer.pause() : musicPlayer.play()} style={styles.musicPlay}><MaterialIcons name={musicPlayer.playing ? "pause" : "play-arrow"} size={17} color="#FFF" /></Pressable> : null}</View><View style={styles.trackList}>{musicTracks.map((track) => <Pressable key={track.id} onPress={() => { setMusicTrackId(track.id); musicPlayer.replace(track.source); musicPlayer.play(); }} style={[styles.trackRow, musicTrackId === track.id && styles.trackSelected]}><MaterialIcons name={musicTrackId === track.id ? "radio-button-checked" : "radio-button-unchecked"} size={17} color={musicTrackId === track.id ? C.green : C.muted} /><View style={styles.trackCopy}><Text style={styles.trackTitle}>{track.title}</Text><Text style={styles.trackMeta}>{track.artist} · {track.mood}</Text></View><MaterialIcons name="play-arrow" size={16} color={C.terra} /></Pressable>)}</View>{selectedTrack ? <View style={styles.mixControls}><View style={styles.mixRow}><Text style={styles.mixLabel}>{language === "bn" ? "মূল ভিডিও" : "Original"}</Text><Pressable onPress={() => setOriginalVolume(Math.max(0, Number((originalVolume - 0.1).toFixed(1))))}><Text style={styles.mixButton}>−</Text></Pressable><Text style={styles.mixValue}>{Math.round(originalVolume * 100)}%</Text><Pressable onPress={() => setOriginalVolume(Math.min(1, Number((originalVolume + 0.1).toFixed(1))))}><Text style={styles.mixButton}>+</Text></Pressable></View><View style={styles.mixRow}><Text style={styles.mixLabel}>{language === "bn" ? "সঙ্গীত" : "Music"}</Text><Pressable onPress={() => { const value = Math.max(0, Number((musicVolume - 0.1).toFixed(1))); setMusicVolume(value); musicPlayer.volume = value; }}><Text style={styles.mixButton}>−</Text></Pressable><Text style={styles.mixValue}>{Math.round(musicVolume * 100)}%</Text><Pressable onPress={() => { const value = Math.min(1, Number((musicVolume + 0.1).toFixed(1))); setMusicVolume(value); musicPlayer.volume = value; }}><Text style={styles.mixButton}>+</Text></Pressable></View></View> : null}<Text style={styles.trimNote}>{language === "bn" ? "সঙ্গীতটি প্রিভিউতে মিশবে এবং প্রকাশের সময় সংরক্ষিত হবে।" : "Music previews in the mix and is saved with your Reel or Story."}</Text></View> : null}
             {mediaType === "image" ? (
               <View style={styles.editRow}>
                 <Pressable onPress={() => editImage()} disabled={busy} style={styles.editButton}><MaterialIcons name="crop" size={16} color={C.terra} /><Text style={styles.editText}>{language === "bn" ? "ক্রপ ৪:৩" : "Crop 4:3"}</Text></Pressable>
@@ -277,7 +295,7 @@ const styles = StyleSheet.create({
   previewImage: { width: "100%", height: "100%" },
   previewOverlay: { position: "absolute", left: 9, bottom: 8, backgroundColor: "rgba(30,27,22,0.62)", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 5 },
   previewText: { color: "#FFF", fontSize: 10, fontWeight: "700" },
-  trimPanel: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line }, trimHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, trimTitle: { color: C.ink, fontSize: 12, fontWeight: "800" }, trimMeta: { color: C.muted, fontSize: 10 }, trimFields: { flexDirection: "row", alignItems: "flex-end", gap: 7, marginTop: 9 }, trimField: { flex: 1 }, trimLabel: { color: C.muted, fontSize: 9, marginBottom: 3 }, trimInput: { height: 34, borderWidth: 1, borderColor: C.line, borderRadius: 9, paddingHorizontal: 9, color: C.ink, fontSize: 12, backgroundColor: "#FBF7F0" }, trimDash: { color: C.muted, paddingBottom: 9 }, seconds: { color: C.muted, fontSize: 10, paddingBottom: 9 }, compressionLabel: { color: C.muted, fontSize: 9, marginTop: 10, marginBottom: 6 }, compressionRow: { flexDirection: "row", gap: 5 }, compressionButton: { flex: 1, borderWidth: 1, borderColor: "#F0C8B9", borderRadius: 999, paddingVertical: 7, alignItems: "center" }, compressionText: { color: C.terra, fontSize: 9, fontWeight: "800" }, trimNote: { color: C.muted, fontSize: 9, lineHeight: 13, marginTop: 7 }, editRow: { flexDirection: "row", gap: 5, marginTop: 10 },
+  musicPanel: { marginTop: 12, paddingTop: 11, borderTopWidth: 1, borderTopColor: C.line }, musicHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, musicPlay: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.green, alignItems: "center", justifyContent: "center" }, trackList: { marginTop: 8, gap: 5 }, trackRow: { flexDirection: "row", alignItems: "center", gap: 8, padding: 8, borderRadius: 10, backgroundColor: "#FBF7F0" }, trackSelected: { borderWidth: 1, borderColor: "#A7C9C2", backgroundColor: "#EEF6F3" }, trackCopy: { flex: 1 }, trackTitle: { color: C.ink, fontSize: 11, fontWeight: "800" }, trackMeta: { color: C.muted, fontSize: 9, marginTop: 2 }, mixControls: { marginTop: 8, gap: 5 }, mixRow: { flexDirection: "row", alignItems: "center", gap: 8 }, mixLabel: { color: C.muted, fontSize: 10, width: 58 }, mixButton: { color: C.terra, fontSize: 19, fontWeight: "700", width: 22, textAlign: "center" }, mixValue: { color: C.ink, fontSize: 10, fontWeight: "800", width: 38, textAlign: "center" }, trimPanel: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line }, trimHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, trimTitle: { color: C.ink, fontSize: 12, fontWeight: "800" }, trimMeta: { color: C.muted, fontSize: 10 }, trimFields: { flexDirection: "row", alignItems: "flex-end", gap: 7, marginTop: 9 }, trimField: { flex: 1 }, trimLabel: { color: C.muted, fontSize: 9, marginBottom: 3 }, trimInput: { height: 34, borderWidth: 1, borderColor: C.line, borderRadius: 9, paddingHorizontal: 9, color: C.ink, fontSize: 12, backgroundColor: "#FBF7F0" }, trimDash: { color: C.muted, paddingBottom: 9 }, seconds: { color: C.muted, fontSize: 10, paddingBottom: 9 }, compressionLabel: { color: C.muted, fontSize: 9, marginTop: 10, marginBottom: 6 }, compressionRow: { flexDirection: "row", gap: 5 }, compressionButton: { flex: 1, borderWidth: 1, borderColor: "#F0C8B9", borderRadius: 999, paddingVertical: 7, alignItems: "center" }, compressionText: { color: C.terra, fontSize: 9, fontWeight: "800" }, trimNote: { color: C.muted, fontSize: 9, lineHeight: 13, marginTop: 7 }, editRow: { flexDirection: "row", gap: 5, marginTop: 10 },
   editButton: { flex: 1, borderWidth: 1, borderColor: "#F0C8B9", borderRadius: 999, paddingVertical: 7, alignItems: "center", justifyContent: "center" },
   editText: { color: C.terra, fontSize: 9, fontWeight: "800" },
   filterActive: { backgroundColor: C.terra },

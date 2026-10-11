@@ -26,6 +26,9 @@ export type Post = {
   videoStart?: number;
   videoEnd?: number;
   videoCompression?: VideoCompression;
+  musicTrackId?: string;
+  musicVolume?: number;
+  originalVolume?: number;
   isStory?: boolean;
   isDemo?: boolean;
   storyExpiresAt?: string;

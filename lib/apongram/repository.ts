@@ -115,7 +115,7 @@ export async function addComment(postId: string, body: string): Promise<Comment>
   return comment;
 }
 
-export async function createPost(body: string, imagePath?: string, videoPath?: string, isStory = false, videoOptions?: { start: number; end: number; compression: VideoCompression }): Promise<Post> {
+export async function createPost(body: string, imagePath?: string, videoPath?: string, isStory = false, videoOptions?: { start: number; end: number; compression: VideoCompression }, musicOptions?: { trackId: string; musicVolume: number; originalVolume: number }): Promise<Post> {
   const post: Post = {
     id: `local-${Date.now()}`,
     author: currentUser,
@@ -126,6 +126,9 @@ export async function createPost(body: string, imagePath?: string, videoPath?: s
     videoStart: videoOptions?.start,
     videoEnd: videoOptions?.end,
     videoCompression: videoOptions?.compression,
+    musicTrackId: musicOptions?.trackId,
+    musicVolume: musicOptions?.musicVolume,
+    originalVolume: musicOptions?.originalVolume,
     isStory,
     storyExpiresAt: isStory ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined,
     createdAt: "now",
@@ -145,7 +148,7 @@ export async function createPost(body: string, imagePath?: string, videoPath?: s
       await supabaseFetch("posts", {
         method: "POST",
         headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ body, image_path: imagePath ?? null, video_path: videoPath ?? null, video_start: videoOptions?.start ?? null, video_end: videoOptions?.end ?? null, video_compression: videoOptions?.compression ?? null, is_story: isStory }),
+        body: JSON.stringify({ body, image_path: imagePath ?? null, video_path: videoPath ?? null, video_start: videoOptions?.start ?? null, video_end: videoOptions?.end ?? null, video_compression: videoOptions?.compression ?? null, music_track_id: musicOptions?.trackId ?? null, music_volume: musicOptions?.musicVolume ?? null, original_volume: musicOptions?.originalVolume ?? null, is_story: isStory }),
       });
     } catch {
       // Keep the preview responsive when live persistence is unavailable.
