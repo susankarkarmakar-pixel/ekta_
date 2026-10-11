@@ -6,7 +6,7 @@ import { Avatar } from "@/components/apongram/Avatar";
 import { PostCard } from "@/components/apongram/PostCard";
 import { Colors } from "@/constants/theme";
 import { ScreenContainer } from "@/components/screen-container";
-import { currentUser, posts } from "@/lib/apongram/mock-data";
+import { currentUser, demoStories, posts } from "@/lib/apongram/mock-data";
 import { getStoredProfile } from "@/lib/apongram/profile-store";
 import { getStoryHighlights, saveStoryHighlight, type StoryHighlight } from "@/lib/apongram/story-highlights";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
@@ -32,9 +32,10 @@ export default function ProfileScreen() {
   const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
   const headingFont = language === "bn" ? "NotoSerifBengaliBold" : "Fraunces";
   const ownPosts = posts.filter((post) => post.author.id === profile.id);
-  const storyPosts = ownPosts.filter((post) => post.isStory && (!post.storyExpiresAt || new Date(post.storyExpiresAt).getTime() > now));
-  const photoPosts = ownPosts.filter((post) => !post.videoUrl);
-  const videoPosts = ownPosts.filter((post) => Boolean(post.videoUrl));
+  const profilePosts = ownPosts.filter((post) => !post.isStory);
+  const storyPosts = [...demoStories.filter((post) => post.author.id === profile.id), ...ownPosts.filter((post) => post.isStory)].filter((post) => !post.storyExpiresAt || new Date(post.storyExpiresAt).getTime() > now);
+  const photoPosts = profilePosts.filter((post) => !post.videoUrl);
+  const videoPosts = profilePosts.filter((post) => Boolean(post.videoUrl));
 
   useFocusEffect(useCallback(() => {
     void Promise.all([getStoredProfile(), getStoryHighlights()]).then(([stored, items]) => { setProfile(stored); setHighlights(items); });
@@ -47,12 +48,12 @@ export default function ProfileScreen() {
     setHighlightTitle("");
     setHighlightModal(false);
   };
-  const viewerStories = viewer?.storyIds.map((id) => posts.find((post) => post.id === id)).filter((post): post is Post => Boolean(post)) ?? [];
+  const viewerStories = viewer?.storyIds.map((id) => [...demoStories, ...posts].find((post) => post.id === id)).filter((post): post is Post => Boolean(post)) ?? [];
 
   return <ScreenContainer safeAreaClassName="bg-background" className="bg-background"><ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
     <View style={styles.banner}><View style={styles.sun} /><View style={styles.hillBack} /><View style={styles.hillFront} /><View style={styles.bannerTop}><Text style={[styles.bannerKicker, { fontFamily: mediumFont }]}>{language === "bn" ? "আপনার একতার জায়গা" : "YOUR PLACE IN EKTA"}</Text><Pressable onPress={() => router.push("/settings")} accessibilityLabel={copy.editProfile}><MaterialIcons name="settings" size={22} color={C.inkNavy} /></Pressable></View><View style={styles.avatarFrame}><Avatar profile={profile} size={78} /></View></View>
     <View style={styles.profile}><Text style={[styles.name, { fontFamily: headingFont }]}>{profile.name}</Text><Text style={[styles.handle, { fontFamily: bodyFont }]}>@{profile.handle} · {profile.region}</Text><Text style={[styles.bio, { fontFamily: bodyFont }]}>{profile.bio}</Text>
-      <View style={styles.stats}><Stat value={String(ownPosts.length)} label={copy.posts} font={mediumFont} bodyFont={bodyFont} /><Stat value={String(profile.followers)} label={copy.followers} font={mediumFont} bodyFont={bodyFont} /><Stat value={String(profile.following)} label={copy.following} font={mediumFont} bodyFont={bodyFont} /></View>
+      <View style={styles.stats}><Stat value={String(profilePosts.length)} label={copy.posts} font={mediumFont} bodyFont={bodyFont} /><Stat value={String(profile.followers)} label={copy.followers} font={mediumFont} bodyFont={bodyFont} /><Stat value={String(profile.following)} label={copy.following} font={mediumFont} bodyFont={bodyFont} /></View>
       <Pressable onPress={() => router.push("/profile-edit")} style={styles.edit} accessibilityRole="button" accessibilityLabel={copy.editProfile}><MaterialIcons name="edit" size={16} color={C.terracotta} /><Text style={[styles.editText, { fontFamily: mediumFont }]}>{copy.editProfile}</Text></Pressable>
     </View>
     <View style={styles.highlightSection}><View style={styles.sectionHeader}><Text style={[styles.sectionTitle, { fontFamily: headingFont }]}>{copy.profileHighlights}</Text><Text style={[styles.sectionHint, { fontFamily: bodyFont }]}>{language === "bn" ? "আপনার গল্প" : "Your stories"}</Text></View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.highlightRail}><Pressable onPress={() => setHighlightModal(true)} style={styles.highlightItem} accessibilityLabel={copy.addHighlight}><View style={[styles.highlightCircle, styles.addCircle]}><MaterialIcons name="add" size={25} color={C.terracotta} /></View><Text style={[styles.highlightLabel, { fontFamily: bodyFont }]}>{copy.addHighlight}</Text></Pressable>{highlights.map((item) => <Pressable key={item.id} onPress={() => setViewer(item)} style={styles.highlightItem}><View style={styles.highlightCircle}><MaterialIcons name="collections-bookmark" size={23} color={C.leafGreen} /></View><Text numberOfLines={1} style={[styles.highlightLabel, { fontFamily: bodyFont }]}>{item.title}</Text></Pressable>)}</ScrollView></View>

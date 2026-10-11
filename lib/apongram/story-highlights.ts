@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { demoStoryHighlights } from "./mock-data";
 
 export type StoryHighlight = {
   id: string;
@@ -12,7 +13,7 @@ const HIGHLIGHTS_KEY = "@ekta/story-highlights-v1";
 export async function getStoryHighlights(): Promise<StoryHighlight[]> {
   try {
     const raw = await AsyncStorage.getItem(HIGHLIGHTS_KEY);
-    if (!raw) return [];
+    if (!raw) return demoStoryHighlights;
     const parsed = JSON.parse(raw) as StoryHighlight[];
     return Array.isArray(parsed) ? parsed : [];
   } catch {

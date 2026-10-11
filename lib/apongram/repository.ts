@@ -30,7 +30,7 @@ export async function getFeedPage(page = 0, pageSize = 6): Promise<{ items: Post
   const from = page * pageSize;
   const to = from + pageSize - 1;
   if (!supabaseConfig.isConfigured) {
-    const demoFeed = [...posts, ...demoReels];
+    const demoFeed = [...posts.filter((post) => !post.isStory), ...demoReels];
     const items = demoFeed.slice(from, to + 1);
     return { items, hasMore: to + 1 < demoFeed.length, fromCache: false };
   }
@@ -49,12 +49,12 @@ export async function getFeedPage(page = 0, pageSize = 6): Promise<{ items: Post
 }
 
 export async function getFeed(): Promise<Post[]> {
-  if (!supabaseConfig.isConfigured) return posts;
+  if (!supabaseConfig.isConfigured) return posts.filter((post) => !post.isStory);
   try {
     const rows = await supabaseFetch<Post[]>("posts?select=*&order=created_at.desc");
-    return rows.length ? rows : posts;
+    return rows.length ? rows : posts.filter((post) => !post.isStory);
   } catch {
-    return posts;
+    return posts.filter((post) => !post.isStory);
   }
 }
 
