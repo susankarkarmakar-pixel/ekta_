@@ -47,6 +47,7 @@ export default function HomeScreen() {
   const [page, setPage] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [feedError, setFeedError] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const loadingRef = useRef(false);
 
@@ -54,11 +55,14 @@ export default function HomeScreen() {
     if (loadingRef.current) return;
     loadingRef.current = true;
     setRefreshing(true);
+    setFeedError(false);
     try {
       const { items, hasMore: nextHasMore } = await getFeedPage(0, 3);
       setFeed(rankFeed(items, feedMode, { ...buildFeedPreferences(currentUser), ...preferences }));
       setPage(0);
       setHasMore(nextHasMore);
+    } catch {
+      setFeedError(true);
     } finally {
       loadingRef.current = false;
       setRefreshing(false);
@@ -79,6 +83,9 @@ export default function HomeScreen() {
       setFeed((items) => rankFeed([...items, ...result.items], feedMode, { ...buildFeedPreferences(currentUser), ...preferences }));
       setPage(nextPage);
       setHasMore(result.hasMore);
+      setFeedError(false);
+    } catch {
+      setFeedError(true);
     } finally {
       loadingRef.current = false;
       setLoadingMore(false);
@@ -149,6 +156,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
+        {feedError ? <View style={styles.errorCard} accessibilityRole="alert"><View style={styles.errorIcon}><MaterialIcons name="cloud-off" size={24} color={C.terra} /></View><View style={styles.errorCopy}><Text style={[styles.errorTitle, { fontFamily: mediumFont }]}>{copy.feedErrorTitle}</Text><Text style={[styles.errorBody, { fontFamily: bodyFont }]}>{copy.feedErrorBody}</Text></View><Pressable onPress={() => void reloadFeed()} style={styles.retryButton} accessibilityRole="button" accessibilityLabel={copy.retry}><Text style={[styles.retryText, { fontFamily: mediumFont }]}>{copy.retry}</Text></Pressable></View> : null}
         {refreshing && !feed.length ? <FeedSkeleton /> : null}
         {feed.map((post) => <PostCard key={post.id} post={post} copy={copy} onOpen={() => router.push({ pathname: "/post/[id]", params: { id: post.id } })} onLike={() => toggleLike(post.id)} onReport={() => router.push({ pathname: "/report", params: { postId: post.id } })} />)}
         {loadingMore ? <View style={styles.feedFooter}><ActivityIndicator color={C.terra} /><Text style={[styles.footerText, { fontFamily: bodyFont }]}>{language === "bn" ? "আরও আপডেট আসছে..." : "Loading more updates…"}</Text></View> : null}
@@ -199,6 +207,13 @@ const styles = StyleSheet.create({
   feedFooter: { minHeight: 58, alignItems: "center", justifyContent: "center", gap: 6 },
   footerText: { color: C.muted, fontSize: 11 },
   endText: { color: C.muted, fontSize: 11, textAlign: "center", paddingVertical: 18 },
+  errorCard: { backgroundColor: C.paper, borderWidth: 1, borderColor: C.line, borderRadius: 18, padding: 13, marginBottom: 14, flexDirection: "row", alignItems: "center", gap: 10 },
+  errorIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.primaryContainer, alignItems: "center", justifyContent: "center" },
+  errorCopy: { flex: 1 },
+  errorTitle: { color: C.ink, fontSize: 12, fontWeight: "800" },
+  errorBody: { color: C.muted, fontSize: 10, lineHeight: 15, marginTop: 2 },
+  retryButton: { minHeight: 40, borderRadius: 20, backgroundColor: C.terra, paddingHorizontal: 13, alignItems: "center", justifyContent: "center" },
+  retryText: { color: C.ivory, fontSize: 11, fontWeight: "800" },
   skeletonCard: { backgroundColor: C.paper, borderRadius: 20, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: C.line },
   skeletonHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
   skeletonAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.line },
