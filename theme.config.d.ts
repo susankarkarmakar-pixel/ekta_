@@ -1,4 +1,12 @@
 export const themeColors: {
+  terracotta: { light: string; dark: string };
+  leafGreen: { light: string; dark: string };
+  ochre: { light: string; dark: string };
+  inkNavy: { light: string; dark: string };
+  ivory: { light: string; dark: string };
+  paper: { light: string; dark: string };
+  slate: { light: string; dark: string };
+  line: { light: string; dark: string };
   primary: { light: string; dark: string };
   onPrimary: { light: string; dark: string };
   primaryContainer: { light: string; dark: string };
