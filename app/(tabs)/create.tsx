@@ -7,6 +7,7 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { Avatar } from "@/components/apongram/Avatar";
+import { Colors } from "@/constants/theme";
 import { ScreenContainer } from "@/components/screen-container";
 import { createPost } from "@/lib/apongram/repository";
 import { applyImageFilter, type ImageFilter } from "@/lib/apongram/image-filters";
@@ -18,7 +19,7 @@ import { musicTracks } from "@/lib/apongram/music";
 /* Expo Video trim preview uses its imperative currentTime API. */
 /* eslint-disable react-hooks/immutability */
 
-const C = { card: "#FFFFFF", ink: "#1E1B16", muted: "#6B6153", terra: "#C85A3A", line: "#E3DACB", green: "#1F6F6B" };
+const C = { ...Colors.light, card: Colors.light.paper, ink: Colors.light.inkNavy, muted: Colors.light.slate, terra: Colors.light.terracotta, line: Colors.light.line, green: Colors.light.leafGreen };
 type PublishMode = "post" | "reel" | "story";
 type CaptureSource = "gallery" | "camera";
 type MediaType = "image" | "video";
@@ -46,6 +47,9 @@ export default function CreateScreen() {
 function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
   const router = useRouter();
   const { copy, language } = useLanguage();
+  const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
+  const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
+  const headingFont = language === "bn" ? "NotoSerifBengaliBold" : "Fraunces";
   const [mode, setMode] = useState<PublishMode>(initialMode);
   const [body, setBody] = useState("");
   const [mediaUri, setMediaUri] = useState<string | null>(null);
@@ -194,9 +198,9 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
       <View style={styles.container}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} accessibilityLabel={copy.back}><MaterialIcons name="close" size={24} color={C.ink} /></Pressable>
-          <Text style={styles.title}>{modeLabel}</Text>
+          <Text style={[styles.title, { fontFamily: headingFont }]}>{modeLabel}</Text>
           <Pressable onPress={submit} disabled={busy || !canPublish} style={[styles.postButton, (busy || !canPublish) && styles.disabled]}>
-            <Text style={styles.postButtonText}>{mode === "reel" ? copy.publishReel : mode === "story" ? (language === "bn" ? "স্টোরিতে দিন" : "Add story") : copy.save}</Text>
+            <Text style={[styles.postButtonText, { fontFamily: mediumFont }]}>{mode === "reel" ? copy.publishReel : mode === "story" ? (language === "bn" ? "স্টোরিতে দিন" : "Add story") : copy.save}</Text>
           </Pressable>
         </View>
 
@@ -204,14 +208,14 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
           {(["post", "reel", "story"] as PublishMode[]).map((item) => (
             <Pressable key={item} onPress={() => { setMode(item); setMediaUri(null); setMediaType(null); setMusicTrackId(null); musicPlayer.pause(); setOverlayText(""); setOverlaySticker(null); setError(""); setSaved(false); }} style={[styles.modeButton, mode === item && styles.modeActive]}>
               <MaterialIcons name={item === "post" ? "edit" : item === "reel" ? "movie" : "auto-stories"} size={16} color={mode === item ? "#FFF" : C.terra} />
-              <Text style={[styles.modeText, mode === item && styles.modeTextActive]}>{item === "post" ? (language === "bn" ? "পোস্ট" : "Post") : item === "reel" ? copy.reels : (language === "bn" ? "স্টোরি" : "Story")}</Text>
+              <Text style={[styles.modeText, { fontFamily: mediumFont }, mode === item && styles.modeTextActive]}>{item === "post" ? (language === "bn" ? "পোস্ট" : "Post") : item === "reel" ? copy.reels : (language === "bn" ? "স্টোরি" : "Story")}</Text>
             </Pressable>
           ))}
         </View>
 
         <View style={styles.author}>
           <Avatar profile={currentUser} size={42} />
-          <View><Text style={styles.name}>{currentUser.name}</Text><Text style={styles.meta}>{mode === "story" ? (language === "bn" ? "আপনার স্টোরি · ২৪ ঘণ্টা" : "Your story · 24 hours") : "India · public community"}</Text></View>
+          <View><Text style={[styles.name, { fontFamily: mediumFont }]}>{currentUser.name}</Text><Text style={[styles.meta, { fontFamily: bodyFont }]}>{mode === "story" ? (language === "bn" ? "আপনার স্টোরি · ২৪ ঘণ্টা" : "Your story · 24 hours") : "India · public community"}</Text></View>
         </View>
 
         <TextInput
@@ -219,21 +223,21 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
           value={body}
           onChangeText={setBody}
           placeholder={mode === "reel" ? (language === "bn" ? "রিলের ক্যাপশন লিখুন... #বিষয়" : "Write a caption for your Reel... #topic") : mode === "story" ? (language === "bn" ? "স্টোরিতে কিছু লিখুন..." : "Add a note to your story...") : copy.postPlaceholder}
-          placeholderTextColor="#9A9080"
-          style={styles.editor}
+          placeholderTextColor={C.muted}
+          style={[styles.editor, { fontFamily: bodyFont }]}
           maxLength={280}
           textAlignVertical="top"
         />
-        <View style={styles.counter}><Text style={styles.note}>{helper}</Text><Text style={styles.count}>{body.length}/280</Text></View>
+        <View style={styles.counter}><Text style={[styles.note, { fontFamily: bodyFont }]}>{helper}</Text><Text style={[styles.count, { fontFamily: bodyFont }]}>{body.length}/280</Text></View>
 
         {!mediaUri ? (
           <View style={[styles.mediaChooser, busy && styles.disabled]}>
-            <Text style={styles.chooserTitle}>{mode === "reel" ? (language === "bn" ? "রিলের ভিডিও যোগ করুন" : "Add a Reel video") : mode === "story" ? (language === "bn" ? "স্টোরির ছবি বা ভিডিও যোগ করুন" : "Add a story photo or video") : (language === "bn" ? "পোস্টে একটি ছবি যোগ করুন" : "Add one photo to your post")}</Text>
+            <Text style={[styles.chooserTitle, { fontFamily: mediumFont }]}>{mode === "reel" ? (language === "bn" ? "রিলের ভিডিও যোগ করুন" : "Add a Reel video") : mode === "story" ? (language === "bn" ? "স্টোরির ছবি বা ভিডিও যোগ করুন" : "Add a story photo or video") : (language === "bn" ? "পোস্টে একটি ছবি যোগ করুন" : "Add one photo to your post")}</Text>
             <View style={styles.chooserActions}>
-              <Pressable onPress={() => chooseMedia("gallery")} disabled={busy} style={styles.mediaAction}><MaterialIcons name="photo-library" size={20} color={C.terra} /><Text style={styles.mediaActionText}>{language === "bn" ? "গ্যালারি" : "Gallery"}</Text></Pressable>
-              <Pressable onPress={() => chooseMedia("camera")} disabled={busy} style={styles.mediaAction}><MaterialIcons name={mode === "reel" ? "videocam" : "photo-camera"} size={20} color={C.terra} /><Text style={styles.mediaActionText}>{mode === "reel" ? (language === "bn" ? "ভিডিও তুলুন" : "Record") : (language === "bn" ? "ক্যামেরা" : "Camera")}</Text></Pressable>
+              <Pressable onPress={() => chooseMedia("gallery")} disabled={busy} style={styles.mediaAction}><MaterialIcons name="photo-library" size={20} color={C.terra} /><Text style={[styles.mediaActionText, { fontFamily: mediumFont }]}>{language === "bn" ? "গ্যালারি" : "Gallery"}</Text></Pressable>
+              <Pressable onPress={() => chooseMedia("camera")} disabled={busy} style={styles.mediaAction}><MaterialIcons name={mode === "reel" ? "videocam" : "photo-camera"} size={20} color={C.terra} /><Text style={[styles.mediaActionText, { fontFamily: mediumFont }]}>{mode === "reel" ? (language === "bn" ? "ভিডিও তুলুন" : "Record") : (language === "bn" ? "ক্যামেরা" : "Camera")}</Text></Pressable>
             </View>
-            {mode === "reel" ? <Text style={styles.videoHint}>{language === "bn" ? "শুধু ভিডিও · সর্বোচ্চ ৬০ সেকেন্ড" : "Video only · 60 seconds max"}</Text> : null}
+            {mode === "reel" ? <Text style={[styles.videoHint, { fontFamily: bodyFont }]}>{language === "bn" ? "শুধু ভিডিও · সর্বোচ্চ ৬০ সেকেন্ড" : "Video only · 60 seconds max"}</Text> : null}
           </View>
         ) : (
           <View style={styles.attachment}>
@@ -271,29 +275,29 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 10, paddingBottom: 12 },
-  title: { color: "#14213D", fontSize: 20, fontFamily: "Georgia", fontWeight: "700" },
-  postButton: { backgroundColor: "#B4492A", borderRadius: 999, paddingHorizontal: 18, paddingVertical: 11, shadowColor: "#6E5148", shadowOpacity: 0.16, shadowRadius: 7, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
+  title: { color: C.ink, fontSize: 20, fontWeight: "700" },
+  postButton: { backgroundColor: C.terra, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 11, shadowColor: C.ink, shadowOpacity: 0.16, shadowRadius: 7, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
   disabled: { opacity: 0.42 },
   postButtonText: { color: "#FFF", fontSize: 11, fontWeight: "800" },
-  modeBar: { flexDirection: "row", gap: 3, marginBottom: 16, padding: 3, borderRadius: 24, backgroundColor: "#EFE6D3" },
+  modeBar: { flexDirection: "row", gap: 3, marginBottom: 16, padding: 3, borderRadius: 24, backgroundColor: C.primaryContainer },
   modeButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 11, borderRadius: 21, borderWidth: 0, backgroundColor: "transparent" },
-  modeActive: { backgroundColor: "#FFFDF8" },
-  modeText: { color: "#5B6478", fontSize: 12, fontWeight: "800" },
-  modeTextActive: { color: "#14213D" },
+  modeActive: { backgroundColor: C.paper },
+  modeText: { color: C.muted, fontSize: 12, fontWeight: "800" },
+  modeTextActive: { color: C.ink },
   author: { flexDirection: "row", alignItems: "center", gap: 10 },
   name: { color: C.ink, fontWeight: "800", fontSize: 14 },
   meta: { color: C.muted, fontSize: 11, marginTop: 3 },
-  editor: { color: C.ink, fontSize: 17, lineHeight: 27, minHeight: 155, paddingHorizontal: 15, paddingTop: 22, backgroundColor: "#FFFBFF", borderWidth: 1, borderColor: "#D8C5BF", borderRadius: 20, marginTop: 15 },
+  editor: { color: C.ink, fontSize: 17, lineHeight: 27, minHeight: 155, paddingHorizontal: 15, paddingTop: 22, backgroundColor: C.paper, borderWidth: 1, borderColor: C.line, borderRadius: 20, marginTop: 15 },
   counter: { flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: C.line, paddingTop: 13 },
   note: { color: C.muted, fontSize: 11, flex: 1, lineHeight: 16 },
   count: { color: "#9A9080", fontSize: 11 },
-  mediaChooser: { marginTop: 20, backgroundColor: "#FFFBFF", borderWidth: 1, borderColor: "#D8C5BF", borderRadius: 20, padding: 15, shadowColor: "#6E5148", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
+  mediaChooser: { marginTop: 20, backgroundColor: C.paper, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 15, shadowColor: C.ink, shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
   chooserTitle: { color: C.ink, fontSize: 13, fontWeight: "800" },
   chooserActions: { flexDirection: "row", gap: 9, marginTop: 12 },
-  mediaAction: { flex: 1, backgroundColor: "#FFDAD1", borderRadius: 14, minHeight: 48, padding: 13, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
-  mediaActionText: { color: "#8B2F1C", fontSize: 12, fontWeight: "800" },
+  mediaAction: { flex: 1, backgroundColor: C.primaryContainer, borderRadius: 14, minHeight: 48, padding: 13, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
+  mediaActionText: { color: C.terra, fontSize: 12, fontWeight: "800" },
   videoHint: { color: C.muted, fontSize: 10, marginTop: 10 },
-  attachment: { marginTop: 20, backgroundColor: "#FFFBFF", borderWidth: 1, borderColor: "#D8C5BF", borderRadius: 20, padding: 13, shadowColor: "#6E5148", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
+  attachment: { marginTop: 20, backgroundColor: C.paper, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 13, shadowColor: C.ink, shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
   attachmentHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   attachmentTitle: { flexDirection: "row", alignItems: "center", gap: 7 },
   attachmentLabel: { color: C.green, fontSize: 12, fontWeight: "800" },
