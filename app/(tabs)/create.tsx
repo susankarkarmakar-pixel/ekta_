@@ -1,6 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
@@ -11,14 +11,26 @@ import { createPost } from "@/lib/apongram/repository";
 import { applyImageFilter, type ImageFilter } from "@/lib/apongram/image-filters";
 import { currentUser } from "@/lib/apongram/mock-data";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
+import type { VideoCompression } from "@/lib/apongram/types";
+
+/* Expo Video trim preview uses its imperative currentTime API. */
+/* eslint-disable react-hooks/immutability */
 
 const C = { card: "#FFFFFF", ink: "#1E1B16", muted: "#6B6153", terra: "#C85A3A", line: "#E3DACB", green: "#1F6F6B" };
 type PublishMode = "post" | "reel" | "story";
 type CaptureSource = "gallery" | "camera";
 type MediaType = "image" | "video";
 
-function VideoPreview({ uri }: { uri: string }) {
+function VideoPreview({ uri, start, end }: { uri: string; start: number; end: number }) {
   const player = useVideoPlayer(uri, (instance) => { instance.loop = true; instance.muted = true; });
+  useEffect(() => {
+    player.currentTime = start;
+    player.timeUpdateEventInterval = 0.25;
+    const subscription = player.addListener("timeUpdate", ({ currentTime }) => {
+      if (currentTime >= end) { player.currentTime = start; player.play(); }
+    });
+    return () => subscription.remove();
+  }, [end, player, start]);
   return <VideoView player={player} style={styles.previewImage} contentFit="cover" nativeControls />;
 }
 
@@ -36,6 +48,10 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
   const [mediaUri, setMediaUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<MediaType | null>(null);
   const [activeFilter, setActiveFilter] = useState<ImageFilter | null>(null);
+  const [videoDuration, setVideoDuration] = useState(60);
+  const [trimStart, setTrimStart] = useState("0");
+  const [trimEnd, setTrimEnd] = useState("60");
+  const [compression, setCompression] = useState<VideoCompression>("balanced");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -76,6 +92,10 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
       setMediaUri(asset.uri);
       setMediaType(asset.type === "video" ? "video" : "image");
       setActiveFilter(null);
+      if (asset.type === "video") {
+        const duration = Math.max(1, Math.min(60, Math.ceil((asset.duration ?? 60_000) / 1000)));
+        setVideoDuration(duration); setTrimStart("0"); setTrimEnd(String(duration)); setCompression("balanced");
+      }
     } catch {
       setError(language === "bn" ? "মিডিয়া বাছাই করা যায়নি। আবার চেষ্টা করুন।" : "We could not select that media. Please try again.");
     } finally {
@@ -113,6 +133,14 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
       return;
     }
     if (!body.trim() && !mediaUri) return;
+    let videoOptions: { start: number; end: number; compression: VideoCompression } | undefined;
+    if (mediaType === "video" && mode === "reel") {
+      const start = Number(trimStart); const end = Number(trimEnd);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > videoDuration || end - start < 1) {
+        setError(language === "bn" ? "ট্রিম সময় ঠিক করুন: কমপক্ষে ১ সেকেন্ড এবং সর্বোচ্চ ৬০ সেকেন্ড।" : "Choose a valid trim range between 1 and 60 seconds."); return;
+      }
+      videoOptions = { start, end, compression };
+    }
     setBusy(true);
     try {
       await createPost(
@@ -120,6 +148,7 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
         mediaType === "image" ? mediaUri ?? undefined : undefined,
         mediaType === "video" ? mediaUri ?? undefined : undefined,
         mode === "story",
+        videoOptions,
       );
       setSaved(true);
       setTimeout(() => router.replace(mode === "reel" ? "/(tabs)/reels" : "/(tabs)"), 550);
@@ -190,9 +219,10 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
               <Pressable onPress={() => { setMediaUri(null); setMediaType(null); }} disabled={busy}><Text style={styles.remove}>{language === "bn" ? "সরান" : "Remove"}</Text></Pressable>
             </View>
             <View style={styles.preview}>
-              {mediaType === "video" ? <VideoPreview uri={mediaUri} /> : <Image source={{ uri: mediaUri }} style={styles.previewImage} resizeMode="cover" />}
+              {mediaType === "video" ? <VideoPreview uri={mediaUri} start={Math.max(0, Number(trimStart) || 0)} end={Math.max(1, Number(trimEnd) || videoDuration)} /> : <Image source={{ uri: mediaUri }} style={styles.previewImage} resizeMode="cover" />}
               <View style={styles.previewOverlay}><MaterialIcons name="check-circle" size={18} color="#FFF" /><Text style={styles.previewText}>{mode === "story" ? (language === "bn" ? "২৪ ঘণ্টার স্টোরি" : "24-hour Story") : (language === "bn" ? "প্রকাশের জন্য প্রস্তুত" : "Ready to publish")}</Text></View>
             </View>
+            {mediaType === "video" && mode === "reel" ? <View style={styles.trimPanel}><View style={styles.trimHeader}><Text style={styles.trimTitle}>{language === "bn" ? "রিল সম্পাদনা" : "Edit Reel"}</Text><Text style={styles.trimMeta}>{language === "bn" ? `মোট ${videoDuration} সেকেন্ড` : `Up to ${videoDuration}s`}</Text></View><View style={styles.trimFields}><View style={styles.trimField}><Text style={styles.trimLabel}>{language === "bn" ? "শুরু" : "Start"}</Text><TextInput value={trimStart} onChangeText={setTrimStart} keyboardType="decimal-pad" style={styles.trimInput} /></View><Text style={styles.trimDash}>–</Text><View style={styles.trimField}><Text style={styles.trimLabel}>{language === "bn" ? "শেষ" : "End"}</Text><TextInput value={trimEnd} onChangeText={setTrimEnd} keyboardType="decimal-pad" style={styles.trimInput} /></View><Text style={styles.seconds}>sec</Text></View><Text style={styles.compressionLabel}>{language === "bn" ? "কম্প্রেশন" : "Compression"}</Text><View style={styles.compressionRow}>{(["high", "balanced", "dataSaver"] as VideoCompression[]).map((profile) => <Pressable key={profile} onPress={() => setCompression(profile)} style={[styles.compressionButton, compression === profile && styles.filterActive]}><Text style={[styles.compressionText, compression === profile && styles.filterTextActive]}>{profile === "high" ? "High" : profile === "balanced" ? "Balanced" : "Data saver"}</Text></Pressable>)}</View><Text style={styles.trimNote}>{language === "bn" ? "এই রেঞ্জ ও কম্প্রেশন প্রোফাইল আপলোডে ব্যবহার হবে।" : "This trim range and compression profile will be applied at upload."}</Text></View> : null}
             {mediaType === "image" ? (
               <View style={styles.editRow}>
                 <Pressable onPress={() => editImage()} disabled={busy} style={styles.editButton}><MaterialIcons name="crop" size={16} color={C.terra} /><Text style={styles.editText}>{language === "bn" ? "ক্রপ ৪:৩" : "Crop 4:3"}</Text></Pressable>
@@ -247,7 +277,7 @@ const styles = StyleSheet.create({
   previewImage: { width: "100%", height: "100%" },
   previewOverlay: { position: "absolute", left: 9, bottom: 8, backgroundColor: "rgba(30,27,22,0.62)", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 5 },
   previewText: { color: "#FFF", fontSize: 10, fontWeight: "700" },
-  editRow: { flexDirection: "row", gap: 5, marginTop: 10 },
+  trimPanel: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line }, trimHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, trimTitle: { color: C.ink, fontSize: 12, fontWeight: "800" }, trimMeta: { color: C.muted, fontSize: 10 }, trimFields: { flexDirection: "row", alignItems: "flex-end", gap: 7, marginTop: 9 }, trimField: { flex: 1 }, trimLabel: { color: C.muted, fontSize: 9, marginBottom: 3 }, trimInput: { height: 34, borderWidth: 1, borderColor: C.line, borderRadius: 9, paddingHorizontal: 9, color: C.ink, fontSize: 12, backgroundColor: "#FBF7F0" }, trimDash: { color: C.muted, paddingBottom: 9 }, seconds: { color: C.muted, fontSize: 10, paddingBottom: 9 }, compressionLabel: { color: C.muted, fontSize: 9, marginTop: 10, marginBottom: 6 }, compressionRow: { flexDirection: "row", gap: 5 }, compressionButton: { flex: 1, borderWidth: 1, borderColor: "#F0C8B9", borderRadius: 999, paddingVertical: 7, alignItems: "center" }, compressionText: { color: C.terra, fontSize: 9, fontWeight: "800" }, trimNote: { color: C.muted, fontSize: 9, lineHeight: 13, marginTop: 7 }, editRow: { flexDirection: "row", gap: 5, marginTop: 10 },
   editButton: { flex: 1, borderWidth: 1, borderColor: "#F0C8B9", borderRadius: 999, paddingVertical: 7, alignItems: "center", justifyContent: "center" },
   editText: { color: C.terra, fontSize: 9, fontWeight: "800" },
   filterActive: { backgroundColor: C.terra },

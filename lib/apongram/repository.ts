@@ -1,7 +1,7 @@
 import { commentsByPost, currentUser, demoReels, posts, profiles, topics } from "./mock-data";
 import { selectReels } from "./reel-utils";
 import { storagePublicUrl, supabaseConfig, supabaseFetch } from "./supabase";
-import type { Comment, Post, Profile } from "./types";
+import type { Comment, Post, Profile, VideoCompression } from "./types";
 
 export const repositoryMode = supabaseConfig.isConfigured ? "supabase" : "demo";
 
@@ -115,7 +115,7 @@ export async function addComment(postId: string, body: string): Promise<Comment>
   return comment;
 }
 
-export async function createPost(body: string, imagePath?: string, videoPath?: string, isStory = false): Promise<Post> {
+export async function createPost(body: string, imagePath?: string, videoPath?: string, isStory = false, videoOptions?: { start: number; end: number; compression: VideoCompression }): Promise<Post> {
   const post: Post = {
     id: `local-${Date.now()}`,
     author: currentUser,
@@ -123,6 +123,9 @@ export async function createPost(body: string, imagePath?: string, videoPath?: s
     imageUrl: imagePath,
     videoUrl: videoPath,
     mediaType: videoPath ? "video" : imagePath ? "image" : undefined,
+    videoStart: videoOptions?.start,
+    videoEnd: videoOptions?.end,
+    videoCompression: videoOptions?.compression,
     isStory,
     storyExpiresAt: isStory ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined,
     createdAt: "now",
@@ -142,7 +145,7 @@ export async function createPost(body: string, imagePath?: string, videoPath?: s
       await supabaseFetch("posts", {
         method: "POST",
         headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ body, image_path: imagePath ?? null, video_path: videoPath ?? null, is_story: isStory }),
+        body: JSON.stringify({ body, image_path: imagePath ?? null, video_path: videoPath ?? null, video_start: videoOptions?.start ?? null, video_end: videoOptions?.end ?? null, video_compression: videoOptions?.compression ?? null, is_story: isStory }),
       });
     } catch {
       // Keep the preview responsive when live persistence is unavailable.

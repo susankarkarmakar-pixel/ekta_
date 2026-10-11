@@ -14,6 +14,8 @@ export type Profile = {
   verified?: boolean;
 };
 
+export type VideoCompression = "high" | "balanced" | "dataSaver";
+
 export type Post = {
   id: string;
   author: Profile;
@@ -21,6 +23,9 @@ export type Post = {
   imageUrl?: string;
   videoUrl?: string | number;
   mediaType?: "image" | "video";
+  videoStart?: number;
+  videoEnd?: number;
+  videoCompression?: VideoCompression;
   isStory?: boolean;
   isDemo?: boolean;
   storyExpiresAt?: string;
