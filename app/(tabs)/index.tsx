@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { ActivityIndicator, Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { Avatar } from "@/components/apongram/Avatar";
 import { PostCard } from "@/components/apongram/PostCard";
 import { TopicChip } from "@/components/apongram/TopicChip";
@@ -50,7 +50,22 @@ export default function HomeScreen() {
   const [feedError, setFeedError] = useState(false);
   const [feedOffline, setFeedOffline] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const loadingRef = useRef(false);
+  const activeVideoRef = useRef<string | null>(null);
+  const cardLayouts = useRef<Record<string, { y: number; height: number }>>({});
+
+  const setActiveVideo = useCallback((id: string | null) => {
+    if (activeVideoRef.current === id) return;
+    activeVideoRef.current = id;
+    setActiveVideoId(id);
+  }, []);
+
+  useEffect(() => {
+    const firstVideo = feed.find((post) => post.videoUrl);
+    if (!firstVideo || (activeVideoRef.current && feed.some((post) => post.id === activeVideoRef.current && post.videoUrl))) return;
+    setActiveVideo(firstVideo.id);
+  }, [feed, setActiveVideo]);
 
   const reloadFeed = useCallback(async () => {
     if (loadingRef.current) return;
@@ -99,10 +114,30 @@ export default function HomeScreen() {
     }
   }, [feedMode, hasMore, page, preferences]);
 
+  const handleCardLayout = useCallback((postId: string, event: LayoutChangeEvent) => {
+    cardLayouts.current[postId] = { y: event.nativeEvent.layout.y, height: event.nativeEvent.layout.height };
+  }, []);
+
   const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const viewportTop = contentOffset.y;
+    const viewportBottom = viewportTop + layoutMeasurement.height;
+    let bestId: string | null = null;
+    let bestVisibility = 0;
+    for (const post of feed) {
+      if (!post.videoUrl) continue;
+      const layout = cardLayouts.current[post.id];
+      if (!layout) continue;
+      const visibleHeight = Math.max(0, Math.min(layout.y + layout.height, viewportBottom) - Math.max(layout.y, viewportTop));
+      const visibility = visibleHeight / layout.height;
+      if (visibility > bestVisibility) {
+        bestVisibility = visibility;
+        bestId = post.id;
+      }
+    }
+    setActiveVideo(bestVisibility >= 0.35 ? bestId : null);
     if (contentOffset.y + layoutMeasurement.height >= contentSize.height - 520) void loadMore();
-  }, [loadMore]);
+  }, [feed, loadMore, setActiveVideo]);
 
   const toggleLike = (id: string) => setFeed((items) => items.map((post) => post.id === id
     ? { ...post, likedByMe: !post.likedByMe, likes: post.likes + (post.likedByMe ? -1 : 1) }
@@ -166,7 +201,7 @@ export default function HomeScreen() {
         {feedOffline ? <View style={styles.offlineBanner} accessibilityLiveRegion="polite"><MaterialIcons name="cloud-off" size={17} color={C.terra} /><Text style={[styles.offlineText, { fontFamily: bodyFont }]}>{copy.offlineBanner}</Text><Pressable onPress={() => void reloadFeed()} accessibilityRole="button" accessibilityLabel={copy.retry}><Text style={[styles.offlineRetry, { fontFamily: mediumFont }]}>{copy.retry}</Text></Pressable></View> : null}
         {feedError ? <View style={styles.errorCard} accessibilityRole="alert"><View style={styles.errorIcon}><MaterialIcons name="cloud-off" size={24} color={C.terra} /></View><View style={styles.errorCopy}><Text style={[styles.errorTitle, { fontFamily: mediumFont }]}>{copy.feedErrorTitle}</Text><Text style={[styles.errorBody, { fontFamily: bodyFont }]}>{copy.feedErrorBody}</Text></View><Pressable onPress={() => void reloadFeed()} style={styles.retryButton} accessibilityRole="button" accessibilityLabel={copy.retry}><Text style={[styles.retryText, { fontFamily: mediumFont }]}>{copy.retry}</Text></Pressable></View> : null}
         {refreshing && !feed.length ? <FeedSkeleton /> : null}
-        {feed.map((post) => <PostCard key={post.id} post={post} copy={copy} onOpen={() => router.push({ pathname: "/post/[id]", params: { id: post.id } })} onLike={() => toggleLike(post.id)} onReport={() => router.push({ pathname: "/report", params: { postId: post.id } })} />)}
+        {feed.map((post) => <PostCard key={post.id} post={post} copy={copy} isVideoActive={activeVideoId === post.id} onLayout={(event) => handleCardLayout(post.id, event)} onOpen={() => router.push({ pathname: "/post/[id]", params: { id: post.id } })} onLike={() => toggleLike(post.id)} onReport={() => router.push({ pathname: "/report", params: { postId: post.id } })} />)}
         {loadingMore ? <View style={styles.feedFooter}><ActivityIndicator color={C.terra} /><Text style={[styles.footerText, { fontFamily: bodyFont }]}>{language === "bn" ? "আরও আপডেট আসছে..." : "Loading more updates…"}</Text></View> : null}
         {!loadingMore && !hasMore && feed.length ? <Text style={[styles.endText, { fontFamily: bodyFont }]}>{language === "bn" ? "এখানেই আপাতত শেষ।" : "You’re all caught up for now."}</Text> : null}
       </ScrollView>

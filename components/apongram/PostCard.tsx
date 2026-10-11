@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect } from "react";
-import { Image, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, Share, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { Avatar } from "./Avatar";
 import { Colors } from "@/constants/theme";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
@@ -21,25 +21,26 @@ const DEMO_VIDEO_SOURCES: Record<string, number> = {
 };
 
 type CardCopy = { comments: string; likes: string; share: string; report: string; reported: string; demoLabel: string };
-function InlineVideo({ uri }: { uri: string | number }) {
+function InlineVideo({ uri, active }: { uri: string | number; active: boolean }) {
   const player = useVideoPlayer(typeof uri === "string" ? DEMO_VIDEO_SOURCES[uri] ?? uri : uri, (instance) => { instance.loop = true; instance.muted = true; });
   useEffect(() => {
-    player.play();
+    if (active) player.play();
+    else player.pause();
     return () => player.pause();
-  }, [player]);
+  }, [active, player]);
   return <VideoView player={player} style={styles.photo} contentFit="cover" nativeControls />;
 }
 
-export function PostCard({ post, copy, onOpen, onLike, onReport }: { post: Post; copy: CardCopy; onOpen: () => void; onLike: () => void; onReport: () => void }) {
+export function PostCard({ post, copy, onOpen, onLike, onReport, isVideoActive = true, onLayout }: { post: Post; copy: CardCopy; onOpen: () => void; onLike: () => void; onReport: () => void; isVideoActive?: boolean; onLayout?: (event: LayoutChangeEvent) => void }) {
   const { language } = useLanguage();
   const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
   const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
   const sharePost = async () => {
     await Share.share({ message: `${post.body}\n@${post.author.handle} · ${post.location}` });
   };
-  return <View style={styles.card}>
+  return <View style={styles.card} onLayout={onLayout}>
     <View style={styles.header}><Avatar profile={post.author} size={42} /><View style={styles.author}><View style={styles.nameRow}><Text style={[styles.name, { fontFamily: mediumFont }]}>{post.author.name}</Text>{post.author.verified && <MaterialIcons name="verified" size={15} color={TERRACOTTA} />}</View><Text style={[styles.meta, { fontFamily: bodyFont }]}>@{post.author.handle} · {post.createdAt}</Text></View>{post.isDemo ? <View style={styles.sampleBadge}><View style={styles.sampleDot} /><Text style={[styles.sampleText, { fontFamily: mediumFont }]}>{copy.demoLabel}</Text></View> : null}<Pressable onPress={onReport} hitSlop={10} accessibilityLabel={copy.report}><MaterialIcons name="more-horiz" size={22} color={MUTED} /></Pressable></View>
-    <Pressable onPress={onOpen}><Text style={[styles.body, { fontFamily: bodyFont }]}>{post.body}</Text>{(post.imageUrl || post.videoUrl) && <View style={[styles.photoWrap, post.videoUrl ? styles.videoAspect : styles.imageAspect]}>{post.videoUrl ? <InlineVideo uri={post.videoUrl} /> : <Image source={post.imageUrl === "community-pottery" ? COMMUNITY_IMAGE : { uri: post.imageUrl }} style={styles.photo} resizeMode="cover" />}<View style={styles.photoCaption}><MaterialIcons name={post.videoUrl ? "play-arrow" : "place"} size={13} color={PAPER} /><Text style={[styles.photoCaptionText, { fontFamily: mediumFont }]}>{post.videoUrl ? "Reel" : post.location}</Text></View></View>}<View style={styles.location}><MaterialIcons name="place" size={13} color={TERRACOTTA} /><Text style={[styles.locationText, { fontFamily: mediumFont }]}>{post.location}</Text></View></Pressable>
+    <Pressable onPress={onOpen}><Text style={[styles.body, { fontFamily: bodyFont }]}>{post.body}</Text>{(post.imageUrl || post.videoUrl) && <View style={[styles.photoWrap, post.videoUrl ? styles.videoAspect : styles.imageAspect]}>{post.videoUrl ? <InlineVideo uri={post.videoUrl} active={isVideoActive} /> : <Image source={post.imageUrl === "community-pottery" ? COMMUNITY_IMAGE : { uri: post.imageUrl }} style={styles.photo} resizeMode="cover" />}<View style={styles.photoCaption}><MaterialIcons name={post.videoUrl ? "play-arrow" : "place"} size={13} color={PAPER} /><Text style={[styles.photoCaptionText, { fontFamily: mediumFont }]}>{post.videoUrl ? "Reel" : post.location}</Text></View></View>}<View style={styles.location}><MaterialIcons name="place" size={13} color={TERRACOTTA} /><Text style={[styles.locationText, { fontFamily: mediumFont }]}>{post.location}</Text></View></Pressable>
     <View style={styles.tags}>{post.tags.map((tag) => <View key={tag} style={styles.tagPill}><Text style={[styles.tag, { fontFamily: mediumFont }]}>#{tag}</Text></View>)}</View>
     <View style={styles.divider} /><View style={styles.actions}><Pressable onPress={onLike} style={styles.action} hitSlop={4}><MaterialIcons name={post.likedByMe ? "favorite" : "favorite-border"} size={20} color={post.likedByMe ? TERRACOTTA : MUTED} /><Text style={[styles.actionText, { fontFamily: mediumFont }, post.likedByMe && styles.activeText]}>{post.likes} {copy.likes}</Text></Pressable><Pressable onPress={onOpen} style={styles.action} hitSlop={4}><MaterialIcons name="chat-bubble-outline" size={19} color={MUTED} /><Text style={[styles.actionText, { fontFamily: mediumFont }]}>{post.comments} {copy.comments}</Text></Pressable><Pressable onPress={() => void sharePost()} style={styles.actionIcon} hitSlop={4} accessibilityLabel={copy.share}><MaterialIcons name="share" size={18} color={MUTED} /></Pressable></View>
   </View>;
