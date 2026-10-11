@@ -7,6 +7,7 @@ import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
+import { DEMO_MODE } from "@/lib/apongram/demo-mode";
 
 const WELCOME_KEY = "ekta-welcome-seen";
 const LIGHT = Colors.light;
@@ -18,6 +19,10 @@ export default function EntryScreen() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      router.replace("/(tabs)");
+      return;
+    }
     AsyncStorage.getItem(WELCOME_KEY).then((seen) => {
       if (seen === "true") router.replace("/auth/phone");
       else setChecking(false);
@@ -25,6 +30,10 @@ export default function EntryScreen() {
   }, [router]);
 
   const start = async () => {
+    if (DEMO_MODE) {
+      router.replace("/(tabs)");
+      return;
+    }
     await AsyncStorage.setItem(WELCOME_KEY, "true");
     router.replace("/auth/phone");
   };
