@@ -76,6 +76,7 @@ The codebase, language system and data model are already written for the nationa
 | Safety | Report posts, confirmation flow | UI ready |
 | Languages | Bengali and English complete | Available |
 | Notifications | Basic placeholder | Planned |
+| Profile avatar storage | Authenticated upload to `avatars` with user-scoped RLS | Available |
 | Durable video storage | Authenticated upload and public URLs | Planned |
 | Direct messages, recommendations | Deliberately **not** in Phase 1 | Later |
 

@@ -24,4 +24,27 @@ export async function supabaseFetch<T>(path: string, init?: RequestInit): Promis
 export const storagePublicUrl = (bucket: string, path: string) =>
   supabaseConfig.isConfigured ? `${supabaseConfig.url}/storage/v1/object/public/${bucket}/${path}` : undefined;
 
+export async function uploadProfileAvatar(uri: string, userId: string): Promise<string> {
+  if (!supabaseConfig.isConfigured) throw new Error("Supabase is not configured");
+  const accessToken = await getSupabaseAccessToken();
+  if (!accessToken) throw new Error("Supabase session is required to upload an avatar");
+  const source = await fetch(uri);
+  if (!source.ok) throw new Error("Could not read the selected avatar");
+  const blob = await source.blob();
+  const extension = blob.type.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+  const path = `${userId}/${Date.now()}.${extension}`;
+  const response = await fetch(`${supabaseConfig.url}/storage/v1/object/avatars/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: supabaseConfig.anonKey,
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": blob.type || "image/jpeg",
+      "x-upsert": "true",
+    },
+    body: blob,
+  });
+  if (!response.ok) throw new Error(`Avatar upload failed (${response.status})`);
+  return path;
+}
+
 export const isNative = Platform.OS !== "web";

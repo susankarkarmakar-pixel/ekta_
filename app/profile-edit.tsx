@@ -48,9 +48,9 @@ export default function ProfileEditScreen() {
     setSyncStatus("syncing");
     try {
       const saved = await saveStoredProfile({ ...profile, name: name.trim(), handle: handle.trim().replace(/^@/, ""), bio: bio.trim(), region: region.trim() || profile.region });
-      const synced = await syncProfileToSupabase(saved);
-      setProfile(saved);
-      setSyncStatus(synced ? "synced" : supabaseConfig.isConfigured ? "failed" : "local");
+      const syncResult = await syncProfileToSupabase(saved);
+      setProfile(syncResult.profile);
+      setSyncStatus(syncResult.synced ? "synced" : supabaseConfig.isConfigured ? "failed" : "local");
     } catch {
       setSyncStatus("failed");
     } finally {

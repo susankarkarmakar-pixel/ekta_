@@ -31,7 +31,7 @@
 ## 6. Supabase data and storage integration
 - The app uses `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` as protected runtime configuration; no service-role key is placed in source or the mobile bundle.
 - A Supabase migration defines profiles, posts, follows, likes, comments, hashtags and reports, with indexes and Row Level Security policies appropriate for public community content.
-- Profile photos and the single optional post image have a documented Supabase Storage boundary ready for secure upload/retrieval.
+- Profile photos upload to the authenticated user's Supabase Storage `avatars` path before the profile row syncs; the single optional post image still has a documented Storage boundary ready for later upload/retrieval.
 - The app uses a repository interface that selects Supabase when configured and seeded demo data when it is not.
 
 ## 7. GitHub source mirror and delivery readiness
