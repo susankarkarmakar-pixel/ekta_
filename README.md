@@ -16,7 +16,7 @@ For each rollout, translate interface and community-safety copy, have native spe
 
 ## Current preview and production work
 
-The demo feed contains sample posts from multiple Indian cities. Settings currently shows `India · all regions`; it is a display-only nationwide preference, not live state/district/neighborhood filtering. The preview uses seeded demo data when live backend credentials are absent. Phone OTP is a demo flow and does not send real SMS. Production authentication, region selection, moderation operations, and live data policies must be completed before public launch.
+The demo feed contains sample posts from multiple Indian cities. Settings currently shows `India · all regions`; it is a display-only nationwide preference, not live state/district/neighborhood filtering. The preview uses seeded demo data when live backend credentials are absent. When `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` are configured, the phone screen uses Supabase SMS OTP with persisted native/web sessions; without those values it remains an explicitly labelled demo flow. Production region selection, moderation operations, and live data policies must still be completed before public launch.
 
 The Reels preview includes short, compressed Pexels sample clips and an in-session video composer. Picker videos are local to the current device/session; the app does not upload them to Supabase Storage yet, so they are not durable live community media. Before production video publishing, add authenticated upload, bucket/file-size policies, durable public or signed playback URLs, and associated moderation rules.
 
