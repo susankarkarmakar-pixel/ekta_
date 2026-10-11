@@ -138,7 +138,7 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
       : copy.publicNote;
 
   return (
-    <ScreenContainer safeAreaClassName="bg-[#FBF7F0]" className="bg-[#FBF7F0]">
+    <ScreenContainer safeAreaClassName="bg-background" className="bg-background">
       <View style={styles.container}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} accessibilityLabel={copy.back}><MaterialIcons name="close" size={24} color={C.ink} /></Pressable>
@@ -217,33 +217,33 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 18 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 15, paddingBottom: 16 },
   title: { color: C.ink, fontSize: 18, fontFamily: "Georgia", fontWeight: "700" },
-  postButton: { backgroundColor: C.terra, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
+  postButton: { backgroundColor: "#B5482F", borderRadius: 999, paddingHorizontal: 16, paddingVertical: 11, shadowColor: "#6E5148", shadowOpacity: 0.16, shadowRadius: 7, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
   disabled: { opacity: 0.42 },
   postButtonText: { color: "#FFF", fontSize: 11, fontWeight: "800" },
   modeBar: { flexDirection: "row", gap: 7, marginBottom: 18 },
-  modeButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: "#F0C8B9" },
-  modeActive: { backgroundColor: C.terra, borderColor: C.terra },
-  modeText: { color: C.terra, fontSize: 11, fontWeight: "800" },
+  modeButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 11, borderRadius: 999, borderWidth: 1, borderColor: "#D8C5BF", backgroundColor: "#F6F0EB" },
+  modeActive: { backgroundColor: "#FFDAD1", borderColor: "#B5482F" },
+  modeText: { color: "#8B2F1C", fontSize: 11, fontWeight: "800" },
   modeTextActive: { color: "#FFF" },
   author: { flexDirection: "row", alignItems: "center", gap: 10 },
   name: { color: C.ink, fontWeight: "800", fontSize: 14 },
   meta: { color: C.muted, fontSize: 11, marginTop: 3 },
-  editor: { color: C.ink, fontSize: 17, lineHeight: 27, minHeight: 155, paddingTop: 22 },
+  editor: { color: C.ink, fontSize: 17, lineHeight: 27, minHeight: 155, paddingHorizontal: 15, paddingTop: 22, backgroundColor: "#FFFBFF", borderWidth: 1, borderColor: "#D8C5BF", borderRadius: 20, marginTop: 15 },
   counter: { flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: C.line, paddingTop: 13 },
   note: { color: C.muted, fontSize: 11, flex: 1, lineHeight: 16 },
   count: { color: "#9A9080", fontSize: 11 },
-  mediaChooser: { marginTop: 20, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 13 },
+  mediaChooser: { marginTop: 20, backgroundColor: "#FFFBFF", borderWidth: 1, borderColor: "#D8C5BF", borderRadius: 20, padding: 15, shadowColor: "#6E5148", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
   chooserTitle: { color: C.ink, fontSize: 13, fontWeight: "800" },
   chooserActions: { flexDirection: "row", gap: 9, marginTop: 12 },
-  mediaAction: { flex: 1, backgroundColor: "#FBF7F0", borderRadius: 11, padding: 13, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
-  mediaActionText: { color: C.terra, fontSize: 12, fontWeight: "800" },
+  mediaAction: { flex: 1, backgroundColor: "#FFDAD1", borderRadius: 14, minHeight: 48, padding: 13, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
+  mediaActionText: { color: "#8B2F1C", fontSize: 12, fontWeight: "800" },
   videoHint: { color: C.muted, fontSize: 10, marginTop: 10 },
-  attachment: { marginTop: 20, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 12 },
+  attachment: { marginTop: 20, backgroundColor: "#FFFBFF", borderWidth: 1, borderColor: "#D8C5BF", borderRadius: 20, padding: 13, shadowColor: "#6E5148", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
   attachmentHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   attachmentTitle: { flexDirection: "row", alignItems: "center", gap: 7 },
   attachmentLabel: { color: C.green, fontSize: 12, fontWeight: "800" },
   remove: { color: C.terra, fontSize: 11, fontWeight: "800" },
-  preview: { height: 172, borderRadius: 10, overflow: "hidden", position: "relative", backgroundColor: "#201E1B" },
+  preview: { height: 180, borderRadius: 16, overflow: "hidden", position: "relative", backgroundColor: "#201E1B" },
   previewImage: { width: "100%", height: "100%" },
   previewOverlay: { position: "absolute", left: 9, bottom: 8, backgroundColor: "rgba(30,27,22,0.62)", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 5 },
   previewText: { color: "#FFF", fontSize: 10, fontWeight: "700" },
@@ -252,8 +252,8 @@ const styles = StyleSheet.create({
   editText: { color: C.terra, fontSize: 9, fontWeight: "800" },
   filterActive: { backgroundColor: C.terra },
   filterTextActive: { color: "#FFF" },
-  error: { marginTop: 10, padding: 11, backgroundColor: "#FBE9E3", borderRadius: 12, flexDirection: "row", gap: 7 },
+  error: { marginTop: 10, padding: 12, backgroundColor: "#FFEDEA", borderRadius: 16, borderWidth: 1, borderColor: "#F1B8B0", flexDirection: "row", gap: 7 },
   errorText: { color: C.terra, flex: 1, fontSize: 10, lineHeight: 15 },
-  success: { backgroundColor: "#E3EEEA", padding: 14, borderRadius: 14, flexDirection: "row", gap: 8, marginTop: 18 },
+  success: { backgroundColor: "#DFF2ED", borderWidth: 1, borderColor: "#A4D7CC", padding: 14, borderRadius: 16, flexDirection: "row", gap: 8, marginTop: 18 },
   successText: { color: C.green, fontWeight: "800" },
 });

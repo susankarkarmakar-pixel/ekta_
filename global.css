@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .m3-card {
+    @apply rounded-2xl border border-outlineVariant bg-surface px-4 py-4;
+  }
+
+  .m3-card-elevated {
+    @apply rounded-2xl border border-outlineVariant bg-surface px-4 py-4 shadow-sm;
+  }
+
+  .m3-pill-primary {
+    @apply rounded-full bg-primary px-4 py-2 text-onPrimary;
+  }
+
+  .m3-pill-tonal {
+    @apply rounded-full bg-primaryContainer px-3 py-2 text-onPrimaryContainer;
+  }
+
+  .m3-section-label {
+    @apply text-xs font-extrabold uppercase tracking-widest text-muted;
+  }
+}

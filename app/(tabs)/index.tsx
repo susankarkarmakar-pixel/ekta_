@@ -37,7 +37,7 @@ export default function HomeScreen() {
   const report = () => { setToast(copy.reported); setTimeout(() => setToast(""), 2200); };
 
   return (
-    <ScreenContainer safeAreaClassName="bg-[#FBF7F0]" className="bg-[#FBF7F0]">
+      <ScreenContainer safeAreaClassName="bg-background" className="bg-background">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
         <View style={styles.topbar}>
           <View style={styles.brandRow}>
@@ -103,9 +103,9 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 18, paddingBottom: 32 },
-  topbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 10 },
+  topbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 10, paddingBottom: 4 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 9 },
-  logoMark: { width: 34, height: 34, borderRadius: 12, backgroundColor: C.terra, alignItems: "center", justifyContent: "center" },
+  logoMark: { width: 38, height: 38, borderRadius: 14, backgroundColor: C.terra, alignItems: "center", justifyContent: "center", shadowColor: C.terra, shadowOpacity: 0.22, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   wordmark: { color: C.terra, fontSize: 23, fontFamily: "Georgia", fontWeight: "700", letterSpacing: -0.5 },
   eyebrow: { color: C.muted, fontSize: 8, fontWeight: "800", letterSpacing: 1, marginTop: 1 },
   topActions: { flexDirection: "row", alignItems: "center", gap: 12 },
@@ -114,14 +114,14 @@ const styles = StyleSheet.create({
   hero: { paddingTop: 22, paddingBottom: 15 },
   heroTitle: { color: C.ink, fontSize: 26, lineHeight: 33, fontFamily: "Georgia", fontWeight: "700" },
   heroSub: { color: C.muted, fontSize: 13, lineHeight: 19, marginTop: 5 },
-  demoBanner: { backgroundColor: "#F3DCD2", borderRadius: 12, padding: 10, flexDirection: "row", gap: 8, alignItems: "center", marginBottom: 11 },
+  demoBanner: { backgroundColor: "#FFDAD1", borderRadius: 16, padding: 12, flexDirection: "row", gap: 8, alignItems: "center", marginBottom: 11, borderWidth: 1, borderColor: "#E7B8AC" },
   demoText: { color: C.muted, fontSize: 11, lineHeight: 16, flex: 1 },
-  composer: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 12, flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 },
+  composer: { backgroundColor: "#FFFBFF", borderWidth: 1, borderColor: "#D8C5BF", borderRadius: 20, padding: 13, flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 17, shadowColor: "#6E5148", shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
   composerText: { flex: 1, color: C.muted, fontSize: 13 },
   storyHeader: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 9 },
   storyHint: { color: C.muted, fontSize: 10 },
   storyHeaderSpacer: { flex: 1 },
-  watchReels: { flexDirection: "row", alignItems: "center", gap: 2, paddingHorizontal: 7, paddingVertical: 5, borderRadius: 999, backgroundColor: "#F3DCD2" },
+  watchReels: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: "#FFDAD1" },
   watchReelsText: { color: C.terra, fontSize: 10, fontWeight: "900" },
   storyRail: { marginBottom: 15, flexGrow: 0 },
   storyItem: { width: 68, alignItems: "center", marginRight: 8 },
@@ -129,12 +129,12 @@ const styles = StyleSheet.create({
   storyRingOwn: { borderColor: C.green },
   storyPlus: { position: "absolute", right: -1, bottom: -1, width: 17, height: 17, borderRadius: 9, backgroundColor: C.terra, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: C.card },
   storyName: { color: C.muted, fontSize: 10, marginTop: 5, maxWidth: 66, textAlign: "center" },
-  topics: { marginBottom: 15, flexGrow: 0 },
-  feedHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 11 },
+  topics: { marginBottom: 17, flexGrow: 0 },
+  feedHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 13, paddingTop: 2 },
   sectionTitle: { color: C.ink, fontSize: 16, fontFamily: "Georgia", fontWeight: "700" },
   feedModes: { flex: 1, flexDirection: "row", justifyContent: "flex-end", gap: 4 },
   feedMode: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
-  feedModeActive: { backgroundColor: "#F3DCD2" },
+  feedModeActive: { backgroundColor: "#FFDAD1" },
   feedModeText: { color: C.muted, fontSize: 10, fontWeight: "800" },
   feedModeTextActive: { color: C.terra },
   liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: C.green, marginLeft: 5 },
