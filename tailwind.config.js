@@ -12,6 +12,17 @@ const tailwindColors = Object.fromEntries(
   ]),
 );
 
+const brandColors = {
+  terracotta: { DEFAULT: '#B4492A', dark: '#E8795A' },
+  leaf: { DEFAULT: '#2E6B4A', dark: '#6DBF8F' },
+  ochre: { DEFAULT: '#E0A24A', dark: '#F2C56B' },
+  navy: { DEFAULT: '#14213D', dark: '#F5F7FA' },
+  ivory: { DEFAULT: '#FBF6EC', dark: '#14213D' },
+  paper: { DEFAULT: '#FFFDF8', dark: '#1C2638' },
+  slate: { DEFAULT: '#5B6478', dark: '#C8D0DC' },
+  line: { DEFAULT: '#E6DCC8', dark: '#35445A' },
+};
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",
@@ -21,7 +32,12 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
-      colors: tailwindColors,
+      colors: { ...tailwindColors, brand: brandColors },
+      fontFamily: {
+        sans: ['HindSiliguri', 'HindSiliguriLatin', 'system-ui', 'sans-serif'],
+        display: ['Fraunces', 'NotoSerifBengali', 'serif'],
+        bengali: ['NotoSerifBengali', 'HindSiliguri', 'serif'],
+      },
     },
   },
   plugins: [

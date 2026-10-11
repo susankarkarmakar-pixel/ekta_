@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Avatar } from "@/components/apongram/Avatar";
+import { Colors } from "@/constants/theme";
 import { ScreenContainer } from "@/components/screen-container";
 import { profiles } from "@/lib/apongram/mock-data";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
@@ -20,6 +21,9 @@ type Activity = {
 export default function AlertsScreen() {
   const router = useRouter();
   const { language, copy } = useLanguage();
+  const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
+  const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
+  const headingFont = language === "bn" ? "NotoSerifBengaliBold" : "Fraunces";
   const rows: Activity[] = language === "bn"
     ? [
       { id: "1", who: profiles[1], text: "আপনার পোস্ট পছন্দ করেছেন", time: "১০ মিনিট আগে", icon: "favorite", unread: true, route: "/post/[id]" },
@@ -49,8 +53,8 @@ export default function AlertsScreen() {
         </View>
       </View>
       <View style={styles.rowCopy}>
-        <Text style={styles.message}><Text style={styles.name}>{item.who.name}</Text>{" "}{item.text}</Text>
-        <Text style={styles.time}>{item.time}</Text>
+        <Text style={[styles.message, { fontFamily: bodyFont }]}><Text style={[styles.name, { fontFamily: mediumFont }]}>{item.who.name}</Text>{" "}{item.text}</Text>
+        <Text style={[styles.time, { fontFamily: bodyFont }]}>{item.time}</Text>
       </View>
       {item.unread && !readAll ? <View style={styles.unreadDot} /> : null}
     </Pressable>
@@ -63,9 +67,9 @@ export default function AlertsScreen() {
           <Pressable onPress={() => router.back()} style={styles.back} accessibilityLabel={language === "bn" ? "ফিরে যান" : "Go back"}>
             <MaterialIcons name="arrow-back" size={22} color="#14213D" />
           </Pressable>
-          <Text style={styles.title}>{copy.alerts}</Text>
+          <Text style={[styles.title, { fontFamily: headingFont }]}>{copy.alerts}</Text>
           <Pressable onPress={() => setReadAll(true)} style={styles.markRead}>
-            <Text style={styles.markReadText}>{language === "bn" ? "সব পড়া হয়েছে" : "Mark all read"}</Text>
+            <Text style={[styles.markReadText, { fontFamily: mediumFont }]}>{language === "bn" ? "সব পড়া হয়েছে" : "Mark all read"}</Text>
           </Pressable>
         </View>
         {today.length ? <><Text style={styles.groupLabel}>{language === "bn" ? "আজ" : "Today"}</Text><View style={styles.list}>{today.map(renderRow)}</View></> : null}
@@ -81,28 +85,28 @@ const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingBottom: 30 },
   header: { flexDirection: "row", alignItems: "center", height: 64, gap: 4 },
   back: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
-  title: { flex: 1, color: "#14213D", fontFamily: "Georgia", fontSize: 21, fontWeight: "700" },
+  title: { flex: 1, color: Colors.light.inkNavy, fontSize: 21, fontWeight: "700" },
   markRead: { minHeight: 44, justifyContent: "center", paddingHorizontal: 4 },
-  markReadText: { color: "#2E6B4A", fontSize: 11, fontWeight: "800" },
-  groupLabel: { color: "#5B6478", fontSize: 12, fontWeight: "700", marginTop: 7, marginBottom: 7 },
-  list: { backgroundColor: "#FFFDF8", borderWidth: 1, borderColor: "#E6DCC8", borderRadius: 16, overflow: "hidden" },
-  row: { minHeight: 72, paddingHorizontal: 14, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: 1, borderBottomColor: "#E6DCC8" },
-  unread: { backgroundColor: "#FDF3EC" },
+  markReadText: { color: Colors.light.leafGreen, fontSize: 11, fontWeight: "800" },
+  groupLabel: { color: Colors.light.slate, fontSize: 12, fontWeight: "700", marginTop: 7, marginBottom: 7 },
+  list: { backgroundColor: Colors.light.paper, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 16, overflow: "hidden" },
+  row: { minHeight: 72, paddingHorizontal: 14, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: 1, borderBottomColor: Colors.light.line },
+  unread: { backgroundColor: Colors.light.primaryContainer },
   avatarWrap: { position: "relative" },
   typeBadge: { position: "absolute", right: -5, bottom: -4, width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#FFFDF8", alignItems: "center", justifyContent: "center" },
   likeBadge: { backgroundColor: "#B4492A" },
   followBadge: { backgroundColor: "#2E6B4A" },
   commentBadge: { backgroundColor: "#14213D" },
   rowCopy: { flex: 1 },
-  message: { color: "#14213D", fontSize: 13, lineHeight: 19 },
+  message: { color: Colors.light.inkNavy, fontSize: 13, lineHeight: 19 },
   name: { fontWeight: "800" },
-  time: { color: "#5B6478", fontSize: 11, marginTop: 3 },
-  unreadDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: "#B4492A" },
+  time: { color: Colors.light.slate, fontSize: 11, marginTop: 3 },
+  unreadDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: Colors.light.terracotta },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 16, paddingVertical: 100, textAlign: "center" },
-  emptyIcon: { width: 96, height: 96, borderRadius: 48, backgroundColor: "#F3DCCF", alignItems: "center", justifyContent: "center" },
-  emptyTitle: { color: "#14213D", fontFamily: "Georgia", fontSize: 23, fontWeight: "700", marginTop: 24 },
-  emptyText: { color: "#5B6478", fontSize: 14, lineHeight: 22, textAlign: "center", marginTop: 8 },
-  emptyButton: { width: "100%", marginTop: 24, borderRadius: 26, backgroundColor: "#B4492A", alignItems: "center", paddingVertical: 15 },
-  emptyButtonText: { color: "#FFF", fontSize: 14, fontWeight: "800" },
-  note: { color: "#5B6478", fontSize: 10, lineHeight: 15, textAlign: "center", marginTop: 16 },
+  emptyIcon: { width: 96, height: 96, borderRadius: 48, backgroundColor: Colors.light.primaryContainer, alignItems: "center", justifyContent: "center" },
+  emptyTitle: { color: Colors.light.inkNavy, fontSize: 23, fontWeight: "700", marginTop: 24 },
+  emptyText: { color: Colors.light.slate, fontSize: 14, lineHeight: 22, textAlign: "center", marginTop: 8 },
+  emptyButton: { width: "100%", marginTop: 24, borderRadius: 26, backgroundColor: Colors.light.terracotta, alignItems: "center", paddingVertical: 15 },
+  emptyButtonText: { color: Colors.light.ivory, fontSize: 14, fontWeight: "800" },
+  note: { color: Colors.light.slate, fontSize: 10, lineHeight: 15, textAlign: "center", marginTop: 16 },
 });
