@@ -1,29 +1,108 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Avatar } from "@/components/apongram/Avatar";
 import { ScreenContainer } from "@/components/screen-container";
 import { profiles } from "@/lib/apongram/mock-data";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
 
+type Activity = {
+  id: string;
+  who: (typeof profiles)[number];
+  text: string;
+  time: string;
+  icon: "favorite" | "chat-bubble-outline" | "person-add-alt-1";
+  unread: boolean;
+  route: "/post/[id]" | "/(tabs)/profile";
+};
+
 export default function AlertsScreen() {
-  const router = useRouter(); const { language, copy } = useLanguage();
-  const rows = language === "bn" ? [
-    { id: "1", who: profiles[1], text: "আপনার পোস্টে লাইক দিয়েছেন", time: "১২ মিনিট আগে", icon: "favorite" as const, unread: true },
-    { id: "2", who: profiles[2], text: "আপনার আলোচনায় মন্তব্য করেছেন", time: "১ ঘণ্টা আগে", icon: "chat-bubble-outline" as const, unread: true },
-    { id: "3", who: profiles[3], text: "আপনাকে ফলো করা শুরু করেছেন", time: "৩ ঘণ্টা আগে", icon: "person-add-alt-1" as const, unread: false },
-    { id: "4", who: profiles[4], text: "আপনার পোস্টে লাইক দিয়েছেন", time: "গতকাল", icon: "favorite" as const, unread: false },
-  ] : [
-    { id: "1", who: profiles[1], text: "liked your community update", time: "12 minutes ago", icon: "favorite" as const, unread: true },
-    { id: "2", who: profiles[2], text: "commented on your discussion", time: "1 hour ago", icon: "chat-bubble-outline" as const, unread: true },
-    { id: "3", who: profiles[3], text: "started following you", time: "3 hours ago", icon: "person-add-alt-1" as const, unread: false },
-    { id: "4", who: profiles[4], text: "liked your post", time: "Yesterday", icon: "favorite" as const, unread: false },
-  ];
-  return <ScreenContainer safeAreaClassName="bg-background" className="bg-background"><ScrollView contentContainerStyle={styles.container}>
-    <View style={styles.header}><View><Text style={styles.kicker}>COMMUNITY · ACTIVITY</Text><Text style={styles.title}>{copy.alerts}</Text></View><Pressable onPress={() => router.push("/settings")} accessibilityLabel={language === "bn" ? "সেটিংস" : "Settings"}><MaterialIcons name="settings" size={23} color="#1E1B16" /></Pressable></View>
-    <View style={styles.pulse}><View style={styles.pulseIcon}><MaterialIcons name="volunteer-activism" size={21} color="#C85A3A" /></View><View style={{ flex: 1 }}><Text style={styles.pulseTitle}>{copy.communityPulse}</Text><Text style={styles.pulseText}>{copy.pulseText}</Text></View><View style={styles.live}><View style={styles.dot} /><Text style={styles.liveText}>LIVE</Text></View></View>
-    <Text style={styles.section}>{language === "bn" ? "সাম্প্রতিক কার্যকলাপ" : "Recent activity"}</Text>
-    <View style={styles.list}>{rows.map((item) => <View key={item.id} style={[styles.row, item.unread && styles.unread]}><Avatar profile={item.who} size={43} /><View style={styles.rowText}><Text style={styles.message}><Text style={styles.name}>{item.who.name}</Text> {item.text}</Text><Text style={styles.time}>{item.time}</Text></View><MaterialIcons name={item.icon} size={18} color={item.icon === "favorite" ? "#C85A3A" : "#6B6153"} /></View>)}</View>
-  </ScrollView></ScreenContainer>;
+  const router = useRouter();
+  const { language, copy } = useLanguage();
+  const rows: Activity[] = language === "bn"
+    ? [
+      { id: "1", who: profiles[1], text: "আপনার পোস্ট পছন্দ করেছেন", time: "১০ মিনিট আগে", icon: "favorite", unread: true, route: "/post/[id]" },
+      { id: "2", who: profiles[2], text: "আপনাকে ফলো করেছেন", time: "১ ঘণ্টা আগে", icon: "person-add-alt-1", unread: true, route: "/(tabs)/profile" },
+      { id: "3", who: profiles[3], text: "আপনার পোস্টে মন্তব্য করেছেন", time: "গতকাল", icon: "chat-bubble-outline", unread: false, route: "/post/[id]" },
+      { id: "4", who: profiles[4], text: "আপনার রিল পছন্দ করেছেন", time: "গতকাল", icon: "favorite", unread: false, route: "/(tabs)/profile" },
+    ]
+    : [
+      { id: "1", who: profiles[1], text: "liked your post", time: "10 minutes ago", icon: "favorite", unread: true, route: "/post/[id]" },
+      { id: "2", who: profiles[2], text: "started following you", time: "1 hour ago", icon: "person-add-alt-1", unread: true, route: "/(tabs)/profile" },
+      { id: "3", who: profiles[3], text: "commented on your post", time: "Yesterday", icon: "chat-bubble-outline", unread: false, route: "/post/[id]" },
+      { id: "4", who: profiles[4], text: "liked your Reel", time: "Yesterday", icon: "favorite", unread: false, route: "/(tabs)/profile" },
+    ];
+  const [today, earlier] = [rows.filter((item) => item.unread), rows.filter((item) => !item.unread)];
+  const [readAll, setReadAll] = useState(false);
+
+  const renderRow = (item: Activity) => (
+    <Pressable
+      key={item.id}
+      onPress={() => item.route === "/post/[id]" ? router.push({ pathname: "/post/[id]", params: { id: "post-1" } }) : router.push("/(tabs)/profile")}
+      style={[styles.row, item.unread && !readAll && styles.unread]}
+    >
+      <View style={styles.avatarWrap}>
+        <Avatar profile={item.who} size={44} />
+        <View style={[styles.typeBadge, item.icon === "person-add-alt-1" ? styles.followBadge : item.icon === "chat-bubble-outline" ? styles.commentBadge : styles.likeBadge]}>
+          <MaterialIcons name={item.icon} size={11} color="#FFF" />
+        </View>
+      </View>
+      <View style={styles.rowCopy}>
+        <Text style={styles.message}><Text style={styles.name}>{item.who.name}</Text>{" "}{item.text}</Text>
+        <Text style={styles.time}>{item.time}</Text>
+      </View>
+      {item.unread && !readAll ? <View style={styles.unreadDot} /> : null}
+    </Pressable>
+  );
+
+  return (
+    <ScreenContainer safeAreaClassName="bg-background" className="bg-background">
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.back} accessibilityLabel={language === "bn" ? "ফিরে যান" : "Go back"}>
+            <MaterialIcons name="arrow-back" size={22} color="#14213D" />
+          </Pressable>
+          <Text style={styles.title}>{copy.alerts}</Text>
+          <Pressable onPress={() => setReadAll(true)} style={styles.markRead}>
+            <Text style={styles.markReadText}>{language === "bn" ? "সব পড়া হয়েছে" : "Mark all read"}</Text>
+          </Pressable>
+        </View>
+        {today.length ? <><Text style={styles.groupLabel}>{language === "bn" ? "আজ" : "Today"}</Text><View style={styles.list}>{today.map(renderRow)}</View></> : null}
+        {earlier.length ? <><Text style={styles.groupLabel}>{language === "bn" ? "আগের" : "Earlier"}</Text><View style={styles.list}>{earlier.map(renderRow)}</View></> : null}
+        {!rows.length ? <View style={styles.empty}><View style={styles.emptyIcon}><MaterialIcons name="notifications-none" size={42} color="#B4492A" /></View><Text style={styles.emptyTitle}>{language === "bn" ? "কোনো বিজ্ঞপ্তি নেই" : "No notifications yet"}</Text><Text style={styles.emptyText}>{language === "bn" ? "কেউ আপনার পোস্ট পছন্দ করলে, মন্তব্য করলে বা আপনাকে ফলো করলে এখানে জানতে পারবেন।" : "Likes, comments and new followers will show up here."}</Text><Pressable onPress={() => router.push("/(tabs)/create")} style={styles.emptyButton}><Text style={styles.emptyButtonText}>{copy.create}</Text></Pressable></View> : null}
+        <Text style={styles.note}>{language === "bn" ? "নমুনা বিজ্ঞপ্তি। শুরুতে শুধু অ্যাপের ভেতরে দেখা যাবে।" : "Demo notifications are shown only inside the app for now."}</Text>
+      </ScrollView>
+    </ScreenContainer>
+  );
 }
-const styles = StyleSheet.create({ container: { paddingHorizontal: 18, paddingBottom: 30 }, header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", paddingTop: 15, paddingBottom: 22 }, kicker: { color: "#B5482F", fontSize: 10, fontWeight: "800", letterSpacing: 1.2 }, title: { color: "#211A18", fontFamily: "Georgia", fontSize: 29, fontWeight: "700", marginTop: 3 }, pulse: { backgroundColor: "#FFFBFF", borderWidth: 1, borderColor: "#D8C5BF", borderRadius: 20, padding: 15, flexDirection: "row", alignItems: "center", gap: 10, shadowColor: "#6E5148", shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 }, pulseIcon: { backgroundColor: "#FFDAD1", width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" }, pulseTitle: { color: "#211A18", fontWeight: "800", fontSize: 13 }, pulseText: { color: "#786E69", lineHeight: 17, fontSize: 11, marginTop: 3 }, live: { alignSelf: "flex-start", flexDirection: "row", gap: 4, alignItems: "center" }, dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#2F6B63" }, liveText: { color: "#2F6B63", fontSize: 9, fontWeight: "900" }, section: { color: "#211A18", fontFamily: "Georgia", fontSize: 18, fontWeight: "700", marginTop: 24, marginBottom: 11 }, list: { backgroundColor: "#FFFBFF", borderWidth: 1, borderColor: "#D8C5BF", borderRadius: 20, overflow: "hidden", shadowColor: "#6E5148", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 }, row: { flexDirection: "row", alignItems: "center", gap: 11, padding: 14, minHeight: 76, borderBottomWidth: 1, borderBottomColor: "#E8DAD5" }, unread: { backgroundColor: "#FFF4F0", borderLeftWidth: 4, borderLeftColor: "#B5482F" }, rowText: { flex: 1 }, message: { color: "#211A18", fontSize: 12, lineHeight: 18 }, name: { fontWeight: "800" }, time: { color: "#786E69", fontSize: 10, marginTop: 4 } });
+
+const styles = StyleSheet.create({
+  container: { paddingHorizontal: 16, paddingBottom: 30 },
+  header: { flexDirection: "row", alignItems: "center", height: 64, gap: 4 },
+  back: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  title: { flex: 1, color: "#14213D", fontFamily: "Georgia", fontSize: 21, fontWeight: "700" },
+  markRead: { minHeight: 44, justifyContent: "center", paddingHorizontal: 4 },
+  markReadText: { color: "#2E6B4A", fontSize: 11, fontWeight: "800" },
+  groupLabel: { color: "#5B6478", fontSize: 12, fontWeight: "700", marginTop: 7, marginBottom: 7 },
+  list: { backgroundColor: "#FFFDF8", borderWidth: 1, borderColor: "#E6DCC8", borderRadius: 16, overflow: "hidden" },
+  row: { minHeight: 72, paddingHorizontal: 14, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: 1, borderBottomColor: "#E6DCC8" },
+  unread: { backgroundColor: "#FDF3EC" },
+  avatarWrap: { position: "relative" },
+  typeBadge: { position: "absolute", right: -5, bottom: -4, width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#FFFDF8", alignItems: "center", justifyContent: "center" },
+  likeBadge: { backgroundColor: "#B4492A" },
+  followBadge: { backgroundColor: "#2E6B4A" },
+  commentBadge: { backgroundColor: "#14213D" },
+  rowCopy: { flex: 1 },
+  message: { color: "#14213D", fontSize: 13, lineHeight: 19 },
+  name: { fontWeight: "800" },
+  time: { color: "#5B6478", fontSize: 11, marginTop: 3 },
+  unreadDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: "#B4492A" },
+  empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 16, paddingVertical: 100, textAlign: "center" },
+  emptyIcon: { width: 96, height: 96, borderRadius: 48, backgroundColor: "#F3DCCF", alignItems: "center", justifyContent: "center" },
+  emptyTitle: { color: "#14213D", fontFamily: "Georgia", fontSize: 23, fontWeight: "700", marginTop: 24 },
+  emptyText: { color: "#5B6478", fontSize: 14, lineHeight: 22, textAlign: "center", marginTop: 8 },
+  emptyButton: { width: "100%", marginTop: 24, borderRadius: 26, backgroundColor: "#B4492A", alignItems: "center", paddingVertical: 15 },
+  emptyButtonText: { color: "#FFF", fontSize: 14, fontWeight: "800" },
+  note: { color: "#5B6478", fontSize: 10, lineHeight: 15, textAlign: "center", marginTop: 16 },
+});

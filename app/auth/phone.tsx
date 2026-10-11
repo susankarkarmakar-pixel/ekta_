@@ -80,8 +80,8 @@ export default function PhoneAuthScreen() {
           </Pressable>
         </View>
         <View style={styles.hero}>
-          <View style={styles.logo}><MaterialIcons name="diversity-3" size={30} color="#C85A3A" /></View>
-          <Text style={styles.brand}>Ekta</Text>
+          <View style={styles.landscape}><View style={styles.landscapeSun} /><View style={styles.landscapeHillBack} /><View style={styles.landscapeHillFront} /></View>
+          <View style={styles.brandRow}><Text style={styles.brand}>eKta</Text><View style={styles.brandDots}><View style={styles.terraDot} /><View style={styles.greenDot} /></View></View>
           <Text style={styles.tagline}>{language === "bn" ? "একতায় আমরা · your community, connected" : "Your community, connected"}</Text>
           <View style={styles.localPill}><View style={styles.dot} /><Text style={styles.localText}>{language === "bn" ? "আপনার স্থানীয় প্রতিবেশী নেটওয়ার্ক" : "Your local neighborhood network"}</Text></View>
         </View>
@@ -135,8 +135,15 @@ const styles = StyleSheet.create({
   language: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E3DACB", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
   languageText: { color: "#C85A3A", fontSize: 11, fontWeight: "800" },
   hero: { alignItems: "center", paddingTop: 70 },
-  logo: { width: 74, height: 74, borderRadius: 37, backgroundColor: "#F3DCD2", alignItems: "center", justifyContent: "center" },
-  brand: { color: "#C85A3A", fontFamily: "Georgia", fontSize: 54, fontWeight: "700", marginTop: 16 },
+  landscape: { width: "100%", height: 150, borderRadius: 20, backgroundColor: "#F3DCCF", overflow: "hidden", position: "relative" },
+  landscapeSun: { position: "absolute", right: 48, top: 24, width: 40, height: 40, borderRadius: 20, backgroundColor: "#E0A24A" },
+  landscapeHillBack: { position: "absolute", left: -20, right: -20, bottom: -42, height: 94, borderRadius: 90, backgroundColor: "#2E6B4A", transform: [{ scaleX: 1.25 }] },
+  landscapeHillFront: { position: "absolute", left: -20, right: -20, bottom: -64, height: 100, borderRadius: 90, backgroundColor: "#1F4D35", transform: [{ scaleX: 1.15 }] },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 16 },
+  brand: { color: "#14213D", fontFamily: "Georgia", fontSize: 42, fontWeight: "700" },
+  brandDots: { gap: 3, marginTop: 6 },
+  terraDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#B4492A", marginLeft: 5 },
+  greenDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#2E6B4A" },
   tagline: { color: "#6B6153", textAlign: "center", lineHeight: 23, fontSize: 15, marginTop: 7 },
   localPill: { borderWidth: 1, borderColor: "#E3DACB", borderRadius: 999, backgroundColor: "#FFFFFF", paddingHorizontal: 13, paddingVertical: 8, marginTop: 22, flexDirection: "row", alignItems: "center", gap: 7 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#1F6F6B" },
