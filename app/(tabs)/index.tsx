@@ -8,6 +8,8 @@ import { TopicChip } from "@/components/apongram/TopicChip";
 import { ScreenContainer } from "@/components/screen-container";
 import { getFeed, repositoryMode } from "@/lib/apongram/repository";
 import { currentUser, profiles, topics } from "@/lib/apongram/mock-data";
+import { buildFeedPreferences, rankFeed, type FeedMode } from "@/lib/apongram/feed-ranking";
+import { useFeedPreferences } from "@/lib/apongram/FeedPreferencesContext";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
 import type { Post } from "@/lib/apongram/types";
 
@@ -16,14 +18,18 @@ const C = { card: "#FFFFFF", ink: "#1E1B16", muted: "#6B6153", terra: "#C85A3A",
 export default function HomeScreen() {
   const router = useRouter();
   const { language, toggleLanguage, copy } = useLanguage();
+  const { preferences } = useFeedPreferences();
   const [feed, setFeed] = useState<Post[]>([]);
+  const [feedMode, setFeedMode] = useState<FeedMode>("relevant");
   const [toast, setToast] = useState("");
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    getFeed().then((items) => { if (active) setFeed([...items]); });
+    getFeed().then((items) => {
+      if (active) setFeed(rankFeed(items, feedMode, { ...buildFeedPreferences(currentUser), ...preferences }));
+    });
     return () => { active = false; };
-  }, []));
+  }, [feedMode, preferences]));
 
   const toggleLike = (id: string) => setFeed((items) => items.map((post) => post.id === id
     ? { ...post, likedByMe: !post.likedByMe, likes: post.likes + (post.likedByMe ? -1 : 1) }
@@ -77,7 +83,17 @@ export default function HomeScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.topics}>
           {topics.map((topic) => <TopicChip key={topic} label={topic} onPress={() => router.push({ pathname: "/(tabs)/discover", params: { q: topic } })} />)}
         </ScrollView>
-        <View style={styles.feedHeader}><Text style={styles.sectionTitle}>{copy.latest}</Text><View style={styles.liveDot} /><Text style={styles.liveText}>{language === "bn" ? "এখন সক্রিয়" : "Active now"}</Text></View>
+        <View style={styles.feedHeader}>
+          <Text style={styles.sectionTitle}>{language === "bn" ? "আপনার জন্য" : "For you"}</Text>
+          <View style={styles.feedModes}>
+            <Pressable onPress={() => setFeedMode("relevant")} style={[styles.feedMode, feedMode === "relevant" && styles.feedModeActive]} accessibilityLabel={language === "bn" ? "প্রাসঙ্গিক ফিড" : "Relevant feed"}>
+              <Text style={[styles.feedModeText, feedMode === "relevant" && styles.feedModeTextActive]}>{language === "bn" ? "প্রাসঙ্গিক" : "For you"}</Text>
+            </Pressable>
+            <Pressable onPress={() => setFeedMode("latest")} style={[styles.feedMode, feedMode === "latest" && styles.feedModeActive]} accessibilityLabel={copy.latest}>
+              <Text style={[styles.feedModeText, feedMode === "latest" && styles.feedModeTextActive]}>{copy.latest}</Text>
+            </Pressable>
+          </View>
+        </View>
         {feed.map((post) => <PostCard key={post.id} post={post} copy={copy} onOpen={() => router.push({ pathname: "/post/[id]", params: { id: post.id } })} onLike={() => toggleLike(post.id)} onReport={report} />)}
         {toast ? <View style={styles.toast}><MaterialIcons name="check-circle" size={18} color="#FFF" /><Text style={styles.toastText}>{toast}</Text></View> : null}
       </ScrollView>
@@ -116,6 +132,11 @@ const styles = StyleSheet.create({
   topics: { marginBottom: 15, flexGrow: 0 },
   feedHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 11 },
   sectionTitle: { color: C.ink, fontSize: 16, fontFamily: "Georgia", fontWeight: "700" },
+  feedModes: { flex: 1, flexDirection: "row", justifyContent: "flex-end", gap: 4 },
+  feedMode: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
+  feedModeActive: { backgroundColor: "#F3DCD2" },
+  feedModeText: { color: C.muted, fontSize: 10, fontWeight: "800" },
+  feedModeTextActive: { color: C.terra },
   liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: C.green, marginLeft: 5 },
   liveText: { color: C.muted, fontSize: 10, fontWeight: "700" },
   toast: { position: "absolute", bottom: 28, left: 18, right: 18, backgroundColor: C.green, padding: 13, borderRadius: 14, flexDirection: "row", alignItems: "center", gap: 8 },
