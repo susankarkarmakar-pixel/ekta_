@@ -15,6 +15,8 @@ export type Profile = {
 };
 
 export type VideoCompression = "high" | "balanced" | "dataSaver";
+export type OverlaySticker = "sparkles" | "favorite" | "location-on" | "wb-sunny" | "local-florist";
+export type OverlayPosition = "top" | "center" | "bottom";
 
 export type Post = {
   id: string;
@@ -29,6 +31,9 @@ export type Post = {
   musicTrackId?: string;
   musicVolume?: number;
   originalVolume?: number;
+  overlayText?: string;
+  overlaySticker?: OverlaySticker;
+  overlayPosition?: OverlayPosition;
   isStory?: boolean;
   isDemo?: boolean;
   storyExpiresAt?: string;
