@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Expo font assets require static Metro imports. */
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
