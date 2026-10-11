@@ -21,7 +21,6 @@ export default function HomeScreen() {
   const { preferences } = useFeedPreferences();
   const [feed, setFeed] = useState<Post[]>([]);
   const [feedMode, setFeedMode] = useState<FeedMode>("relevant");
-  const [toast, setToast] = useState("");
 
   useFocusEffect(useCallback(() => {
     let active = true;
@@ -34,7 +33,6 @@ export default function HomeScreen() {
   const toggleLike = (id: string) => setFeed((items) => items.map((post) => post.id === id
     ? { ...post, likedByMe: !post.likedByMe, likes: post.likes + (post.likedByMe ? -1 : 1) }
     : post));
-  const report = () => { setToast(copy.reported); setTimeout(() => setToast(""), 2200); };
 
   return (
       <ScreenContainer safeAreaClassName="bg-background" className="bg-background">
@@ -93,8 +91,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
-        {feed.map((post) => <PostCard key={post.id} post={post} copy={copy} onOpen={() => router.push({ pathname: "/post/[id]", params: { id: post.id } })} onLike={() => toggleLike(post.id)} onReport={report} />)}
-        {toast ? <View style={styles.toast}><MaterialIcons name="check-circle" size={18} color="#FFF" /><Text style={styles.toastText}>{toast}</Text></View> : null}
+        {feed.map((post) => <PostCard key={post.id} post={post} copy={copy} onOpen={() => router.push({ pathname: "/post/[id]", params: { id: post.id } })} onLike={() => toggleLike(post.id)} onReport={() => router.push({ pathname: "/report", params: { postId: post.id } })} />)}
       </ScrollView>
     </ScreenContainer>
   );

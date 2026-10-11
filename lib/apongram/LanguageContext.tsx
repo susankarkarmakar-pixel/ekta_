@@ -3,10 +3,10 @@ import { createContext, useContext, useEffect, useMemo, useState, type PropsWith
 import { copy, type Language } from "./types";
 
 const STORAGE_KEY = "apongram-language";
-const LanguageContext = createContext<{ language: Language; setLanguage: (language: Language) => void; toggleLanguage: () => void }>({ language: "en", setLanguage: () => undefined, toggleLanguage: () => undefined });
+const LanguageContext = createContext<{ language: Language; setLanguage: (language: Language) => void; toggleLanguage: () => void }>({ language: "bn", setLanguage: () => undefined, toggleLanguage: () => undefined });
 
 export function LanguageProvider({ children }: PropsWithChildren) {
-  const [language, setLanguage] = useState<Language>("en");
+  const [language, setLanguage] = useState<Language>("bn");
   useEffect(() => { AsyncStorage.getItem(STORAGE_KEY).then((value) => { if (value === "bn" || value === "en") setLanguage(value); }).catch(() => undefined); }, []);
   useEffect(() => { AsyncStorage.setItem(STORAGE_KEY, language).catch(() => undefined); }, [language]);
   const value = useMemo(() => ({ language, setLanguage, toggleLanguage: () => setLanguage((current) => current === "bn" ? "en" : "bn") }), [language]);
