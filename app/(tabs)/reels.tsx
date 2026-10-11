@@ -342,7 +342,7 @@ export default function ReelsScreen() {
         <View style={styles.headerRow}>
           <View style={styles.headerTitleWrap}>
             <Text style={styles.headerTitle}>{copy.reels}</Text>
-            <View style={styles.headerSubRow}><View style={styles.liveDot} /><Text style={styles.headerSubtitle}>{language === "bn" ? "আপনার এলাকার ছোট গল্প" : "Short stories from your community"}</Text></View>
+            <View style={styles.headerSubRow}><View style={styles.liveDot} /><Text style={styles.headerSubtitle}>{copy.reelsIntro}</Text></View>
           </View>
           <Pressable onPress={openCreator} style={styles.createButton} accessibilityRole="button" accessibilityLabel={copy.createReel}>
             <MaterialIcons name="videocam" size={18} color={COLORS.white} />
