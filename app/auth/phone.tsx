@@ -1,6 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { sendPhoneOtp, SupabaseAuthError, verifyPhoneOtp } from "@/lib/apongram/supabase-auth";
@@ -17,6 +17,7 @@ export default function PhoneAuthScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [resendIn, setResendIn] = useState(0);
+  const otpRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
     if (!resendIn) return;
@@ -63,6 +64,30 @@ export default function PhoneAuthScreen() {
     }
   };
 
+  const otpDigits = otp.replace(/\D/g, "").slice(0, 6);
+  const setOtpDigit = (index: number, value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length > 1) {
+      const pasted = digits.slice(0, 6);
+      setOtp(pasted);
+      otpRefs.current[Math.min(pasted.length, 5)]?.focus();
+      return;
+    }
+    const next = otpDigits.split("");
+    next[index] = digits;
+    const nextOtp = next.join("").slice(0, 6);
+    setOtp(nextOtp);
+    if (digits && index < 5) otpRefs.current[index + 1]?.focus();
+  };
+  const handleOtpKeyPress = (index: number, key: string) => {
+    if (key !== "Backspace" || otpDigits[index]) return;
+    if (index > 0) {
+      const next = otpDigits.split("");
+      next[index - 1] = "";
+      setOtp(next.join(""));
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
   const phoneDigits = phone.replace(/\D/g, "");
   const canSend = phoneDigits.length === 10 || phoneDigits.length === 12;
   const canVerify = otp.replace(/\D/g, "").length === 6;
@@ -94,20 +119,37 @@ export default function PhoneAuthScreen() {
         ) : (
           <View style={styles.form}>
             <Text style={styles.label}>{sent ? copy.otpLabel : copy.phoneLabel}</Text>
-            <View style={styles.inputWrap}>
-              {!sent && <View style={styles.prefix}><Text style={styles.prefixText}>+91</Text></View>}
-              <TextInput
-                value={sent ? otp : phone}
-                onChangeText={sent ? setOtp : setPhone}
+            {sent ? <View style={styles.otpRow} accessibilityRole="none">
+              {Array.from({ length: 6 }, (_, index) => <TextInput
+                key={index}
+                ref={(ref) => { otpRefs.current[index] = ref; }}
+                value={otpDigits[index] ?? ""}
+                onChangeText={(value) => setOtpDigit(index, value)}
+                onKeyPress={({ nativeEvent }) => handleOtpKeyPress(index, nativeEvent.key)}
                 keyboardType="number-pad"
-                placeholder={sent ? "123456" : copy.phonePlaceholder.replace("+91 ", "")}
+                inputMode="numeric"
+                maxLength={6}
+                autoFocus={index === 0}
+                editable={!busy}
+                selectTextOnFocus
+                accessibilityLabel={`${copy.otpDigit} ${index + 1}`}
+                style={[styles.otpBox, otpDigits[index] && styles.otpBoxFilled, index === otpDigits.length && styles.otpBoxActive]}
+              />)}
+            </View> : <View style={styles.inputWrap}>
+              <View style={styles.prefix}><Text style={styles.prefixText}>+91</Text></View>
+              <TextInput
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="number-pad"
+                placeholder={copy.phonePlaceholder.replace("+91 ", "")}
                 placeholderTextColor="#9A9080"
                 style={styles.input}
-                maxLength={sent ? 6 : 12}
+                maxLength={12}
                 autoFocus
                 editable={!busy}
+                accessibilityLabel={copy.phoneLabel}
               />
-            </View>
+            </View>}
             <Pressable
               onPress={sent ? verifyOtp : sendOtp}
               disabled={busy || (sent ? !canVerify : !canSend) || (!sent && resendIn > 0)}
@@ -154,6 +196,10 @@ const styles = StyleSheet.create({
   prefix: { height: "100%", justifyContent: "center", paddingHorizontal: 15, borderRightWidth: 1, borderRightColor: "#E3DACB" },
   prefixText: { color: "#1E1B16", fontSize: 15, fontWeight: "700" },
   input: { flex: 1, color: "#1E1B16", fontSize: 16, paddingHorizontal: 14 },
+  otpRow: { flexDirection: "row", gap: 8, marginBottom: 15 },
+  otpBox: { width: 46, height: 56, padding: 0, borderWidth: 1.5, borderColor: "#D8CDB6", borderRadius: 12, backgroundColor: "#FFFDF8", color: "#14213D", fontSize: 24, fontWeight: "600", textAlign: "center" },
+  otpBoxFilled: { borderColor: "#14213D" },
+  otpBoxActive: { borderWidth: 2, borderColor: "#B4492A" },
   button: { backgroundColor: "#C85A3A", borderRadius: 12, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 9, paddingVertical: 15 },
   disabled: { opacity: 0.42 },
   buttonText: { color: "#FFF", fontWeight: "800", fontSize: 14 },
