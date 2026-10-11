@@ -41,8 +41,7 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
         <View style={styles.topbar}>
           <View style={styles.brandRow}>
-            <View style={styles.logoMark}><MaterialIcons name="diversity-3" size={18} color="#FFF" /></View>
-            <View><Text style={styles.wordmark}>Ekta</Text><Text style={styles.eyebrow}>{language === "bn" ? "ভারত · সব অঞ্চল" : "INDIA · ALL REGIONS"}</Text></View>
+            <View style={styles.wordmarkWrap}><Text style={styles.wordmark}>eKta</Text><View style={styles.brandDots}><View style={styles.terraDot} /><View style={styles.greenDot} /></View></View>
           </View>
           <View style={styles.topActions}>
             <Pressable onPress={toggleLanguage} style={styles.lang}><Text style={styles.langText}>{language === "bn" ? "EN" : "বাং"}</Text></Pressable>
@@ -105,9 +104,11 @@ const styles = StyleSheet.create({
   container: { paddingHorizontal: 18, paddingBottom: 32 },
   topbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 10, paddingBottom: 4 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 9 },
-  logoMark: { width: 38, height: 38, borderRadius: 14, backgroundColor: C.terra, alignItems: "center", justifyContent: "center", shadowColor: C.terra, shadowOpacity: 0.22, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
-  wordmark: { color: C.terra, fontSize: 23, fontFamily: "Georgia", fontWeight: "700", letterSpacing: -0.5 },
-  eyebrow: { color: C.muted, fontSize: 8, fontWeight: "800", letterSpacing: 1, marginTop: 1 },
+  wordmarkWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
+  wordmark: { color: "#14213D", fontSize: 28, fontFamily: "Georgia", fontWeight: "700", letterSpacing: -0.5 },
+  brandDots: { gap: 3, marginLeft: 1, marginTop: 3 },
+  terraDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#B4492A", marginLeft: 5 },
+  greenDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#2E6B4A" },
   topActions: { flexDirection: "row", alignItems: "center", gap: 12 },
   lang: { borderWidth: 1, borderColor: C.line, borderRadius: 15, paddingHorizontal: 9, paddingVertical: 6, backgroundColor: C.card },
   langText: { color: C.terra, fontSize: 11, fontWeight: "800" },

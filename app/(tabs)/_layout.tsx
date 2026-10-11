@@ -21,15 +21,15 @@ export default function TabLayout() {
       tabBarInactiveTintColor: "#9A9080",
       tabBarButton: HapticTab,
       tabBarLabelStyle: { fontSize: 10, fontWeight: "700" },
-      tabBarStyle: { paddingTop: 8, paddingBottom: bottomPadding, height: 60 + bottomPadding, backgroundColor: "#FFFBFF", borderTopColor: "#D8C5BF", borderTopWidth: 1, elevation: 8, shadowColor: "#6E5148", shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: -3 } },
+      tabBarStyle: { paddingTop: 6, paddingBottom: bottomPadding, height: 70 + bottomPadding, backgroundColor: "#FFFDF8", borderTopColor: "#E6DCC8", borderTopWidth: 1, elevation: 8, shadowColor: "#6E5148", shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: -3 } },
       tabBarItemStyle: { borderRadius: 18, marginHorizontal: 2, marginVertical: 2 },
     }}>
       <Tabs.Screen name="index" options={{ title: copy.home, tabBarIcon: icon("home-filled") }} />
       <Tabs.Screen name="reels" options={{ title: copy.reels, tabBarIcon: icon("movie") }} />
+      <Tabs.Screen name="create" options={{ title: "", tabBarLabel: () => null, tabBarIcon: icon("add-circle"), tabBarItemStyle: { width: 58, marginHorizontal: 8, borderRadius: 24, backgroundColor: "#B4492A" } }} />
       <Tabs.Screen name="discover" options={{ title: copy.discover, tabBarIcon: icon("search") }} />
-      <Tabs.Screen name="create" options={{ title: copy.create, tabBarIcon: icon("add-circle") }} />
-      <Tabs.Screen name="alerts" options={{ title: copy.alerts, tabBarIcon: icon("notifications-none") }} />
       <Tabs.Screen name="profile" options={{ title: copy.profile, tabBarIcon: icon("person-outline") }} />
+      <Tabs.Screen name="alerts" options={{ href: null }} />
     </Tabs>
   );
 }
