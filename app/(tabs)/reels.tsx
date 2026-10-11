@@ -196,7 +196,7 @@ function formatCount(count: number) {
 export default function ReelsScreen() {
   const router = useRouter();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const { copy, language } = useLanguage();
+  const { copy } = useLanguage();
   const [reels, setReels] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [focused, setFocused] = useState(false);
