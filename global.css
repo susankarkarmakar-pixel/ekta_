@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Discourage casual media dragging/saving in the public demo. Screenshots and
+   screen recording cannot be prevented by a web app. */
+img,
+video {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
 @layer components {
   .m3-card {
     @apply rounded-2xl border border-outlineVariant bg-surface px-4 py-4;

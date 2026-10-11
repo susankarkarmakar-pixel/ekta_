@@ -59,6 +59,7 @@ const publicRuntime = {
   apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? "",
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  liveWebViewUrl: process.env.EXPO_PUBLIC_LIVE_WEBVIEW_URL ?? "",
 };
 
 const config: ExpoConfig = {
