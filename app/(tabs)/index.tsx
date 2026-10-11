@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { Avatar } from "@/components/apongram/Avatar";
 import { PostCard } from "@/components/apongram/PostCard";
 import { TopicChip } from "@/components/apongram/TopicChip";
@@ -16,6 +16,24 @@ import { useLanguage } from "@/lib/apongram/LanguageContext";
 import type { Post } from "@/lib/apongram/types";
 
 const C = { ...Colors.light, card: Colors.light.paper, ink: Colors.light.inkNavy, muted: Colors.light.slate, terra: Colors.light.terracotta, line: Colors.light.line, green: Colors.light.leafGreen };
+
+function FeedSkeleton() {
+  const [opacity] = useState(() => new Animated.Value(0.42));
+  useEffect(() => {
+    const animation = Animated.loop(Animated.sequence([
+      Animated.timing(opacity, { toValue: 0.9, duration: 750, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0.42, duration: 750, useNativeDriver: true }),
+    ]));
+    animation.start();
+    return () => animation.stop();
+  }, [opacity]);
+  return <View accessibilityLabel="Loading feed" accessible>
+    {[0, 1].map((item) => <Animated.View key={item} style={[styles.skeletonCard, { opacity }]}>
+      <View style={styles.skeletonHeader}><View style={styles.skeletonAvatar} /><View style={styles.skeletonHeaderCopy}><View style={styles.skeletonName} /><View style={styles.skeletonMeta} /></View></View>
+      <View style={styles.skeletonLineWide} /><View style={styles.skeletonLine} /><View style={styles.skeletonMedia} /><View style={styles.skeletonActions}><View style={styles.skeletonAction} /><View style={styles.skeletonAction} /><View style={styles.skeletonActionSmall} /></View>
+    </Animated.View>)}
+  </View>;
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -131,6 +149,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
+        {refreshing && !feed.length ? <FeedSkeleton /> : null}
         {feed.map((post) => <PostCard key={post.id} post={post} copy={copy} onOpen={() => router.push({ pathname: "/post/[id]", params: { id: post.id } })} onLike={() => toggleLike(post.id)} onReport={() => router.push({ pathname: "/report", params: { postId: post.id } })} />)}
         {loadingMore ? <View style={styles.feedFooter}><ActivityIndicator color={C.terra} /><Text style={[styles.footerText, { fontFamily: bodyFont }]}>{language === "bn" ? "আরও আপডেট আসছে..." : "Loading more updates…"}</Text></View> : null}
         {!loadingMore && !hasMore && feed.length ? <Text style={[styles.endText, { fontFamily: bodyFont }]}>{language === "bn" ? "এখানেই আপাতত শেষ।" : "You’re all caught up for now."}</Text> : null}
@@ -180,4 +199,16 @@ const styles = StyleSheet.create({
   feedFooter: { minHeight: 58, alignItems: "center", justifyContent: "center", gap: 6 },
   footerText: { color: C.muted, fontSize: 11 },
   endText: { color: C.muted, fontSize: 11, textAlign: "center", paddingVertical: 18 },
+  skeletonCard: { backgroundColor: C.paper, borderRadius: 20, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: C.line },
+  skeletonHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
+  skeletonAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.line },
+  skeletonHeaderCopy: { flex: 1, gap: 7 },
+  skeletonName: { width: "42%", height: 12, borderRadius: 6, backgroundColor: C.line },
+  skeletonMeta: { width: "28%", height: 9, borderRadius: 5, backgroundColor: C.primaryContainer },
+  skeletonLineWide: { width: "92%", height: 13, borderRadius: 7, backgroundColor: C.primaryContainer, marginTop: 17 },
+  skeletonLine: { width: "68%", height: 13, borderRadius: 7, backgroundColor: C.primaryContainer, marginTop: 8 },
+  skeletonMedia: { width: "100%", aspectRatio: 4 / 3, borderRadius: 16, backgroundColor: C.line, marginTop: 14 },
+  skeletonActions: { flexDirection: "row", justifyContent: "space-between", marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.line },
+  skeletonAction: { width: "23%", height: 12, borderRadius: 6, backgroundColor: C.primaryContainer },
+  skeletonActionSmall: { width: "12%", height: 12, borderRadius: 6, backgroundColor: C.primaryContainer },
 });
