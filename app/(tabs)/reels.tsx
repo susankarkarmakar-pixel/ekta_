@@ -19,6 +19,7 @@ import {
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Avatar } from "@/components/apongram/Avatar";
 import { ScreenContainer } from "@/components/screen-container";
+import { Colors } from "@/constants/theme";
 import { currentUser } from "@/lib/apongram/mock-data";
 import { getReels } from "@/lib/apongram/repository";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
@@ -26,12 +27,12 @@ import type { Post } from "@/lib/apongram/types";
 
 const COLORS = {
   black: "#080908",
-  white: "#FFFFFF",
-  muted: "#E8E3DC",
-  terra: "#C85A3A",
-  green: "#1F6F6B",
-  line: "#E3DACB",
-  paper: "#FBF7F0",
+  white: Colors.light.ivory,
+  muted: Colors.dark.slate,
+  terra: Colors.light.terracotta,
+  green: Colors.light.leafGreen,
+  line: Colors.light.line,
+  paper: Colors.light.paper,
 };
 const REEL_VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 80 };
 const DEMO_VIDEO_SOURCES: Record<string, number> = {
@@ -75,6 +76,9 @@ function ReelCard({
   onOpenComments,
   onShare,
 }: ReelCardProps) {
+  const { language } = useLanguage();
+  const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
+  const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
   const player = useVideoPlayer(resolveVideoSource(reel.videoUrl ?? null), (instance) => {
     instance.loop = true;
     instance.muted = true;
@@ -127,8 +131,8 @@ function ReelCard({
             accessibilityRole="button"
             accessibilityLabel={`${copy.likeVideo} · ${likes}`}
           >
-            <MaterialIcons name={liked ? "favorite" : "favorite-border"} size={29} color={liked ? "#FF6B6B" : COLORS.white} />
-            <Text style={styles.actionLabel}>{formatCount(likes)}</Text>
+            <MaterialIcons name={liked ? "favorite" : "favorite-border"} size={29} color={liked ? COLORS.terra : COLORS.white} />
+            <Text style={[styles.actionLabel, { fontFamily: mediumFont }]}>{formatCount(likes)}</Text>
           </Pressable>
           <Pressable
             onPress={onOpenComments}
@@ -137,7 +141,7 @@ function ReelCard({
             accessibilityLabel={`${copy.comments} · ${commentCount}`}
           >
             <MaterialIcons name="chat-bubble-outline" size={27} color={COLORS.white} />
-            <Text style={styles.actionLabel}>{formatCount(commentCount)}</Text>
+            <Text style={[styles.actionLabel, { fontFamily: mediumFont }]}>{formatCount(commentCount)}</Text>
           </Pressable>
           <Pressable
             onPress={onShare}
@@ -146,7 +150,7 @@ function ReelCard({
             accessibilityLabel={copy.shareReel}
           >
             <MaterialIcons name="send" size={25} color={COLORS.white} />
-            <Text style={styles.actionLabel}>{copy.shareReel}</Text>
+            <Text style={[styles.actionLabel, { fontFamily: mediumFont }]}>{copy.shareReel}</Text>
           </Pressable>
           <Pressable
             onPress={onToggleMute}
@@ -162,22 +166,22 @@ function ReelCard({
           {reel.isDemo ? (
             <View style={styles.demoPill}>
               <MaterialIcons name="movie" size={12} color={COLORS.white} />
-              <Text style={styles.demoPillText}>{copy.demoFootage}</Text>
+              <Text style={[styles.demoPillText, { fontFamily: mediumFont }]}>{copy.demoFootage}</Text>
             </View>
           ) : null}
           <View style={styles.creatorRow}>
             <Avatar profile={reel.author} size={34} />
-            <Text numberOfLines={1} style={styles.creatorName}>@{reel.author.handle}</Text>
-            {reel.author.verified ? <MaterialIcons name="verified" size={15} color="#A8E7D1" /> : null}
-            <View style={styles.followPill}><Text style={styles.followPillText}>{copy.localReel}</Text></View>
+            <Text numberOfLines={1} style={[styles.creatorName, { fontFamily: mediumFont }]}>@{reel.author.handle}</Text>
+            {reel.author.verified ? <MaterialIcons name="verified" size={15} color={Colors.dark.leafGreen} /> : null}
+            <View style={styles.followPill}><Text style={[styles.followPillText, { fontFamily: mediumFont }]}>{copy.localReel}</Text></View>
           </View>
-          {caption ? <Text numberOfLines={3} style={styles.caption}>{caption}</Text> : null}
+          {caption ? <Text numberOfLines={3} style={[styles.caption, { fontFamily: bodyFont }]}>{caption}</Text> : null}
           <View style={styles.locationRow}>
             <MaterialIcons name="place" size={14} color={COLORS.white} />
-            <Text numberOfLines={1} style={styles.locationText}>{reel.location}</Text>
+            <Text numberOfLines={1} style={[styles.locationText, { fontFamily: bodyFont }]}>{reel.location}</Text>
           </View>
           {reel.tags.length ? (
-            <Text numberOfLines={1} style={styles.tags}>{reel.tags.map((tag) => `#${tag.replace(/^#/, "")}`).join("  ")}</Text>
+            <Text numberOfLines={1} style={[styles.tags, { fontFamily: mediumFont }]}>{reel.tags.map((tag) => `#${tag.replace(/^#/, "")}`).join("  ")}</Text>
           ) : null}
         </View>
         </View>
@@ -196,7 +200,10 @@ function formatCount(count: number) {
 export default function ReelsScreen() {
   const router = useRouter();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const { copy } = useLanguage();
+  const { copy, language } = useLanguage();
+  const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
+  const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
+  const headingFont = language === "bn" ? "NotoSerifBengaliBold" : "Fraunces";
   const [reels, setReels] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [focused, setFocused] = useState(false);
@@ -286,16 +293,16 @@ export default function ReelsScreen() {
       {loading ? (
         <View style={styles.centerState}>
           <MaterialIcons name="movie" size={34} color={COLORS.terra} />
-          <Text style={styles.stateText}>{copy.loadingReels}</Text>
+          <Text style={[styles.stateText, { fontFamily: bodyFont }]}>{copy.loadingReels}</Text>
         </View>
       ) : reels.length === 0 ? (
         <View style={styles.centerState}>
           <View style={styles.emptyIcon}><MaterialIcons name="movie-filter" size={30} color={COLORS.terra} /></View>
-          <Text style={styles.emptyTitle}>{copy.noReelsYet}</Text>
-          <Text style={styles.emptyText}>{copy.beFirstReel}</Text>
+          <Text style={[styles.emptyTitle, { fontFamily: headingFont }]}>{copy.noReelsYet}</Text>
+          <Text style={[styles.emptyText, { fontFamily: bodyFont }]}>{copy.beFirstReel}</Text>
           <Pressable onPress={openCreator} style={styles.emptyButton}>
             <MaterialIcons name="add" size={17} color={COLORS.white} />
-            <Text style={styles.emptyButtonText}>{copy.createReel}</Text>
+            <Text style={[styles.emptyButtonText, { fontFamily: mediumFont }]}>{copy.createReel}</Text>
           </Pressable>
         </View>
       ) : (
@@ -341,12 +348,12 @@ export default function ReelsScreen() {
       <View pointerEvents="box-none" style={styles.headerOverlay}>
         <View style={styles.headerRow}>
           <View style={styles.headerTitleWrap}>
-            <Text style={styles.headerTitle}>{copy.reels}</Text>
-            <View style={styles.headerSubRow}><View style={styles.liveDot} /><Text style={styles.headerSubtitle}>{copy.reelsIntro}</Text></View>
+            <Text style={[styles.headerTitle, { fontFamily: headingFont }]}>{copy.reels}</Text>
+            <View style={styles.headerSubRow}><View style={styles.liveDot} /><Text style={[styles.headerSubtitle, { fontFamily: bodyFont }]}>{copy.reelsIntro}</Text></View>
           </View>
           <Pressable onPress={openCreator} style={styles.createButton} accessibilityRole="button" accessibilityLabel={copy.createReel}>
             <MaterialIcons name="videocam" size={18} color={COLORS.white} />
-            <Text style={styles.createButtonText}>{copy.createReel}</Text>
+            <Text style={[styles.createButtonText, { fontFamily: mediumFont }]}>{copy.createReel}</Text>
           </Pressable>
         </View>
       </View>
@@ -363,23 +370,23 @@ export default function ReelsScreen() {
             <View style={styles.sheet}>
               <View style={styles.sheetHandle} />
               <View style={styles.sheetHeading}>
-                <Text style={styles.sheetTitle}>{copy.comments}</Text>
+                <Text style={[styles.sheetTitle, { fontFamily: headingFont }]}>{copy.comments}</Text>
                 <Pressable onPress={() => setSelectedReel(null)} accessibilityLabel={copy.closeComments}>
-                  <MaterialIcons name="close" size={22} color="#302D29" />
+                  <MaterialIcons name="close" size={22} color={Colors.light.inkNavy} />
                 </Pressable>
               </View>
-              <Text style={styles.sheetCaption} numberOfLines={2}>{selectedReel?.body}</Text>
+              <Text style={[styles.sheetCaption, { fontFamily: bodyFont }]} numberOfLines={2}>{selectedReel?.body}</Text>
               <FlatList
                 data={selectedThread}
                 keyExtractor={(_, index) => `reel-comment-${selectedReel?.id}-${index}`}
                 contentContainerStyle={styles.commentList}
-                ListEmptyComponent={<Text style={styles.noComments}>{copy.noReelComments}</Text>}
+                ListEmptyComponent={<Text style={[styles.noComments, { fontFamily: bodyFont }]}>{copy.noReelComments}</Text>}
                 renderItem={({ item }) => (
                   <View style={styles.commentRow}>
                     <Avatar profile={currentUser} size={30} />
                     <View style={styles.commentBubble}>
-                      <Text style={styles.commentAuthor}>@{currentUser.handle}</Text>
-                      <Text style={styles.commentBody}>{item}</Text>
+                      <Text style={[styles.commentAuthor, { fontFamily: mediumFont }]}>@{currentUser.handle}</Text>
+                      <Text style={[styles.commentBody, { fontFamily: bodyFont }]}>{item}</Text>
                     </View>
                   </View>
                 )}
@@ -390,8 +397,8 @@ export default function ReelsScreen() {
                   value={commentDraft}
                   onChangeText={setCommentDraft}
                   placeholder={copy.replyPlaceholder}
-                  placeholderTextColor="#94897D"
-                  style={styles.commentInput}
+                  placeholderTextColor={Colors.light.slate}
+                  style={[styles.commentInput, { fontFamily: bodyFont }]}
                   returnKeyType="send"
                   onSubmitEditing={addComment}
                   maxLength={300}
@@ -424,7 +431,7 @@ const styles = StyleSheet.create({
   actionLabel: { color: COLORS.white, fontSize: 10, fontWeight: "800", textShadowColor: "rgba(0,0,0,0.75)", textShadowRadius: 5, textShadowOffset: { width: 0, height: 1 } },
   soundButton: { marginTop: 1, backgroundColor: "rgba(0,0,0,0.34)", borderRadius: 22, width: 40, height: 40 },
   creatorInfo: { position: "absolute", left: 17, right: 73, bottom: 28, zIndex: 3 },
-  demoPill: { alignSelf: "flex-start", marginBottom: 9, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999, backgroundColor: "rgba(31,111,107,0.9)", flexDirection: "row", alignItems: "center", gap: 4 },
+  demoPill: { alignSelf: "flex-start", marginBottom: 9, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999, backgroundColor: "rgba(46,107,74,0.9)", flexDirection: "row", alignItems: "center", gap: 4 },
   demoPillText: { color: COLORS.white, fontSize: 9, fontWeight: "900", letterSpacing: 0.4, textTransform: "uppercase" },
   creatorRow: { flexDirection: "row", alignItems: "center", gap: 7 },
   creatorName: { color: COLORS.white, fontSize: 13, fontWeight: "900", maxWidth: 114, textShadowColor: "rgba(0,0,0,0.8)", textShadowRadius: 4 },
@@ -438,16 +445,16 @@ const styles = StyleSheet.create({
   headerOverlay: { ...StyleSheet.absoluteFill, justifyContent: "flex-start", zIndex: 8 },
   headerRow: { paddingHorizontal: 16, paddingTop: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   headerTitleWrap: { flex: 1, marginRight: 10 },
-  headerTitle: { color: COLORS.white, fontFamily: "Georgia", fontSize: 24, fontWeight: "800", textShadowColor: "rgba(0,0,0,0.65)", textShadowRadius: 6 },
+  headerTitle: { color: COLORS.white, fontSize: 24, fontWeight: "800", textShadowColor: "rgba(0,0,0,0.65)", textShadowRadius: 6 },
   headerSubRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
   headerSubtitle: { color: "rgba(255,255,255,0.94)", fontSize: 10, fontWeight: "700", textShadowColor: "rgba(0,0,0,0.7)", textShadowRadius: 4 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#A8E7D1" },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.dark.leafGreen },
   createButton: { backgroundColor: COLORS.terra, flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 9, shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 4, elevation: 3 },
   createButtonText: { color: COLORS.white, fontSize: 10, fontWeight: "900" },
   centerState: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: COLORS.black },
   stateText: { color: COLORS.muted, fontSize: 12, marginTop: 10 },
-  emptyIcon: { width: 64, height: 64, borderRadius: 21, backgroundColor: "#F3DCD2", alignItems: "center", justifyContent: "center" },
-  emptyTitle: { color: COLORS.white, fontFamily: "Georgia", fontWeight: "700", fontSize: 23, marginTop: 18, textAlign: "center" },
+  emptyIcon: { width: 64, height: 64, borderRadius: 21, backgroundColor: Colors.light.primaryContainer, alignItems: "center", justifyContent: "center" },
+  emptyTitle: { color: COLORS.white, fontWeight: "700", fontSize: 23, marginTop: 18, textAlign: "center" },
   emptyText: { color: COLORS.muted, fontSize: 13, lineHeight: 19, textAlign: "center", marginTop: 8, maxWidth: 260 },
   emptyButton: { backgroundColor: COLORS.terra, flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 999, paddingHorizontal: 15, paddingVertical: 11, marginTop: 18 },
   emptyButtonText: { color: COLORS.white, fontSize: 12, fontWeight: "900" },
@@ -455,18 +462,18 @@ const styles = StyleSheet.create({
   modalBackdrop: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0,0,0,0.55)" },
   sheetWrap: { width: "100%", justifyContent: "flex-end" },
   sheet: { height: "64%", backgroundColor: COLORS.paper, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 17, paddingTop: 10, paddingBottom: Platform.OS === "ios" ? 24 : 14 },
-  sheetHandle: { alignSelf: "center", width: 38, height: 4, backgroundColor: "#D6CDC0", borderRadius: 3, marginBottom: 12 },
+  sheetHandle: { alignSelf: "center", width: 38, height: 4, backgroundColor: COLORS.line, borderRadius: 3, marginBottom: 12 },
   sheetHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  sheetTitle: { color: "#1E1B16", fontFamily: "Georgia", fontSize: 20, fontWeight: "800" },
-  sheetCaption: { color: "#6B6153", fontSize: 11, lineHeight: 16, marginTop: 7, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: COLORS.line },
+  sheetTitle: { color: Colors.light.inkNavy, fontSize: 20, fontWeight: "800" },
+  sheetCaption: { color: Colors.light.slate, fontSize: 11, lineHeight: 16, marginTop: 7, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: COLORS.line },
   commentList: { flexGrow: 1, paddingVertical: 8 },
-  noComments: { color: "#6B6153", textAlign: "center", fontSize: 12, paddingVertical: 26 },
+  noComments: { color: Colors.light.slate, textAlign: "center", fontSize: 12, paddingVertical: 26 },
   commentRow: { flexDirection: "row", gap: 8, alignItems: "flex-start", marginBottom: 13 },
-  commentBubble: { flex: 1, backgroundColor: "#FFFFFF", borderRadius: 13, padding: 10, borderWidth: 1, borderColor: COLORS.line },
-  commentAuthor: { color: "#1E1B16", fontSize: 10, fontWeight: "900", marginBottom: 3 },
-  commentBody: { color: "#1E1B16", fontSize: 12, lineHeight: 17 },
+  commentBubble: { flex: 1, backgroundColor: Colors.light.paper, borderRadius: 13, padding: 10, borderWidth: 1, borderColor: COLORS.line },
+  commentAuthor: { color: Colors.light.inkNavy, fontSize: 10, fontWeight: "900", marginBottom: 3 },
+  commentBody: { color: Colors.light.inkNavy, fontSize: 12, lineHeight: 17 },
   commentComposer: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.line },
-  commentInput: { flex: 1, minHeight: 42, maxHeight: 80, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: COLORS.line, backgroundColor: "#FFFFFF", color: "#1E1B16", fontSize: 12 },
+  commentInput: { flex: 1, minHeight: 42, maxHeight: 80, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: COLORS.line, backgroundColor: Colors.light.paper, color: Colors.light.inkNavy, fontSize: 12 },
   sendButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: COLORS.terra, alignItems: "center", justifyContent: "center" },
   sendDisabled: { opacity: 0.42 },
 });
