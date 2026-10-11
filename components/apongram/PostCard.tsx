@@ -5,6 +5,7 @@ import { Image, Pressable, Share, StyleSheet, Text, View, type LayoutChangeEvent
 import { Avatar } from "./Avatar";
 import { Colors } from "@/constants/theme";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
+import { createPostShareLinks, createPostShareMessage } from "@/lib/apongram/share-links";
 import type { Post } from "@/lib/apongram/types";
 
 const INK = Colors.light.inkNavy;
@@ -36,7 +37,13 @@ export function PostCard({ post, copy, onOpen, onLike, onReport, isVideoActive =
   const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
   const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
   const sharePost = async () => {
-    await Share.share({ message: `${post.body}\n@${post.author.handle} · ${post.location}` });
+    const links = createPostShareLinks(post.id);
+    const message = createPostShareMessage(post.id, post.body, post.author.handle, post.location);
+    try {
+      await Share.share({ message, url: links.webUrl }, { dialogTitle: copy.share });
+    } catch {
+      // Dismissing or cancelling the native share sheet is not an error state.
+    }
   };
   return <View style={styles.card} onLayout={onLayout}>
     <View style={styles.header}><Avatar profile={post.author} size={42} /><View style={styles.author}><View style={styles.nameRow}><Text style={[styles.name, { fontFamily: mediumFont }]}>{post.author.name}</Text>{post.author.verified && <MaterialIcons name="verified" size={15} color={TERRACOTTA} />}</View><Text style={[styles.meta, { fontFamily: bodyFont }]}>@{post.author.handle} · {post.createdAt}</Text></View>{post.isDemo ? <View style={styles.sampleBadge}><View style={styles.sampleDot} /><Text style={[styles.sampleText, { fontFamily: mediumFont }]}>{copy.demoLabel}</Text></View> : null}<Pressable onPress={onReport} hitSlop={10} accessibilityLabel={copy.report}><MaterialIcons name="more-horiz" size={22} color={MUTED} /></Pressable></View>
