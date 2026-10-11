@@ -9,9 +9,9 @@ type LogoProps = {
   style?: ImageStyle;
 };
 
-const MARK: ImageSourcePropType = require("@/assets/brand/ekta-mark.png");
-const HORIZONTAL: ImageSourcePropType = require("@/assets/brand/ekta-logo-horizontal.png");
-const HORIZONTAL_DARK: ImageSourcePropType = require("@/assets/brand/ekta-logo-horizontal-on-dark.png");
+const MARK: ImageSourcePropType = require("../assets/brand/ekta-mark.png");
+const HORIZONTAL: ImageSourcePropType = require("../assets/brand/ekta-logo-horizontal.png");
+const HORIZONTAL_DARK: ImageSourcePropType = require("../assets/brand/ekta-logo-horizontal-on-dark.png");
 
 export function Logo({ variant = "horizontal", dark = false, width, height, accessibilityLabel = "eKta", style }: LogoProps) {
   const isMark = variant === "mark";

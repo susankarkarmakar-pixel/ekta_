@@ -28,15 +28,15 @@ export default function RootLayout() {
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS; const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
   const [insets, setInsets] = useState<EdgeInsets>(initialInsets); const [frame, setFrame] = useState<Rect>(initialFrame);
   const [fontsLoaded] = useFonts({
-    Fraunces: require("@/assets/fonts/fraunces-latin-700-normal.woff2"),
-    NotoSerifBengali: require("@/assets/fonts/noto-serif-bengali-bengali-500-normal.woff2"),
-    NotoSerifBengaliBold: require("@/assets/fonts/noto-serif-bengali-bengali-700-normal.woff2"),
-    HindSiliguri: require("@/assets/fonts/hind-siliguri-bengali-400-normal.woff2"),
-    HindSiliguriMedium: require("@/assets/fonts/hind-siliguri-bengali-500-normal.woff2"),
-    HindSiliguriSemiBold: require("@/assets/fonts/hind-siliguri-bengali-600-normal.woff2"),
-    HindSiliguriLatin: require("@/assets/fonts/hind-siliguri-latin-400-normal.woff2"),
-    HindSiliguriLatinMedium: require("@/assets/fonts/hind-siliguri-latin-500-normal.woff2"),
-    HindSiliguriLatinSemiBold: require("@/assets/fonts/hind-siliguri-latin-600-normal.woff2"),
+    Fraunces: require("../assets/fonts/fraunces-latin-700-normal.woff2"),
+    NotoSerifBengali: require("../assets/fonts/noto-serif-bengali-bengali-500-normal.woff2"),
+    NotoSerifBengaliBold: require("../assets/fonts/noto-serif-bengali-bengali-700-normal.woff2"),
+    HindSiliguri: require("../assets/fonts/hind-siliguri-bengali-400-normal.woff2"),
+    HindSiliguriMedium: require("../assets/fonts/hind-siliguri-bengali-500-normal.woff2"),
+    HindSiliguriSemiBold: require("../assets/fonts/hind-siliguri-bengali-600-normal.woff2"),
+    HindSiliguriLatin: require("../assets/fonts/hind-siliguri-latin-400-normal.woff2"),
+    HindSiliguriLatinMedium: require("../assets/fonts/hind-siliguri-latin-500-normal.woff2"),
+    HindSiliguriLatinSemiBold: require("../assets/fonts/hind-siliguri-latin-600-normal.woff2"),
   });
   useEffect(() => { if (fontsLoaded) void SplashScreen.hideAsync(); }, [fontsLoaded]);
   useEffect(() => { initManusRuntime(); }, []);
