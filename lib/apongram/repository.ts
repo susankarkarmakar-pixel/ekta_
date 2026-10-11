@@ -5,6 +5,23 @@ import type { Comment, Post, Profile, VideoCompression, OverlayPosition, Overlay
 
 export const repositoryMode = supabaseConfig.isConfigured ? "supabase" : "demo";
 
+export async function getFeedPage(page = 0, pageSize = 6): Promise<{ items: Post[]; hasMore: boolean }> {
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+  if (!supabaseConfig.isConfigured) {
+    const demoFeed = [...posts, ...demoReels];
+    const items = demoFeed.slice(from, to + 1);
+    return { items, hasMore: to + 1 < demoFeed.length };
+  }
+  try {
+    const rows = await supabaseFetch<Post[]>(`posts?select=*&order=created_at.desc&offset=${from}&limit=${pageSize}`);
+    return { items: rows, hasMore: rows.length === pageSize };
+  } catch {
+    const items = posts.slice(from, to + 1);
+    return { items, hasMore: to + 1 < posts.length };
+  }
+}
+
 export async function getFeed(): Promise<Post[]> {
   if (!supabaseConfig.isConfigured) return posts;
   try {

@@ -1,14 +1,14 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { Avatar } from "@/components/apongram/Avatar";
 import { PostCard } from "@/components/apongram/PostCard";
 import { TopicChip } from "@/components/apongram/TopicChip";
 import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
-import { getFeed, repositoryMode } from "@/lib/apongram/repository";
+import { getFeedPage, repositoryMode } from "@/lib/apongram/repository";
 import { currentUser, profiles, topics } from "@/lib/apongram/mock-data";
 import { buildFeedPreferences, rankFeed, type FeedMode } from "@/lib/apongram/feed-ranking";
 import { useFeedPreferences } from "@/lib/apongram/FeedPreferencesContext";
@@ -26,14 +26,48 @@ export default function HomeScreen() {
   const { preferences } = useFeedPreferences();
   const [feed, setFeed] = useState<Post[]>([]);
   const [feedMode, setFeedMode] = useState<FeedMode>("relevant");
+  const [page, setPage] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const loadingRef = useRef(false);
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    getFeed().then((items) => {
-      if (active) setFeed(rankFeed(items, feedMode, { ...buildFeedPreferences(currentUser), ...preferences }));
+    loadingRef.current = true;
+    setLoadingMore(true);
+    getFeedPage(0, 3).then(({ items, hasMore: nextHasMore }) => {
+      if (active) {
+        setFeed(rankFeed(items, feedMode, { ...buildFeedPreferences(currentUser), ...preferences }));
+        setPage(0);
+        setHasMore(nextHasMore);
+      }
+    }).finally(() => {
+      loadingRef.current = false;
+      if (active) setLoadingMore(false);
     });
     return () => { active = false; };
   }, [feedMode, preferences]));
+
+  const loadMore = useCallback(async () => {
+    if (loadingRef.current || !hasMore) return;
+    loadingRef.current = true;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const result = await getFeedPage(nextPage, 3);
+      setFeed((items) => rankFeed([...items, ...result.items], feedMode, { ...buildFeedPreferences(currentUser), ...preferences }));
+      setPage(nextPage);
+      setHasMore(result.hasMore);
+    } finally {
+      loadingRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [feedMode, hasMore, page, preferences]);
+
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    if (contentOffset.y + layoutMeasurement.height >= contentSize.height - 520) void loadMore();
+  }, [loadMore]);
 
   const toggleLike = (id: string) => setFeed((items) => items.map((post) => post.id === id
     ? { ...post, likedByMe: !post.likedByMe, likes: post.likes + (post.likedByMe ? -1 : 1) }
@@ -41,7 +75,7 @@ export default function HomeScreen() {
 
   return (
       <ScreenContainer safeAreaClassName="bg-background" className="bg-background">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container} onScroll={handleScroll} scrollEventThrottle={16} decelerationRate="fast" keyboardShouldPersistTaps="handled">
         <View style={styles.topbar}>
           <View style={styles.brandRow}><Logo variant="horizontal" width={94} height={30} accessibilityLabel="eKta" /></View>
           <View style={styles.topActions}>
@@ -95,6 +129,8 @@ export default function HomeScreen() {
           </View>
         </View>
         {feed.map((post) => <PostCard key={post.id} post={post} copy={copy} onOpen={() => router.push({ pathname: "/post/[id]", params: { id: post.id } })} onLike={() => toggleLike(post.id)} onReport={() => router.push({ pathname: "/report", params: { postId: post.id } })} />)}
+        {loadingMore ? <View style={styles.feedFooter}><ActivityIndicator color={C.terra} /><Text style={[styles.footerText, { fontFamily: bodyFont }]}>{language === "bn" ? "আরও আপডেট আসছে..." : "Loading more updates…"}</Text></View> : null}
+        {!loadingMore && !hasMore && feed.length ? <Text style={[styles.endText, { fontFamily: bodyFont }]}>{language === "bn" ? "এখানেই আপাতত শেষ।" : "You’re all caught up for now."}</Text> : null}
       </ScrollView>
     </ScreenContainer>
   );
@@ -138,4 +174,7 @@ const styles = StyleSheet.create({
   liveText: { color: C.muted, fontSize: 10, fontWeight: "700" },
   toast: { position: "absolute", bottom: 28, left: 18, right: 18, backgroundColor: C.green, padding: 13, borderRadius: 14, flexDirection: "row", alignItems: "center", gap: 8 },
   toastText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
+  feedFooter: { minHeight: 58, alignItems: "center", justifyContent: "center", gap: 6 },
+  footerText: { color: C.muted, fontSize: 11 },
+  endText: { color: C.muted, fontSize: 11, textAlign: "center", paddingVertical: 18 },
 });
