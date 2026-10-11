@@ -48,6 +48,7 @@ export default function HomeScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [feedError, setFeedError] = useState(false);
+  const [feedOffline, setFeedOffline] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const loadingRef = useRef(false);
 
@@ -57,10 +58,12 @@ export default function HomeScreen() {
     setRefreshing(true);
     setFeedError(false);
     try {
-      const { items, hasMore: nextHasMore } = await getFeedPage(0, 3);
+      const { items, hasMore: nextHasMore, fromCache } = await getFeedPage(0, 3);
       setFeed(rankFeed(items, feedMode, { ...buildFeedPreferences(currentUser), ...preferences }));
       setPage(0);
       setHasMore(nextHasMore);
+      setFeedOffline(fromCache && items.length > 0);
+      setFeedError(fromCache && items.length === 0);
     } catch {
       setFeedError(true);
     } finally {
@@ -80,10 +83,14 @@ export default function HomeScreen() {
     try {
       const nextPage = page + 1;
       const result = await getFeedPage(nextPage, 3);
-      setFeed((items) => rankFeed([...items, ...result.items], feedMode, { ...buildFeedPreferences(currentUser), ...preferences }));
+      setFeed((items) => {
+        const merged = [...items, ...result.items];
+        return rankFeed([...new Map(merged.map((item) => [item.id, item])).values()], feedMode, { ...buildFeedPreferences(currentUser), ...preferences });
+      });
       setPage(nextPage);
       setHasMore(result.hasMore);
-      setFeedError(false);
+      setFeedOffline(result.fromCache);
+      setFeedError(result.fromCache && !result.items.length);
     } catch {
       setFeedError(true);
     } finally {
@@ -156,6 +163,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
+        {feedOffline ? <View style={styles.offlineBanner} accessibilityLiveRegion="polite"><MaterialIcons name="cloud-off" size={17} color={C.terra} /><Text style={[styles.offlineText, { fontFamily: bodyFont }]}>{copy.offlineBanner}</Text><Pressable onPress={() => void reloadFeed()} accessibilityRole="button" accessibilityLabel={copy.retry}><Text style={[styles.offlineRetry, { fontFamily: mediumFont }]}>{copy.retry}</Text></Pressable></View> : null}
         {feedError ? <View style={styles.errorCard} accessibilityRole="alert"><View style={styles.errorIcon}><MaterialIcons name="cloud-off" size={24} color={C.terra} /></View><View style={styles.errorCopy}><Text style={[styles.errorTitle, { fontFamily: mediumFont }]}>{copy.feedErrorTitle}</Text><Text style={[styles.errorBody, { fontFamily: bodyFont }]}>{copy.feedErrorBody}</Text></View><Pressable onPress={() => void reloadFeed()} style={styles.retryButton} accessibilityRole="button" accessibilityLabel={copy.retry}><Text style={[styles.retryText, { fontFamily: mediumFont }]}>{copy.retry}</Text></Pressable></View> : null}
         {refreshing && !feed.length ? <FeedSkeleton /> : null}
         {feed.map((post) => <PostCard key={post.id} post={post} copy={copy} onOpen={() => router.push({ pathname: "/post/[id]", params: { id: post.id } })} onLike={() => toggleLike(post.id)} onReport={() => router.push({ pathname: "/report", params: { postId: post.id } })} />)}
@@ -208,6 +216,9 @@ const styles = StyleSheet.create({
   footerText: { color: C.muted, fontSize: 11 },
   endText: { color: C.muted, fontSize: 11, textAlign: "center", paddingVertical: 18 },
   errorCard: { backgroundColor: C.paper, borderWidth: 1, borderColor: C.line, borderRadius: 18, padding: 13, marginBottom: 14, flexDirection: "row", alignItems: "center", gap: 10 },
+  offlineBanner: { backgroundColor: C.primaryContainer, borderWidth: 1, borderColor: C.line, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 9, marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 7 },
+  offlineText: { color: C.muted, fontSize: 11, flex: 1 },
+  offlineRetry: { color: C.terra, fontSize: 11, fontWeight: "800" },
   errorIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.primaryContainer, alignItems: "center", justifyContent: "center" },
   errorCopy: { flex: 1 },
   errorTitle: { color: C.ink, fontSize: 12, fontWeight: "800" },

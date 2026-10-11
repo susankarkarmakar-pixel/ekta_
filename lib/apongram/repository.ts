@@ -1,24 +1,50 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { commentsByPost, currentUser, demoReels, posts, profiles, topics } from "./mock-data";
 import { selectReels } from "./reel-utils";
 import { storagePublicUrl, supabaseConfig, supabaseFetch } from "./supabase";
 import type { Comment, Post, Profile, VideoCompression, OverlayPosition, OverlaySticker } from "./types";
 
 export const repositoryMode = supabaseConfig.isConfigured ? "supabase" : "demo";
+const FEED_CACHE_KEY = "@ekta/feed-cache-v1";
 
-export async function getFeedPage(page = 0, pageSize = 6): Promise<{ items: Post[]; hasMore: boolean }> {
+async function readFeedCache(): Promise<Post[]> {
+  try {
+    const raw = await AsyncStorage.getItem(FEED_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as { items?: Post[] };
+    return Array.isArray(parsed.items) ? parsed.items : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeFeedCache(items: Post[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(FEED_CACHE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), items }));
+  } catch {
+    // Caching is best effort and must never block the feed.
+  }
+}
+
+export async function getFeedPage(page = 0, pageSize = 6): Promise<{ items: Post[]; hasMore: boolean; fromCache: boolean }> {
   const from = page * pageSize;
   const to = from + pageSize - 1;
   if (!supabaseConfig.isConfigured) {
     const demoFeed = [...posts, ...demoReels];
     const items = demoFeed.slice(from, to + 1);
-    return { items, hasMore: to + 1 < demoFeed.length };
+    return { items, hasMore: to + 1 < demoFeed.length, fromCache: false };
   }
+  const cachedFeed = await readFeedCache();
   try {
     const rows = await supabaseFetch<Post[]>(`posts?select=*&order=created_at.desc&offset=${from}&limit=${pageSize}`);
-    return { items: rows, hasMore: rows.length === pageSize };
+    const merged = [...(page === 0 ? [] : cachedFeed), ...rows];
+    const unique = [...new Map(merged.map((item) => [item.id, item])).values()];
+    await writeFeedCache(unique);
+    return { items: rows, hasMore: rows.length === pageSize, fromCache: false };
   } catch {
-    const items = posts.slice(from, to + 1);
-    return { items, hasMore: to + 1 < posts.length };
+    const source = cachedFeed.length ? cachedFeed : posts;
+    const items = source.slice(from, to + 1);
+    return { items, hasMore: to + 1 < source.length, fromCache: true };
   }
 }
 
