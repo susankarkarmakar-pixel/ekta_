@@ -51,7 +51,7 @@ export const copy = {
   bn: {
     home: "ফিড", discover: "খুঁজুন", create: "পোস্ট", alerts: "বার্তা", profile: "প্রোফাইল",
     goodMorning: "আপনার এলাকার খবর", feedIntro: "যাঁদের আপনি চেনেন, তাঁদের কাছ থেকে আজকের আপডেট।",
-    whatHappened: "আজ আপনার এলাকায় কী ঘটছে?", photo: "ছবি", share: "শেয়ার করুন", latest: "সাম্প্রতিক",
+    whatHappened: "আজ আপনার এলাকায় কী ঘটছে?", photo: "ছবি", share: "শেয়ার করুন", latest: "সাম্প্রতিক", refreshFeed: "ফিড রিফ্রেশ করুন", pullToRefresh: "রিফ্রেশ করতে নিচে টানুন", releaseToRefresh: "রিফ্রেশ করতে ছেড়ে দিন",
     following: "ফলো করছেন", followers: "ফলোয়ার", popularTopics: "চলতি বিষয়", exploreIntro: "মানুষ, গল্প আর বিষয় খুঁজে নিন", trendingNow: "এখন যা চলছে", clearSearch: "খোঁজ মুছুন", comments: "মন্তব্য",
     comment: "মন্তব্য করুন", likes: "লাইক", follow: "ফলো", followingAction: "ফলো করছেন",
     searchPlaceholder: "মানুষ, পোস্ট বা #বিষয় খুঁজুন", people: "মানুষ", posts: "পোস্ট", topics: "বিষয়",
@@ -83,7 +83,7 @@ export const copy = {
   en: {
     home: "Feed", discover: "Discover", create: "Post", alerts: "Alerts", profile: "Profile",
     goodMorning: "Your local feed", feedIntro: "Fresh updates from people and places you already know.",
-    whatHappened: "What’s happening in your area?", photo: "Photo", share: "Share", latest: "Latest",
+    whatHappened: "What’s happening in your area?", photo: "Photo", share: "Share", latest: "Latest", refreshFeed: "Refresh feed", pullToRefresh: "Pull down to refresh", releaseToRefresh: "Release to refresh",
     following: "Following", followers: "followers", popularTopics: "Topics people are talking about", exploreIntro: "Find people, stories and topics worth following", trendingNow: "Trending now", clearSearch: "Clear search", comments: "comments",
     comment: "Comment", likes: "likes", follow: "Follow", followingAction: "Following",
     searchPlaceholder: "Search people, posts or #topics", people: "People", posts: "Posts", topics: "Topics",

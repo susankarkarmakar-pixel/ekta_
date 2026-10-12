@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type NativeTouchEvent } from "react-native";
 import { Avatar } from "@/components/apongram/Avatar";
 import { PostCard } from "@/components/apongram/PostCard";
 import { TopicChip } from "@/components/apongram/TopicChip";
@@ -51,8 +51,11 @@ export default function HomeScreen() {
   const [feedOffline, setFeedOffline] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [webPullDistance, setWebPullDistance] = useState(0);
   const loadingRef = useRef(false);
   const activeVideoRef = useRef<string | null>(null);
+  const webPullStartY = useRef<number | null>(null);
+  const scrollOffsetY = useRef(0);
   const cardLayouts = useRef<Record<string, { y: number; height: number }>>({});
 
   const setActiveVideo = useCallback((id: string | null) => {
@@ -120,6 +123,7 @@ export default function HomeScreen() {
 
   const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    scrollOffsetY.current = contentOffset.y;
     const viewportTop = contentOffset.y;
     const viewportBottom = viewportTop + layoutMeasurement.height;
     let bestId: string | null = null;
@@ -139,19 +143,37 @@ export default function HomeScreen() {
     if (contentOffset.y + layoutMeasurement.height >= contentSize.height - 520) void loadMore();
   }, [feed, loadMore, setActiveVideo]);
 
+  const handleWebTouchStart = (event: NativeSyntheticEvent<NativeTouchEvent>) => {
+    if (Platform.OS === "web" && scrollOffsetY.current <= 0 && !refreshing) webPullStartY.current = event.nativeEvent.pageY;
+  };
+  const handleWebTouchMove = (event: NativeSyntheticEvent<NativeTouchEvent>) => {
+    if (Platform.OS !== "web" || webPullStartY.current === null) return;
+    const distance = Math.max(0, Math.min(96, event.nativeEvent.pageY - webPullStartY.current));
+    setWebPullDistance(distance);
+  };
+  const handleWebTouchEnd = () => {
+    if (Platform.OS !== "web") return;
+    const shouldRefresh = webPullDistance >= 64;
+    webPullStartY.current = null;
+    setWebPullDistance(0);
+    if (shouldRefresh) void reloadFeed();
+  };
+
   const toggleLike = (id: string) => setFeed((items) => items.map((post) => post.id === id
     ? { ...post, likedByMe: !post.likedByMe, likes: post.likes + (post.likedByMe ? -1 : 1) }
     : post));
 
   return (
       <ScreenContainer safeAreaClassName="bg-background" className="bg-background">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container} onScroll={handleScroll} scrollEventThrottle={16} decelerationRate={Platform.OS === "ios" ? 0.985 : "normal"} overScrollMode="never" bounces keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reloadFeed()} tintColor={C.terra} colors={[C.terra]} progressBackgroundColor={C.paper} /> }>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container} onScroll={handleScroll} onTouchStart={handleWebTouchStart} onTouchMove={handleWebTouchMove} onTouchEnd={handleWebTouchEnd} scrollEventThrottle={16} decelerationRate={Platform.OS === "ios" ? 0.985 : "normal"} overScrollMode="never" bounces keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reloadFeed()} tintColor={C.terra} colors={[C.terra]} progressBackgroundColor={C.paper} /> }>
+        {Platform.OS === "web" && webPullDistance > 0 ? <View style={{ height: Math.min(webPullDistance, 72), alignItems: "center", justifyContent: "center", overflow: "hidden" }}><MaterialIcons name={webPullDistance >= 64 ? "refresh" : "arrow-downward"} size={18} color={C.terra} /><Text style={{ color: C.terra, fontFamily: bodyFont, fontSize: 10, marginTop: 2 }}>{webPullDistance >= 64 ? copy.releaseToRefresh : copy.pullToRefresh}</Text></View> : null}
         <View style={styles.topbar}>
           <View style={styles.brandRow}><Logo variant="horizontal" width={94} height={30} accessibilityLabel="eKta" /></View>
           <View style={styles.topActions}>
             <Pressable onPress={toggleLanguage} style={styles.lang}><Text style={[styles.langText, { fontFamily: mediumFont }]}>{language === "bn" ? "EN" : "বাং"}</Text></Pressable>
             <Pressable onPress={() => router.push("/(tabs)/discover")} accessibilityLabel={copy.discover}><MaterialIcons name="search" size={23} color={C.ink} /></Pressable>
             <Pressable onPress={() => router.push("/(tabs)/alerts")} accessibilityLabel={copy.alerts}><MaterialIcons name="notifications-none" size={23} color={C.ink} /></Pressable>
+            {Platform.OS === "web" ? <Pressable onPress={() => void reloadFeed()} accessibilityRole="button" accessibilityLabel={copy.refreshFeed} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}><MaterialIcons name="refresh" size={21} color={C.terra} /></Pressable> : null}
             <Pressable onPress={() => router.push("/(tabs)/profile")}><Avatar profile={currentUser} size={32} /></Pressable>
           </View>
         </View>
