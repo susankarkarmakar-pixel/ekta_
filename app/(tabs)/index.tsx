@@ -55,6 +55,7 @@ export default function HomeScreen() {
   const loadingRef = useRef(false);
   const activeVideoRef = useRef<string | null>(null);
   const webPullStartY = useRef<number | null>(null);
+  const webPullDistanceRef = useRef(0);
   const scrollOffsetY = useRef(0);
   const cardLayouts = useRef<Record<string, { y: number; height: number }>>({});
 
@@ -89,6 +90,39 @@ export default function HomeScreen() {
       setRefreshing(false);
     }
   }, [feedMode, preferences]);
+
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const onDocumentTouchStart = (event: globalThis.TouchEvent) => {
+      const touch = event.touches[0];
+      if (touch && scrollOffsetY.current <= 0 && !refreshing) webPullStartY.current = touch.pageY;
+    };
+    const onDocumentTouchMove = (event: globalThis.TouchEvent) => {
+      const touch = event.touches[0];
+      if (!touch || webPullStartY.current === null) return;
+      const distance = Math.max(0, Math.min(96, touch.pageY - webPullStartY.current));
+      webPullDistanceRef.current = distance;
+      setWebPullDistance(distance);
+    };
+    const onDocumentTouchEnd = () => {
+      if (webPullStartY.current === null) return;
+      const shouldRefresh = webPullDistanceRef.current >= 64;
+      webPullStartY.current = null;
+      webPullDistanceRef.current = 0;
+      setWebPullDistance(0);
+      if (shouldRefresh) void reloadFeed();
+    };
+    document.addEventListener("touchstart", onDocumentTouchStart, { passive: true });
+    document.addEventListener("touchmove", onDocumentTouchMove, { passive: true });
+    document.addEventListener("touchend", onDocumentTouchEnd, { passive: true });
+    document.addEventListener("touchcancel", onDocumentTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", onDocumentTouchStart);
+      document.removeEventListener("touchmove", onDocumentTouchMove);
+      document.removeEventListener("touchend", onDocumentTouchEnd);
+      document.removeEventListener("touchcancel", onDocumentTouchEnd);
+    };
+  }, [refreshing, reloadFeed]);
 
   useFocusEffect(useCallback(() => {
     void reloadFeed();
@@ -149,12 +183,14 @@ export default function HomeScreen() {
   const handleWebTouchMove = (event: NativeSyntheticEvent<NativeTouchEvent>) => {
     if (Platform.OS !== "web" || webPullStartY.current === null) return;
     const distance = Math.max(0, Math.min(96, event.nativeEvent.pageY - webPullStartY.current));
+    webPullDistanceRef.current = distance;
     setWebPullDistance(distance);
   };
   const handleWebTouchEnd = () => {
     if (Platform.OS !== "web") return;
-    const shouldRefresh = webPullDistance >= 64;
+    const shouldRefresh = webPullDistanceRef.current >= 64;
     webPullStartY.current = null;
+    webPullDistanceRef.current = 0;
     setWebPullDistance(0);
     if (shouldRefresh) void reloadFeed();
   };
