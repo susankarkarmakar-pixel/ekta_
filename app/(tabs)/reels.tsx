@@ -2,6 +2,8 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Animated,
+  Easing,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -84,6 +86,10 @@ function ReelCard({
     instance.muted = true;
   });
   const [paused, setPaused] = useState(false);
+  const [likeScale] = useState(() => new Animated.Value(1));
+  const [burstScale] = useState(() => new Animated.Value(0.55));
+  const [burstOpacity] = useState(() => new Animated.Value(0));
+  const [showLikeBurst, setShowLikeBurst] = useState(false);
 
   useEffect(() => {
     // expo-video is an imperative media API; synchronize its player with React state.
@@ -97,6 +103,18 @@ function ReelCard({
   }, [active, muted, paused, player]);
 
   const togglePlayback = () => setPaused((value) => !value);
+  const handleLike = () => {
+    onToggleLike();
+    setShowLikeBurst(true);
+    likeScale.setValue(0.82);
+    burstScale.setValue(0.55);
+    burstOpacity.setValue(1);
+    Animated.parallel([
+      Animated.spring(likeScale, { toValue: 1, friction: 4, tension: 90, useNativeDriver: true }),
+      Animated.timing(burstScale, { toValue: 1.18, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(burstOpacity, { toValue: 0, duration: 520, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+    ]).start(({ finished }) => { if (finished) setShowLikeBurst(false); });
+  };
   const caption = reel.body.trim();
 
   return (
@@ -122,16 +140,17 @@ function ReelCard({
             <MaterialIcons name="play-arrow" size={42} color={COLORS.white} />
           </View>
         ) : null}
+        {showLikeBurst ? <Animated.View pointerEvents="none" style={[styles.likeBurst, { opacity: burstOpacity, transform: [{ scale: burstScale }] }]}><MaterialIcons name="favorite" size={72} color={COLORS.terra} /></Animated.View> : null}
 
         <View pointerEvents="box-none" style={styles.reelOverlay}>
         <View style={styles.sideActions}>
           <Pressable
-            onPress={onToggleLike}
+            onPress={handleLike}
             style={styles.actionButton}
             accessibilityRole="button"
             accessibilityLabel={`${copy.likeVideo} · ${likes}`}
           >
-            <MaterialIcons name={liked ? "favorite" : "favorite-border"} size={29} color={liked ? COLORS.terra : COLORS.white} />
+            <Animated.View style={{ transform: [{ scale: likeScale }] }}><MaterialIcons name={liked ? "favorite" : "favorite-border"} size={29} color={liked ? COLORS.terra : COLORS.white} /></Animated.View>
             <Text style={[styles.actionLabel, { fontFamily: mediumFont }]}>{formatCount(likes)}</Text>
           </Pressable>
           <Pressable
@@ -281,6 +300,16 @@ export default function ReelsScreen() {
     setCommentDraft("");
   };
 
+  const openComments = (reel: Post) => {
+    setCommentThreads((current) => current[reel.id] ? current : {
+      ...current,
+      [reel.id]: language === "bn"
+        ? ["নমুনা · ভিডিওর mood দারুণ হয়েছে।", "এই ধরনের local story আরও দেখতে চাই!"]
+        : ["Sample · Love the mood of this video.", "Would love to see more local stories like this!"],
+    });
+    setSelectedReel(reel);
+  };
+
   const openCreator = () => router.push({ pathname: "/(tabs)/create", params: { mode: "reel" } });
   const selectedThread = useMemo(
     () => selectedReel ? commentThreads[selectedReel.id] ?? [] : [],
@@ -324,7 +353,7 @@ export default function ReelsScreen() {
                   copy={copy}
                   onToggleMute={() => setMuted((value) => !value)}
                   onToggleLike={() => toggleLike(item)}
-                  onOpenComments={() => setSelectedReel(item)}
+                  onOpenComments={() => openComments(item)}
                   onShare={() => void shareReel(item)}
                 />
               </View>
@@ -442,6 +471,7 @@ const styles = StyleSheet.create({
   locationText: { color: COLORS.white, fontSize: 10, fontWeight: "700", flexShrink: 1 },
   tags: { color: "#F7D8C9", fontSize: 10, fontWeight: "800", marginTop: 5 },
   playIndicator: { position: "absolute", alignSelf: "center", top: "45%", width: 72, height: 72, borderRadius: 36, backgroundColor: "rgba(0,0,0,0.42)", alignItems: "center", justifyContent: "center", zIndex: 2 },
+  likeBurst: { position: "absolute", alignSelf: "center", top: "39%", zIndex: 3, shadowColor: COLORS.terra, shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 5 }, elevation: 8 },
   headerOverlay: { ...StyleSheet.absoluteFill, justifyContent: "flex-start", zIndex: 8 },
   headerRow: { paddingHorizontal: 16, paddingTop: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   headerTitleWrap: { flex: 1, marginRight: 10 },
