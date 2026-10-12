@@ -15,6 +15,8 @@ import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { LanguageProvider } from "@/lib/apongram/LanguageContext";
 import { FeedPreferencesProvider } from "@/lib/apongram/FeedPreferencesContext";
+import { NotificationPreferencesProvider } from "@/lib/apongram/NotificationPreferencesContext";
+import { PushNotificationsProvider } from "@/lib/apongram/PushNotificationsProvider";
 import { SafeAreaFrameContext, SafeAreaInsetsContext, SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-context";
 import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 import { trpc, createTRPCClient } from "@/lib/trpc";
