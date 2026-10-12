@@ -93,9 +93,20 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
+    const findScrollableParent = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return null;
+      let node: HTMLElement | null = target;
+      while (node && node !== document.body) {
+        const style = window.getComputedStyle(node);
+        if ((style.overflowY === "auto" || style.overflowY === "scroll") && node.scrollHeight > node.clientHeight) return node;
+        node = node.parentElement;
+      }
+      return null;
+    };
     const onDocumentTouchStart = (event: globalThis.TouchEvent) => {
       const touch = event.touches[0];
-      if (touch && scrollOffsetY.current <= 0 && !refreshing) webPullStartY.current = touch.pageY;
+      const scroller = findScrollableParent(event.target);
+      if (touch && scroller && scroller.scrollTop <= 0 && scrollOffsetY.current <= 0 && !refreshing) webPullStartY.current = touch.pageY;
     };
     const onDocumentTouchMove = (event: globalThis.TouchEvent) => {
       const touch = event.touches[0];
