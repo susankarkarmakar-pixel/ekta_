@@ -29,8 +29,8 @@ function FeedSkeleton() {
   }, [opacity]);
   return <View accessibilityLabel="Loading feed" accessible>
     {[0, 1].map((item) => <Animated.View key={item} style={[styles.skeletonCard, { opacity }]}>
-      <View style={styles.skeletonHeader}><View style={styles.skeletonAvatar} /><View style={styles.skeletonHeaderCopy}><View style={styles.skeletonName} /><View style={styles.skeletonMeta} /></View></View>
-      <View style={styles.skeletonLineWide} /><View style={styles.skeletonLine} /><View style={styles.skeletonMedia} /><View style={styles.skeletonActions}><View style={styles.skeletonAction} /><View style={styles.skeletonAction} /><View style={styles.skeletonActionSmall} /></View>
+      <View style={styles.skeletonHeader}><View style={styles.skeletonAvatar} /><View style={styles.skeletonHeaderCopy}><View style={styles.skeletonName} /><View style={styles.skeletonMeta} /></View><View style={styles.skeletonMenu} /></View>
+      <View style={styles.skeletonLineWide} /><View style={styles.skeletonLine} /><View style={styles.skeletonMedia} /><View style={styles.skeletonLocation} /><View style={styles.skeletonTags}><View style={styles.skeletonTag} /><View style={styles.skeletonTagShort} /></View><View style={styles.skeletonActions}><View style={styles.skeletonAction} /><View style={styles.skeletonAction} /><View style={styles.skeletonActionSmall} /></View>
     </Animated.View>)}
   </View>;
 }
@@ -329,16 +329,21 @@ const styles = StyleSheet.create({
   errorBody: { color: C.muted, fontSize: 10, lineHeight: 15, marginTop: 2 },
   retryButton: { minHeight: 40, borderRadius: 20, backgroundColor: C.terra, paddingHorizontal: 13, alignItems: "center", justifyContent: "center" },
   retryText: { color: C.ivory, fontSize: 11, fontWeight: "800" },
-  skeletonCard: { backgroundColor: C.paper, borderRadius: 20, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: C.line },
+  skeletonCard: { backgroundColor: C.paper, borderRadius: 22, padding: 15, marginBottom: 16, borderWidth: 1, borderColor: C.line },
   skeletonHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
   skeletonAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.line },
   skeletonHeaderCopy: { flex: 1, gap: 7 },
+  skeletonMenu: { width: 24, height: 10, borderRadius: 5, backgroundColor: C.primaryContainer },
   skeletonName: { width: "42%", height: 12, borderRadius: 6, backgroundColor: C.line },
   skeletonMeta: { width: "28%", height: 9, borderRadius: 5, backgroundColor: C.primaryContainer },
   skeletonLineWide: { width: "92%", height: 13, borderRadius: 7, backgroundColor: C.primaryContainer, marginTop: 17 },
   skeletonLine: { width: "68%", height: 13, borderRadius: 7, backgroundColor: C.primaryContainer, marginTop: 8 },
-  skeletonMedia: { width: "100%", aspectRatio: 4 / 3, borderRadius: 16, backgroundColor: C.line, marginTop: 14 },
-  skeletonActions: { flexDirection: "row", justifyContent: "space-between", marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.line },
+  skeletonMedia: { width: "100%", aspectRatio: 4 / 3, borderRadius: 18, backgroundColor: C.line, marginTop: 13 },
+  skeletonLocation: { width: 106, height: 20, borderRadius: 999, backgroundColor: C.primaryContainer, marginTop: 10 },
+  skeletonTags: { flexDirection: "row", gap: 6, marginTop: 11 },
+  skeletonTag: { width: 72, height: 22, borderRadius: 999, backgroundColor: C.primaryContainer },
+  skeletonTagShort: { width: 58, height: 22, borderRadius: 999, backgroundColor: C.primaryContainer },
+  skeletonActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 13, paddingVertical: 4, paddingHorizontal: 3, borderRadius: 15, backgroundColor: C.primaryContainer },
   skeletonAction: { width: "23%", height: 12, borderRadius: 6, backgroundColor: C.primaryContainer },
   skeletonActionSmall: { width: "12%", height: 12, borderRadius: 6, backgroundColor: C.primaryContainer },
 });
