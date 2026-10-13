@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
-import { sendPhoneOtp, SupabaseAuthError, verifyPhoneOtp } from "@/lib/apongram/supabase-auth";
+import { sendEmailOtp, SupabaseAuthError, verifyEmailOtp } from "@/lib/apongram/supabase-auth";
 import { supabaseConfig } from "@/lib/apongram/supabase-config";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
 
@@ -16,7 +16,7 @@ export default function PhoneAuthScreen() {
   const { copy, language, toggleLanguage } = useLanguage();
   const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
   const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -41,7 +41,7 @@ export default function PhoneAuthScreen() {
         setResendIn(30);
         return;
       }
-      await sendPhoneOtp(phone);
+      await sendEmailOtp(email);
       setSent(true);
       setOtp("");
       setResendIn(30);
@@ -60,7 +60,7 @@ export default function PhoneAuthScreen() {
       if (!supabaseConfig.isConfigured) {
         if (otp.replace(/\D/g, "").length < 6) throw new Error(language === "bn" ? "৬ সংখ্যার OTP লিখুন।" : "Enter the 6-digit OTP.");
       } else {
-        await verifyPhoneOtp(otp, phone);
+        await verifyEmailOtp(otp, email);
       }
       setVerified(true);
     } catch (cause) {
@@ -94,8 +94,7 @@ export default function PhoneAuthScreen() {
       otpRefs.current[index - 1]?.focus();
     }
   };
-  const phoneDigits = phone.replace(/\D/g, "");
-  const canSend = phoneDigits.length === 10 || phoneDigits.length === 12;
+  const canSend = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const canVerify = otp.replace(/\D/g, "").length === 6;
 
   return (
@@ -114,7 +113,7 @@ export default function PhoneAuthScreen() {
           <View style={styles.landscape}><View style={styles.landscapeSun} /><View style={styles.landscapeHillBack} /><View style={styles.landscapeHillFront} /></View>
           <View style={styles.brandRow}><Logo variant="horizontal" width={118} height={36} accessibilityLabel="eKta" /></View>
           <Text style={[styles.tagline, { fontFamily: bodyFont }]}>{language === "bn" ? "একতায় আমরা · your community, connected" : "Your community, connected"}</Text>
-          <View style={styles.localPill}><View style={styles.dot} /><Text style={[styles.localText, { fontFamily: bodyFont }]}>{language === "bn" ? "আপনার স্থানীয় প্রতিবেশী নেটওয়ার্ক" : "Your local neighborhood network"}</Text></View>
+          <View style={styles.localPill}><View style={styles.dot} /><Text style={[styles.localText, { fontFamily: bodyFont }]}>{language === "bn" ? "ইমেইল OTP দিয়ে নিরাপদে সাইন ইন" : "Secure sign-in with email OTP"}</Text></View>
         </View>
         {verified ? (
           <View style={styles.verified}>
@@ -124,7 +123,7 @@ export default function PhoneAuthScreen() {
           </View>
         ) : (
           <View style={styles.form}>
-            <Text style={[styles.label, { fontFamily: mediumFont }]}>{sent ? copy.otpLabel : copy.phoneLabel}</Text>
+            <Text style={[styles.label, { fontFamily: mediumFont }]}>{sent ? copy.otpLabel : (language === "bn" ? "ইমেইল ঠিকানা" : "Email address")}</Text>
             {sent ? <View style={styles.otpRow} accessibilityRole="none">
               {Array.from({ length: 6 }, (_, index) => <TextInput
                 key={index}
@@ -142,18 +141,19 @@ export default function PhoneAuthScreen() {
                 style={[styles.otpBox, { fontFamily: mediumFont }, otpDigits[index] && styles.otpBoxFilled, index === otpDigits.length && styles.otpBoxActive]}
               />)}
             </View> : <View style={styles.inputWrap}>
-              <View style={styles.prefix}><Text style={styles.prefixText}>+91</Text></View>
               <TextInput
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="number-pad"
-                placeholder={copy.phonePlaceholder.replace("+91 ", "")}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                placeholder="you@example.com"
                 placeholderTextColor="#9A9080"
                 style={[styles.input, { fontFamily: bodyFont }]}
-                maxLength={12}
+                maxLength={120}
                 autoFocus
                 editable={!busy}
-                accessibilityLabel={copy.phoneLabel}
+                accessibilityLabel={language === "bn" ? "ইমেইল ঠিকানা" : "Email address"}
               />
             </View>}
             <Pressable

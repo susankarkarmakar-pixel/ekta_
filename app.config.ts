@@ -110,6 +110,14 @@ const config: ExpoConfig = {
     "expo-asset",
     "expo-router",
     [
+      "expo-notifications",
+      {
+        icon: "./assets/images/android-icon-monochrome.png",
+        color: "#B5482F",
+        defaultChannel: "community",
+      },
+    ],
+    [
       "expo-audio",
       {
         microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone.",

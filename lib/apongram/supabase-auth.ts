@@ -4,6 +4,7 @@ import { supabaseConfig } from "./supabase-config";
 
 const SESSION_KEY = "ekta.supabase.session";
 const OTP_PHONE_KEY = "ekta.supabase.otp.phone";
+const OTP_EMAIL_KEY = "ekta.supabase.otp.email";
 
 export type SupabaseUser = {
   id: string;
@@ -60,6 +61,14 @@ function normalizePhone(phone: string): string {
   throw new SupabaseAuthError("Enter a valid Indian mobile number");
 }
 
+function normalizeEmail(emailInput: string): string {
+  const email = emailInput.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new SupabaseAuthError("Enter a valid email address");
+  }
+  return email;
+}
+
 async function authRequest<T>(path: string, init: RequestInit): Promise<T> {
   requireConfigured();
   const response = await fetch(`${supabaseConfig.url}/auth/v1/${path}`, {
@@ -82,6 +91,28 @@ async function authRequest<T>(path: string, init: RequestInit): Promise<T> {
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+export async function sendEmailOtp(emailInput: string): Promise<void> {
+  const email = normalizeEmail(emailInput);
+  await authRequest("otp", {
+    method: "POST",
+    body: JSON.stringify({ email, create_user: true }),
+  });
+  await writeValue(OTP_EMAIL_KEY, email);
+}
+
+export async function verifyEmailOtp(otpInput: string, emailInput?: string): Promise<SupabaseSession> {
+  const email = normalizeEmail(emailInput ?? (await readValue(OTP_EMAIL_KEY) ?? ""));
+  const token = otpInput.replace(/\D/g, "");
+  if (!/^\d{6}$/.test(token)) throw new SupabaseAuthError("Enter the 6-digit OTP");
+  const session = await authRequest<SupabaseSession>("token?grant_type=otp", {
+    method: "POST",
+    body: JSON.stringify({ email, token, type: "email" }),
+  });
+  await saveSupabaseSession(session);
+  await removeValue(OTP_EMAIL_KEY);
+  return session;
 }
 
 export async function sendPhoneOtp(phoneInput: string): Promise<void> {
@@ -151,4 +182,5 @@ export async function clearSupabaseSession(): Promise<void> {
   }
   await removeValue(SESSION_KEY);
   await removeValue(OTP_PHONE_KEY);
+  await removeValue(OTP_EMAIL_KEY);
 }

@@ -10,9 +10,10 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const envPath = path.resolve(process.cwd(), ".env");
+const envPaths = [path.resolve(process.cwd(), ".env"), path.resolve(process.cwd(), ".env.local")];
 
-if (fs.existsSync(envPath)) {
+for (const envPath of envPaths) {
+  if (!fs.existsSync(envPath)) continue;
   const envContent = fs.readFileSync(envPath, "utf8");
   const lines = envContent.split("\n");
 

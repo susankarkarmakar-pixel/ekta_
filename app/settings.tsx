@@ -8,9 +8,10 @@ import { useLanguage } from "@/lib/apongram/LanguageContext";
 import { plannedLanguages } from "@/lib/apongram/languages";
 import { useFeedPreferences } from "@/lib/apongram/FeedPreferencesContext";
 import { FEED_REGIONS, FEED_TOPIC_OPTIONS } from "@/lib/apongram/feed-preferences";
+import { useNotificationPreferences } from "@/lib/apongram/NotificationPreferencesContext";
 
 export default function SettingsScreen() {
-  const router = useRouter(); const { language, setLanguage, copy } = useLanguage(); const { preferences, setRegion, toggleTopic, resetPreferences } = useFeedPreferences(); const [bulletins, setBulletins] = useState(true); const [replies, setReplies] = useState(true); const [showPlannedLanguages, setShowPlannedLanguages] = useState(false);
+  const router = useRouter(); const { language, setLanguage, copy } = useLanguage(); const { preferences, setRegion, toggleTopic, resetPreferences } = useFeedPreferences(); const { bulletins, replies, setBulletins, setReplies } = useNotificationPreferences(); const [showPlannedLanguages, setShowPlannedLanguages] = useState(false);
   const bn = language === "bn";
   const bodyFont = bn ? "HindSiliguri" : "HindSiliguriLatin";
   const mediumFont = bn ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";

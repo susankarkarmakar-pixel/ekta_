@@ -333,3 +333,11 @@ License to be decided. Until a licence file is added, all rights are reserved by
 - **ডেটাবেস:** শুরুতে ছোট, পরীক্ষার ফল দেখে ধাপে ধাপে বড় করা হবে (গাজোল, মালদা, পশ্চিমবঙ্গ, তারপর সারা ভারত)।
 - **নিরাপত্তা:** রিপোর্ট ও মডারেশন ব্যবস্থা, ডেটা সুরক্ষা আইন (DPDP Act, 2023) মাথায় রেখে নকশা। আধার নম্বর সংগ্রহ করা হয় না।
 - **চালানোর জন্য:** `pnpm install` তারপর `pnpm dev:metro`। Supabase কী না দিলে অ্যাপ ডেমো মোডে চলে।
+
+## Supabase Email OTP and push notifications
+
+The auth screen uses passwordless **Email OTP** rather than SMS, so it does not require a paid SMS provider. The project URL and publishable key are read from `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`; local development can use the ignored `.env.local` file. The app verifies the code with `type: "email"` and persists the returned session in SecureStore/localStorage.
+
+The Supabase built-in SMTP service is suitable for testing only: it currently delivers only to pre-authorized project team addresses and is limited to about 2 emails per hour. For public users, configure a free/low-cost custom SMTP provider such as Resend, Brevo, ZeptoMail, or SES; no service-role key belongs in the mobile app.
+
+The app also registers Expo Push Tokens on physical iOS/Android devices when permission is granted. Tokens are stored in `public.push_tokens` using `supabase/migrations/002_push_notifications.sql`, and `server/_core/expo-push.ts` provides the server-side Expo delivery helper. Native delivery requires an Expo/EAS project ID and a development/production build; web preview and simulators skip native token registration.
