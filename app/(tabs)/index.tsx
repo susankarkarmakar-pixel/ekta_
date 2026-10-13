@@ -49,6 +49,8 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [feedError, setFeedError] = useState(false);
   const [feedOffline, setFeedOffline] = useState(false);
+  const [refreshNotice, setRefreshNotice] = useState(false);
+  const [hiddenPostIds, setHiddenPostIds] = useState<string[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [webPullDistance, setWebPullDistance] = useState(0);
@@ -71,7 +73,7 @@ export default function HomeScreen() {
     setActiveVideo(firstVideo.id);
   }, [feed, setActiveVideo]);
 
-  const reloadFeed = useCallback(async () => {
+  const reloadFeed = useCallback(async (showFeedback = false) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
     setRefreshing(true);
@@ -83,6 +85,10 @@ export default function HomeScreen() {
       setHasMore(nextHasMore);
       setFeedOffline(fromCache && items.length > 0);
       setFeedError(fromCache && items.length === 0);
+      if (showFeedback && !fromCache) {
+        setRefreshNotice(true);
+        setTimeout(() => setRefreshNotice(false), 2200);
+      }
     } catch {
       setFeedError(true);
     } finally {
@@ -121,7 +127,7 @@ export default function HomeScreen() {
       webPullStartY.current = null;
       webPullDistanceRef.current = 0;
       setWebPullDistance(0);
-      if (shouldRefresh) void reloadFeed();
+      if (shouldRefresh) void reloadFeed(true);
     };
     document.addEventListener("touchstart", onDocumentTouchStart, { passive: true });
     document.addEventListener("touchmove", onDocumentTouchMove, { passive: true });
@@ -203,7 +209,7 @@ export default function HomeScreen() {
     webPullStartY.current = null;
     webPullDistanceRef.current = 0;
     setWebPullDistance(0);
-    if (shouldRefresh) void reloadFeed();
+    if (shouldRefresh) void reloadFeed(true);
   };
 
   const toggleLike = (id: string) => setFeed((items) => items.map((post) => post.id === id
@@ -212,7 +218,7 @@ export default function HomeScreen() {
 
   return (
       <ScreenContainer safeAreaClassName="bg-background" className="bg-background">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container} onScroll={handleScroll} onTouchStart={handleWebTouchStart} onTouchMove={handleWebTouchMove} onTouchEnd={handleWebTouchEnd} scrollEventThrottle={16} decelerationRate={Platform.OS === "ios" ? 0.985 : "normal"} overScrollMode="never" bounces keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reloadFeed()} tintColor={C.terra} colors={[C.terra]} progressBackgroundColor={C.paper} /> }>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container} onScroll={handleScroll} onTouchStart={handleWebTouchStart} onTouchMove={handleWebTouchMove} onTouchEnd={handleWebTouchEnd} scrollEventThrottle={16} decelerationRate={Platform.OS === "ios" ? 0.985 : "normal"} overScrollMode="never" bounces keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reloadFeed(true)} tintColor={C.terra} colors={[C.terra]} progressBackgroundColor={C.paper} /> }>
         {Platform.OS === "web" && webPullDistance > 0 ? <View style={{ height: Math.min(webPullDistance, 72), alignItems: "center", justifyContent: "center", overflow: "hidden" }}><MaterialIcons name={webPullDistance >= 64 ? "refresh" : "arrow-downward"} size={18} color={C.terra} /><Text style={{ color: C.terra, fontFamily: bodyFont, fontSize: 10, marginTop: 2 }}>{webPullDistance >= 64 ? copy.releaseToRefresh : copy.pullToRefresh}</Text></View> : null}
         <View style={styles.topbar}>
           <View style={styles.brandRow}><Logo variant="horizontal" width={94} height={30} accessibilityLabel="eKta" /></View>
@@ -220,16 +226,11 @@ export default function HomeScreen() {
             <Pressable onPress={toggleLanguage} style={styles.lang}><Text style={[styles.langText, { fontFamily: mediumFont }]}>{language === "bn" ? "EN" : "বাং"}</Text></Pressable>
             <Pressable onPress={() => router.push("/(tabs)/discover")} accessibilityLabel={copy.discover}><MaterialIcons name="search" size={23} color={C.ink} /></Pressable>
             <Pressable onPress={() => router.push("/(tabs)/alerts")} accessibilityLabel={copy.alerts}><MaterialIcons name="notifications-none" size={23} color={C.ink} /></Pressable>
-            {Platform.OS === "web" ? <Pressable onPress={() => void reloadFeed()} accessibilityRole="button" accessibilityLabel={copy.refreshFeed} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}><MaterialIcons name="refresh" size={21} color={C.terra} /></Pressable> : null}
+            <Pressable onPress={() => router.push("/(tabs)/create")} accessibilityRole="button" accessibilityLabel={language === "bn" ? "নতুন পোস্ট তৈরি করুন" : "Create a new post"} style={styles.createIcon}><MaterialIcons name="add" size={23} color={C.terra} /></Pressable>
+            {Platform.OS === "web" ? <Pressable onPress={() => void reloadFeed(true)} accessibilityRole="button" accessibilityLabel={copy.refreshFeed} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}><MaterialIcons name="refresh" size={21} color={C.terra} /></Pressable> : null}
             <Pressable onPress={() => router.push("/(tabs)/profile")}><Avatar profile={currentUser} size={32} /></Pressable>
           </View>
         </View>
-
-        <View style={styles.hero}><Text style={[styles.heroTitle, { fontFamily: headingFont }]}>{copy.goodMorning}</Text><Text style={[styles.heroSub, { fontFamily: bodyFont }]}>{copy.feedIntro}</Text></View>
-        {repositoryMode === "demo" && <View style={styles.demoBanner}><MaterialIcons name="info-outline" size={17} color={C.terra} /><Text style={[styles.demoText, { fontFamily: bodyFont }]}>{copy.demoModeText}</Text></View>}
-        <Pressable onPress={() => router.push("/(tabs)/create")} style={({ pressed }) => [styles.composer, pressed && { opacity: 0.82 }]}>
-          <Avatar profile={currentUser} size={38} /><Text style={[styles.composerText, { fontFamily: bodyFont }]}>{copy.whatHappened}</Text><MaterialIcons name="edit" size={19} color={C.terra} />
-        </Pressable>
 
         <View style={styles.storyHeader}>
           <Text style={[styles.sectionTitle, { fontFamily: headingFont }]}>{language === "bn" ? "স্টোরি" : "Stories"}</Text>
@@ -243,7 +244,7 @@ export default function HomeScreen() {
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.storyRail}>
           {[currentUser, ...profiles.slice(1, 5)].map((person, index) => (
-            <Pressable key={person.id} onPress={() => router.push("/(tabs)/create")} style={styles.storyItem}>
+            <Pressable key={person.id} onPress={() => index === 0 ? router.push("/(tabs)/create") : router.push({ pathname: "/(tabs)/profile", params: { id: person.id } })} style={styles.storyItem} accessibilityRole="button" accessibilityLabel={index === 0 ? (language === "bn" ? "আপনার স্টোরি তৈরি করুন" : "Create your story") : `View ${person.name}'s story`}>
               <View style={[styles.storyRing, index === 0 && styles.storyRingOwn]}>
                 <Avatar profile={person} size={48} />
                 {index === 0 && <View style={styles.storyPlus}><MaterialIcons name="add" size={12} color="#FFF" /></View>}
@@ -252,6 +253,9 @@ export default function HomeScreen() {
             </Pressable>
           ))}
         </ScrollView>
+
+        <View style={styles.hero}><Text style={[styles.heroTitle, { fontFamily: headingFont }]}>{copy.goodMorning}</Text><Text style={[styles.heroSub, { fontFamily: bodyFont }]}>{copy.feedIntro}</Text></View>
+        {repositoryMode === "demo" && <View style={styles.demoBanner}><MaterialIcons name="info-outline" size={17} color={C.terra} /><Text style={[styles.demoText, { fontFamily: bodyFont }]}>{copy.demoModeText}</Text></View>}
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.topics}>
           {topics.map((topic) => <TopicChip key={topic} label={topic} onPress={() => router.push({ pathname: "/(tabs)/discover", params: { q: topic } })} />)}
@@ -267,13 +271,14 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
-        {feedOffline ? <View style={styles.offlineBanner} accessibilityLiveRegion="polite"><MaterialIcons name="cloud-off" size={17} color={C.terra} /><Text style={[styles.offlineText, { fontFamily: bodyFont }]}>{copy.offlineBanner}</Text><Pressable onPress={() => void reloadFeed()} accessibilityRole="button" accessibilityLabel={copy.retry}><Text style={[styles.offlineRetry, { fontFamily: mediumFont }]}>{copy.retry}</Text></Pressable></View> : null}
-        {feedError ? <View style={styles.errorCard} accessibilityRole="alert"><View style={styles.errorIcon}><MaterialIcons name="cloud-off" size={24} color={C.terra} /></View><View style={styles.errorCopy}><Text style={[styles.errorTitle, { fontFamily: mediumFont }]}>{copy.feedErrorTitle}</Text><Text style={[styles.errorBody, { fontFamily: bodyFont }]}>{copy.feedErrorBody}</Text></View><Pressable onPress={() => void reloadFeed()} style={styles.retryButton} accessibilityRole="button" accessibilityLabel={copy.retry}><Text style={[styles.retryText, { fontFamily: mediumFont }]}>{copy.retry}</Text></Pressable></View> : null}
+        {feedOffline ? <View style={styles.offlineBanner} accessibilityLiveRegion="polite"><MaterialIcons name="cloud-off" size={17} color={C.terra} /><Text style={[styles.offlineText, { fontFamily: bodyFont }]}>{copy.offlineBanner}</Text><Pressable onPress={() => void reloadFeed(true)} accessibilityRole="button" accessibilityLabel={copy.retry}><Text style={[styles.offlineRetry, { fontFamily: mediumFont }]}>{copy.retry}</Text></Pressable></View> : null}
+        {feedError ? <View style={styles.errorCard} accessibilityRole="alert"><View style={styles.errorIcon}><MaterialIcons name="cloud-off" size={24} color={C.terra} /></View><View style={styles.errorCopy}><Text style={[styles.errorTitle, { fontFamily: mediumFont }]}>{copy.feedErrorTitle}</Text><Text style={[styles.errorBody, { fontFamily: bodyFont }]}>{copy.feedErrorBody}</Text></View><Pressable onPress={() => void reloadFeed(true)} style={styles.retryButton} accessibilityRole="button" accessibilityLabel={copy.retry}><Text style={[styles.retryText, { fontFamily: mediumFont }]}>{copy.retry}</Text></Pressable></View> : null}
         {refreshing && !feed.length ? <FeedSkeleton /> : null}
-        {feed.map((post) => <PostCard key={post.id} post={post} copy={copy} isVideoActive={activeVideoId === post.id} onLayout={(event) => handleCardLayout(post.id, event)} onOpen={() => router.push({ pathname: "/post/[id]", params: { id: post.id } })} onLike={() => toggleLike(post.id)} onReport={() => router.push({ pathname: "/report", params: { postId: post.id } })} />)}
+        {feed.filter((post) => !hiddenPostIds.includes(post.id)).map((post) => <PostCard key={post.id} post={post} copy={copy} isVideoActive={activeVideoId === post.id} onLayout={(event) => handleCardLayout(post.id, event)} onOpen={() => router.push({ pathname: "/post/[id]", params: { id: post.id } })} onAuthor={() => router.push({ pathname: "/(tabs)/profile", params: { id: post.author.id } })} onHide={() => setHiddenPostIds((ids) => [...ids, post.id])} onLike={() => toggleLike(post.id)} onReport={() => router.push({ pathname: "/report", params: { postId: post.id } })} />)}
         {loadingMore ? <View style={styles.feedFooter}><ActivityIndicator color={C.terra} /><Text style={[styles.footerText, { fontFamily: bodyFont }]}>{language === "bn" ? "আরও আপডেট আসছে..." : "Loading more updates…"}</Text></View> : null}
         {!loadingMore && !hasMore && feed.length ? <Text style={[styles.endText, { fontFamily: bodyFont }]}>{language === "bn" ? "এখানেই আপাতত শেষ।" : "You’re all caught up for now."}</Text> : null}
       </ScrollView>
+      {refreshNotice ? <View style={styles.toast} accessibilityRole="alert"><MaterialIcons name="check-circle" size={18} color="#FFF" /><Text style={[styles.toastText, { fontFamily: mediumFont }]}>{language === "bn" ? "ফিড আপডেট হয়েছে" : "Feed updated"}</Text></View> : null}
     </ScreenContainer>
   );
 }
@@ -284,6 +289,7 @@ const styles = StyleSheet.create({
   brandRow: { flexDirection: "row", alignItems: "center", gap: 9 },
   wordmarkWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
   topActions: { flexDirection: "row", alignItems: "center", gap: 12 },
+  createIcon: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: C.primaryContainer, borderWidth: 1, borderColor: C.line },
   lang: { borderWidth: 1, borderColor: C.line, borderRadius: 15, paddingHorizontal: 9, paddingVertical: 6, backgroundColor: C.card },
   langText: { color: C.terra, fontSize: 11, fontWeight: "800" },
   hero: { paddingTop: 22, paddingBottom: 15 },

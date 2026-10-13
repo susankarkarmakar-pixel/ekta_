@@ -2,7 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useAudioPlayer } from "expo-audio";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
@@ -192,26 +192,33 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
     : mode === "story"
       ? (language === "bn" ? "ছবি বা ভিডিও · ২৪ ঘণ্টা পরে স্টোরি মুছে যাবে।" : "Photo or video · disappears after 24 hours.")
       : copy.publicNote;
+  const modeDescription = mode === "reel"
+    ? (language === "bn" ? "৬০ সেকেন্ডের মধ্যে একটি ছোট ভিডিও গল্প তৈরি করুন।" : "Create a short video story up to 60 seconds.")
+    : mode === "story"
+      ? (language === "bn" ? "ছবি বা ভিডিও ২৪ ঘণ্টার জন্য শেয়ার করুন।" : "Share a photo or video for 24 hours.")
+      : (language === "bn" ? "আপনার এলাকার জন্য লেখা বা একটি ছবি শেয়ার করুন।" : "Share a useful note or photo from your area.");
 
   return (
     <ScreenContainer safeAreaClassName="bg-background" className="bg-background">
-      <View style={styles.container}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView style={styles.flex} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} accessibilityLabel={copy.back}><MaterialIcons name="close" size={24} color={C.ink} /></Pressable>
           <Text style={[styles.title, { fontFamily: headingFont }]}>{modeLabel}</Text>
-          <Pressable onPress={submit} disabled={busy || !canPublish} style={[styles.postButton, (busy || !canPublish) && styles.disabled]}>
-            <Text style={[styles.postButtonText, { fontFamily: mediumFont }]}>{mode === "reel" ? copy.publishReel : mode === "story" ? (language === "bn" ? "স্টোরিতে দিন" : "Add story") : copy.save}</Text>
+          <Pressable onPress={submit} disabled={busy || !canPublish} style={[styles.postButton, (busy || !canPublish) && styles.disabled]} accessibilityRole="button" accessibilityLabel={mode === "reel" ? copy.publishReel : copy.save}>
+            <Text style={[styles.postButtonText, { fontFamily: mediumFont }]}>{busy ? (language === "bn" ? "অপেক্ষা করুন…" : "Please wait…") : mode === "reel" ? copy.publishReel : mode === "story" ? (language === "bn" ? "স্টোরিতে দিন" : "Add story") : copy.save}</Text>
           </Pressable>
         </View>
 
         <View style={styles.modeBar}>
           {(["post", "reel", "story"] as PublishMode[]).map((item) => (
-            <Pressable key={item} onPress={() => { setMode(item); setMediaUri(null); setMediaType(null); setMusicTrackId(null); musicPlayer.pause(); setOverlayText(""); setOverlaySticker(null); setError(""); setSaved(false); }} style={[styles.modeButton, mode === item && styles.modeActive]}>
+            <Pressable key={item} onPress={() => { setMode(item); setMediaUri(null); setMediaType(null); setMusicTrackId(null); musicPlayer.pause(); setOverlayText(""); setOverlaySticker(null); setError(""); setSaved(false); }} style={[styles.modeButton, mode === item && styles.modeActive]} accessibilityRole="button" accessibilityState={{ selected: mode === item }}>
               <MaterialIcons name={item === "post" ? "edit" : item === "reel" ? "movie" : "auto-stories"} size={16} color={mode === item ? "#FFF" : C.terra} />
               <Text style={[styles.modeText, { fontFamily: mediumFont }, mode === item && styles.modeTextActive]}>{item === "post" ? (language === "bn" ? "পোস্ট" : "Post") : item === "reel" ? copy.reels : (language === "bn" ? "স্টোরি" : "Story")}</Text>
             </Pressable>
           ))}
         </View>
+        <View style={styles.modeHint}><MaterialIcons name={mode === "reel" ? "movie" : mode === "story" ? "auto-stories" : "edit-note"} size={16} color={C.terra} /><Text style={[styles.modeHintText, { fontFamily: bodyFont }]}>{modeDescription}</Text></View>
 
         <View style={styles.author}>
           <Avatar profile={currentUser} size={42} />
@@ -234,8 +241,8 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
           <View style={[styles.mediaChooser, busy && styles.disabled]}>
             <Text style={[styles.chooserTitle, { fontFamily: mediumFont }]}>{mode === "reel" ? (language === "bn" ? "রিলের ভিডিও যোগ করুন" : "Add a Reel video") : mode === "story" ? (language === "bn" ? "স্টোরির ছবি বা ভিডিও যোগ করুন" : "Add a story photo or video") : (language === "bn" ? "পোস্টে একটি ছবি যোগ করুন" : "Add one photo to your post")}</Text>
             <View style={styles.chooserActions}>
-              <Pressable onPress={() => chooseMedia("gallery")} disabled={busy} style={styles.mediaAction}><MaterialIcons name="photo-library" size={20} color={C.terra} /><Text style={[styles.mediaActionText, { fontFamily: mediumFont }]}>{language === "bn" ? "গ্যালারি" : "Gallery"}</Text></Pressable>
-              <Pressable onPress={() => chooseMedia("camera")} disabled={busy} style={styles.mediaAction}><MaterialIcons name={mode === "reel" ? "videocam" : "photo-camera"} size={20} color={C.terra} /><Text style={[styles.mediaActionText, { fontFamily: mediumFont }]}>{mode === "reel" ? (language === "bn" ? "ভিডিও তুলুন" : "Record") : (language === "bn" ? "ক্যামেরা" : "Camera")}</Text></Pressable>
+              <Pressable onPress={() => chooseMedia("gallery")} disabled={busy} style={styles.mediaAction} accessibilityRole="button"><MaterialIcons name="photo-library" size={20} color={C.terra} /><Text style={[styles.mediaActionText, { fontFamily: mediumFont }]}>{language === "bn" ? "গ্যালারি" : "Gallery"}</Text></Pressable>
+              <Pressable onPress={() => chooseMedia("camera")} disabled={busy} style={styles.mediaAction} accessibilityRole="button"><MaterialIcons name={mode === "reel" ? "videocam" : "photo-camera"} size={20} color={C.terra} /><Text style={[styles.mediaActionText, { fontFamily: mediumFont }]}>{mode === "reel" ? (language === "bn" ? "ভিডিও তুলুন" : "Record") : (language === "bn" ? "ক্যামেরা" : "Camera")}</Text></Pressable>
             </View>
             {mode === "reel" ? <Text style={[styles.videoHint, { fontFamily: bodyFont }]}>{language === "bn" ? "শুধু ভিডিও · সর্বোচ্চ ৬০ সেকেন্ড" : "Video only · 60 seconds max"}</Text> : null}
           </View>
@@ -265,15 +272,17 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
           </View>
         )}
 
-        {error ? <View style={styles.error}><MaterialIcons name="error-outline" size={17} color={C.terra} /><Text style={styles.errorText}>{error}</Text></View> : null}
+        {error ? <View style={styles.error} accessibilityRole="alert"><MaterialIcons name="error-outline" size={17} color={C.terra} /><Text style={styles.errorText}>{error}</Text></View> : null}
         {saved ? <View style={styles.success}><MaterialIcons name="check-circle" size={20} color={C.green} /><Text style={styles.successText}>{mode === "reel" ? copy.reelPublished : mode === "story" ? (language === "bn" ? "স্টোরিতে যোগ হয়েছে ✓" : "Added to your Story ✓") : copy.share}</Text></View> : null}
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 16 },
+  flex: { flex: 1 },
+  container: { paddingHorizontal: 16, paddingBottom: 34 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 10, paddingBottom: 12 },
   title: { color: C.ink, fontSize: 20, fontWeight: "700" },
   postButton: { backgroundColor: C.terra, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 11, shadowColor: C.ink, shadowOpacity: 0.16, shadowRadius: 7, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
@@ -284,6 +293,8 @@ const styles = StyleSheet.create({
   modeActive: { backgroundColor: C.paper },
   modeText: { color: C.muted, fontSize: 12, fontWeight: "800" },
   modeTextActive: { color: C.ink },
+  modeHint: { flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: C.primaryContainer, borderRadius: 13, paddingHorizontal: 11, paddingVertical: 9, marginBottom: 14 },
+  modeHintText: { flex: 1, color: C.muted, fontSize: 11, lineHeight: 16 },
   author: { flexDirection: "row", alignItems: "center", gap: 10 },
   name: { color: C.ink, fontWeight: "800", fontSize: 14 },
   meta: { color: C.muted, fontSize: 11, marginTop: 3 },
