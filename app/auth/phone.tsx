@@ -3,16 +3,23 @@ import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
-import { completeGoogleOAuthRedirect, getGoogleOAuthUrl, getSupabaseSession, sendEmailOtp, SupabaseAuthError, verifyEmailOtp } from "@/lib/apongram/supabase-auth";
+import { completeSupabaseRedirect, getGoogleOAuthUrl, getSupabaseSession, sendEmailOtp, SupabaseAuthError, verifyEmailOtp } from "@/lib/apongram/supabase-auth";
 import { supabaseConfig } from "@/lib/apongram/supabase-config";
 import { getStoredProfile, syncProfileToSupabase } from "@/lib/apongram/profile-store";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
 
 const LIGHT = Colors.light;
+
+function getEmailAuthRedirectUrl(): string {
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    return new URL("/auth/phone", window.location.origin).toString();
+  }
+  return Linking.createURL("auth/phone");
+}
 
 export default function PhoneAuthScreen() {
   const router = useRouter();
@@ -27,12 +34,42 @@ export default function PhoneAuthScreen() {
   const [error, setError] = useState("");
   const [resendIn, setResendIn] = useState(0);
   const otpRefs = useRef<(TextInput | null)[]>([]);
+  const handledAuthRedirect = useRef<string | null>(null);
 
   useEffect(() => {
     getSupabaseSession().then((session) => {
       if (session?.user?.id) router.replace("/(tabs)");
     }).catch(() => undefined);
   }, [router]);
+
+  useEffect(() => {
+    const handleAuthRedirect = async (url: string | null) => {
+      if (!url || !/(?:access_token|refresh_token|error|error_description|error_code)=/.test(url)) return;
+      if (handledAuthRedirect.current === url) return;
+      handledAuthRedirect.current = url;
+      setBusy(true);
+      setError("");
+      try {
+        await completeSupabaseRedirect(url);
+        const profile = await getStoredProfile();
+        await syncProfileToSupabase(profile);
+        router.replace("/(tabs)");
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : (language === "bn" ? "ইমেইল লিংক দিয়ে সাইন ইন সম্পূর্ণ করা যায়নি।" : "Email-link sign-in could not be completed."));
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    let subscription: ReturnType<typeof Linking.addEventListener> | undefined;
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      void handleAuthRedirect(window.location.href);
+    } else {
+      void Linking.getInitialURL().then(handleAuthRedirect).catch(() => undefined);
+      subscription = Linking.addEventListener("url", ({ url }) => void handleAuthRedirect(url));
+    }
+    return () => subscription?.remove();
+  }, [language, router]);
 
   useEffect(() => {
     if (!resendIn) return;
@@ -49,7 +86,7 @@ export default function PhoneAuthScreen() {
         setError(language === "bn" ? "বাস্তব ইমেইল OTP চালাতে Supabase URL ও publishable key configure করুন।" : "Email OTP is unavailable until the Supabase URL and publishable key are configured.");
         return;
       }
-      await sendEmailOtp(email);
+      await sendEmailOtp(email, getEmailAuthRedirectUrl());
       setSent(true);
       setOtp("");
       setResendIn(30);
@@ -65,7 +102,7 @@ export default function PhoneAuthScreen() {
     setBusy(true);
     setError("");
     try {
-      if (supabaseConfig.isConfigured) await sendEmailOtp(email);
+      if (supabaseConfig.isConfigured) await sendEmailOtp(email, getEmailAuthRedirectUrl());
       setOtp("");
       setResendIn(30);
     } catch (cause) {
@@ -86,7 +123,7 @@ export default function PhoneAuthScreen() {
       const redirectTo = Linking.createURL("oauth/callback");
       const result = await WebBrowser.openAuthSessionAsync(getGoogleOAuthUrl(redirectTo), redirectTo);
       if (result.type !== "success" || !result.url) return;
-      await completeGoogleOAuthRedirect(result.url);
+      await completeSupabaseRedirect(result.url);
       const profile = await getStoredProfile();
       await syncProfileToSupabase(profile);
       router.replace("/(tabs)");

@@ -1,7 +1,7 @@
 import { ThemedView } from "@/components/themed-view";
 import * as Api from "@/lib/_core/api";
 import * as Auth from "@/lib/_core/auth";
-import { completeGoogleOAuthRedirect, getSupabaseSession } from "@/lib/apongram/supabase-auth";
+import { completeSupabaseRedirect, getSupabaseSession } from "@/lib/apongram/supabase-auth";
 import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -97,7 +97,7 @@ export default function OAuthCallback() {
         // code/state exchange below.
         if (url && (url.includes("access_token=") || url.includes("refresh_token="))) {
           console.log("[OAuth] Supabase session found in callback URL");
-          await completeGoogleOAuthRedirect(url);
+          await completeSupabaseRedirect(url);
           const session = await getSupabaseSession();
           if (!session) throw new Error("Supabase session was not persisted");
           setStatus("success");
