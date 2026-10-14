@@ -66,7 +66,7 @@ export function LaunchAnimation({ onFinished }: LaunchAnimationProps) {
   }, [companyOpacity, logoOpacity, logoScale, nameOpacity, nameY, onFinished, overlayOpacity, reducedMotion]);
 
   return (
-    <Animated.View accessibilityRole="alert" accessibilityLabel="eKta Social. Band Sanket Pixel Technologies." style={[styles.overlay, { opacity: overlayOpacity }]}>
+    <Animated.View accessibilityRole="alert" accessibilityLabel="eKta Social. Sanket Pixel Technologies." style={[styles.overlay, { opacity: overlayOpacity }]}>
       <View style={styles.brandLockup}>
         <View style={styles.logoHalo}>
           <Animated.View style={{ opacity: logoOpacity, transform: [{ scale: logoScale }] }}>
@@ -78,11 +78,8 @@ export function LaunchAnimation({ onFinished }: LaunchAnimationProps) {
         <Animated.View style={{ opacity: nameOpacity, transform: [{ translateY: nameY }] }}>
           <Text style={styles.name}>eKta Social</Text>
         </Animated.View>
-        <Animated.Text style={[styles.company, { opacity: companyOpacity }]}>
-          Band Sanket Pixel Technologies
-        </Animated.Text>
       </View>
-      <Text style={styles.footer}>নিজের এলাকার খবর, কাজ আর কথার জন্য</Text>
+      <Animated.Text style={[styles.footer, { opacity: companyOpacity }]}>Sanket Pixel Technologies</Animated.Text>
     </Animated.View>
   );
 }
@@ -96,6 +93,5 @@ const styles = StyleSheet.create({
   dotTerra: { top: 11, right: 15, backgroundColor: C.terra },
   dotGreen: { bottom: 15, left: 13, backgroundColor: C.green },
   name: { color: C.ink, fontFamily: "Georgia", fontSize: 31, fontWeight: "700", letterSpacing: -0.5, marginTop: 4 },
-  company: { color: C.muted, fontSize: 10, fontWeight: "700", letterSpacing: 1.05, marginTop: 12, textTransform: "uppercase" },
-  footer: { position: "absolute", bottom: 28, color: C.muted, fontSize: 11, letterSpacing: 0.2 },
+  footer: { position: "absolute", bottom: 28, color: C.muted, fontSize: 11, fontWeight: "700", letterSpacing: 0.7 },
 });
