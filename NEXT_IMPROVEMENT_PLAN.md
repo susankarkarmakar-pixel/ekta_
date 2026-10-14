@@ -1,11 +1,31 @@
 # eKta — Next Improvement Plan
 
-**Updated:** 2026-10-11  
-**Current baseline:** Reels/Stories composer with gallery/camera capture, 60-second validation, trim preview, compression metadata, bundled music preview/mix controls, sticker/text overlay preview, seeded Reels feed, Supabase repository boundary, Bengali/English UI, and Vercel deployment.
+**Updated:** 2026-10-14
+**Current baseline:** Reels/Stories composer, seeded feed, Bengali/English UI, and Vercel deployment. Email OTP code is merged and the Supabase URL/publishable key are configured in Vercel; a fresh production deployment and custom SMTP delivery still need verification. Durable media publishing/rendering remains incomplete.
 
 ## Product goal for the next phase
 
-Move eKta from a convincing creator **preview** to a safe, durable community media workflow. A user should be able to create a Reel or Story, render the selected audio and overlays into the final media, upload it through authenticated storage, publish it durably, and see it consistently from another session.
+First make passwordless email sign-in reliable for ordinary users, then move eKta from a convincing creator **preview** to a safe, durable community media workflow. A user should be able to receive and verify an email OTP, remain signed in across sessions, and then create and retrieve durable community media.
+
+## Immediate release gate — Email OTP delivery
+
+**Status:** The app code and Vercel public Supabase variables are in place, and Supabase Email Auth is enabled. The current production site still needs a fresh deployment. Custom SMTP has not yet been verified.
+
+**Work items**
+
+1. Configure a transactional SMTP provider such as Resend with a verified sending domain; keep SMTP credentials in Supabase, never in the client bundle. See the [Supabase SMTP guide](https://supabase.com/docs/guides/auth/auth-smtp).
+2. In Supabase Auth, set the **Magic Link or OTP** email template to include `{{ .Token }}` so users receive the six-digit code expected by the app. See [Supabase passwordless email sign-in](https://supabase.com/docs/guides/auth/auth-email-passwordless).
+3. Redeploy the merged `main` branch so the static web bundle includes the Vercel environment variables.
+4. Align the app's resend cooldown with Supabase's configured per-address limit (default 60 seconds); surface rate-limit errors without implying a code was sent.
+5. Test the full flow with an email address that is not on the Supabase project team, including inbox/spam delivery, code verification, page reload, and session refresh.
+6. Add automated coverage for OTP request/verification failures, persistence, expired-session refresh, and sign-out.
+
+**Acceptance criteria**
+
+- A non-team user receives a six-digit OTP and can sign in without Google or a password.
+- A failed send or invalid code never appears as successful authentication.
+- A verified session survives a reload and can refresh safely after expiry.
+- SMTP credentials and Supabase service-role/secret keys never enter Vercel's public bundle.
 
 ## Priority order
 
@@ -126,6 +146,13 @@ Move eKta from a convincing creator **preview** to a safe, durable community med
 
 ## Recommended implementation sequence
 
+### Sprint 0 — Email OTP release hardening
+
+- Configure and verify custom SMTP plus the six-digit OTP email template.
+- Redeploy the merged authentication changes with the Vercel public variables.
+- Adjust resend timing and add auth-flow tests.
+- Complete one end-to-end sign-in using a non-team email address.
+
 ### Sprint 1 — Upload foundation
 
 - Supabase migration and Storage policies
@@ -163,6 +190,7 @@ Move eKta from a convincing creator **preview** to a safe, durable community med
 ### Automated
 
 - TypeScript and ESLint on every change
+- Auth tests for OTP send/verify, invalid and expired codes, session persistence/refresh, and logout
 - Repository tests for local/demo and Supabase paths
 - Manifest validation tests for duration, MIME, volume, position, and text length
 - FFmpeg fixture tests for duration, audio streams, and overlay presence
@@ -179,6 +207,7 @@ Move eKta from a convincing creator **preview** to a safe, durable community med
 ### Release gates
 
 - No client-side service-role secrets
+- Custom SMTP delivery works for non-team users; the OTP template includes `{{ .Token }}` and the production bundle is current
 - No local URI presented as durable public media
 - Rendered asset plays after a fresh session
 - Story expires correctly
@@ -197,4 +226,4 @@ Move eKta from a convincing creator **preview** to a safe, durable community med
 
 ## Immediate next ticket
 
-**Build the authenticated upload and render-manifest foundation.** Start with the Supabase migration, Storage policy design, `uploadMedia()` repository helper, render manifest type, and a publish state machine. Do not add more visual effects until a Reel can be durably uploaded and retrieved after a fresh session.
+**Close the email OTP release gate first.** Configure and verify custom SMTP, confirm the six-digit template, redeploy `main`, align resend timing, and test sign-in with a non-team email. After this gate passes, continue with the authenticated upload and render-manifest foundation: Supabase Storage policies, `uploadMedia()`, the render manifest, and a publish state machine. Do not add more visual effects until a Reel can be durably uploaded and retrieved after a fresh session.
