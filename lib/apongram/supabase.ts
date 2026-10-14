@@ -50,7 +50,7 @@ export async function uploadProfileAvatar(uri: string, userId: string): Promise<
 
 const MEDIA_BUCKET = "community-media";
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
-const MAX_VIDEO_BYTES = 120 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 const ALLOWED_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "video/mp4", "video/quicktime", "video/webm"]);
 
 function inferMediaType(uri: string, kind: MediaAssetKind, contentType: string): string {
