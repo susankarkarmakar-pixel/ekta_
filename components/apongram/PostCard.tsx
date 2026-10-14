@@ -47,7 +47,7 @@ export function PostCard({ post, copy, onOpen, onLike, onReport, onAuthor, onHid
   }, [entryProgress]);
   const sharePost = async () => {
     const links = createPostShareLinks(post.id);
-    const message = createPostShareMessage(post.id, post.body, post.author.handle, post.location);
+    const message = createPostShareMessage(post.id, post.body, post.author.handle, post.location, language);
     try {
       await Share.share({ message, url: links.webUrl }, { dialogTitle: copy.share });
     } catch {

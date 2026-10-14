@@ -1,4 +1,4 @@
-# eKta — কাজের তালিকা
+# eKta Social (একতা) — কাজের তালিকা
 
 ## 1. Bengali-first mobile app shell and navigation
 - The app is a portrait-first mobile experience for a focused civic/public-service community in Malda/North Bengal, not a national general-purpose clone.
@@ -36,7 +36,7 @@
 
 ## 7. GitHub source mirror and delivery readiness
 - The complete app source, Supabase migration and setup README are updated in `susankarkarmakar-pixel/ekta_` without committing protected values.
-- Native branding files and app configuration preserve the managed Expo identifiers and include the eKta visual identity.
+- Native branding files and app configuration preserve the managed Expo identifiers and include the eKta Social (একতা) visual identity.
 - The Metro listener on 8081 and API listener on 3000 start successfully, and the TypeScript check passes before delivery.
 
 ## 8. Vertical Reels browsing and engagement

@@ -9,7 +9,7 @@
 
 1. **Native splash — ০–০.৬ সেকেন্ড**
    - warm ivory background
-   - eKta leaf/conversation logo
+   - একতা leaf/conversation logo
    - app দ্রুত boot হওয়ার সময় static fallback
 2. **Brand reveal — ০.৬–১.৬ সেকেন্ড**
    - logo ছোট থেকে স্বাভাবিক scale-এ আসবে
@@ -50,7 +50,7 @@
 - `eKta Social`: editorial serif/Georgia-style heading
 - `Band Sanket Pixel Technologies`: ছোট, clean sans-serif uppercase বা title case
 - Company line যেন logo/name-এর চেয়ে visually subdued থাকে
-- Bengali locale থাকলে brand name English-এই রাখা যাবে; product UI পরে Bengali/English preference অনুযায়ী থাকবে
+- English locale-এ brand name `eKta Social`; Bengali locale-এ `একতা` দেখাতে হবে
 
 ## ৩. Technical architecture
 
@@ -61,7 +61,7 @@
 `app.config.ts`-এর বর্তমান `expo-splash-screen` configuration-এ:
 
 - warm ivory background সেট করা
-- dedicated eKta launch logo ব্যবহার করা
+- dedicated eKta Social launch logo ব্যবহার করা
 - `imageWidth` device অনুযায়ী readable রাখা
 - dark mode-এর জন্য আলাদা dark background রাখা
 

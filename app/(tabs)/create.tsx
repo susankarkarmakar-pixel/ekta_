@@ -344,7 +344,7 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
                       <MaterialIcons name={musicTrackId === track.id ? "radio-button-checked" : "radio-button-unchecked"} size={17} color={musicTrackId === track.id ? C.green : C.muted} />
                       <View style={styles.trackCopy}>
                         <Text style={styles.trackTitle}>{track.title}</Text>
-                        <Text style={styles.trackMeta}>{track.artist} · {track.mood}</Text>
+                        <Text style={styles.trackMeta}>{language === "bn" ? track.artistBn ?? track.artist : track.artist} · {track.mood}</Text>
                       </View>
                       <MaterialIcons name="play-arrow" size={16} color={C.terra} />
                     </Pressable>

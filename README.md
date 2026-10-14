@@ -1,15 +1,15 @@
-# eKta (একতা)
+# eKta Social (একতা)
 
 **A social network built in India, for India.**
 Short posts, photos, Reels and conversations in the languages people actually speak, starting with one block and growing to the whole country.
 
-> **Status: Pilot / pre-alpha.** eKta is being tested with a small group of residents of **Gazole Block, Malda District, West Bengal**. Features, data and policies will change. Do not treat the current build as production software.
+> **Status: Pilot / pre-alpha.** eKta Social is being tested with a small group of residents of **Gazole Block, Malda District, West Bengal**. Features, data and policies will change. Do not treat the current build as production software.
 
 ---
 
 ## Table of contents
 
-1. [What is eKta?](#what-is-ekta)
+1. [What is eKta Social?](#what-is-ekta-social)
 2. [Why India needs its own platform](#why-india-needs-its-own-platform)
 3. [How we are rolling out](#how-we-are-rolling-out)
 4. [Features](#features)
@@ -34,11 +34,11 @@ Short posts, photos, Reels and conversations in the languages people actually sp
 
 ---
 
-## What is eKta?
+## What is eKta Social?
 
-eKta is a social platform in the spirit of Instagram and X (Twitter): you follow people, post short updates and photos, watch short videos (Reels), like, comment and search by hashtag. It is designed **from the start for Indian users**: Indian languages first, low-bandwidth and mid-range Android phones first, phone-number sign-in, and local community at the centre.
+eKta Social is a social platform in the spirit of Instagram and X (Twitter): you follow people, post short updates and photos, watch short videos (Reels), like, comment and search by hashtag. It is designed **from the start for Indian users**: Indian languages first, low-bandwidth and mid-range Android phones first, email OTP sign-in, and local community at the centre.
 
-The name *eKta* comes from the Hindi/Bengali word for **unity**.
+The English brand is **eKta Social**; its Bengali name is **একতা**, meaning **unity**.
 
 ## Why India needs its own platform
 
@@ -50,7 +50,7 @@ The name *eKta* comes from the Hindi/Bengali word for **unity**.
 
 ## How we are rolling out
 
-eKta is deliberately starting small and growing in stages. The product is **India-wide in intent**; the pilot is local so that we can learn before we scale.
+eKta Social is deliberately starting small and growing in stages. The product is **India-wide in intent**; the pilot is local so that we can learn before we scale.
 
 | Stage | Audience | Goal |
 |------|----------|------|
@@ -244,14 +244,14 @@ Principle: **measure first, scale second.** Capacity is added only when pilot nu
 
 ## Safety, moderation and privacy
 
-eKta is intended for the Indian public, so it must follow Indian law and Indian norms of safety.
+eKta Social is intended for the Indian public, so it must follow Indian law and Indian norms of safety.
 
 - **Reporting.** Every post can be reported. Reports go to a moderation queue.
 - **Moderation.** Before any public launch beyond the pilot, a moderator role, action log, block and mute tools, and rate limits must exist.
 - **Community rules.** Clear Terms of Use, Community Guidelines and a Privacy Policy are required before wider release.
 - **Grievance redressal.** A named grievance officer and contact process will be published, as expected under the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.
 - **Data protection.** The platform is being designed with the Digital Personal Data Protection Act, 2023 in mind: consent, purpose limitation, data minimisation, account deletion and data export.
-- **Sensitive identifiers.** eKta does **not** collect Aadhaar numbers or other government ID numbers.
+- **Sensitive identifiers.** eKta Social does **not** collect Aadhaar numbers or other government ID numbers.
 - **Phone numbers** are used only for sign-in and are not shown publicly.
 - **Minors.** Age-appropriate rules and parental-consent handling must be defined before any open launch.
 - **No hidden profiling.** Phase 1 has no recommendation algorithm and no ad targeting.
@@ -299,7 +299,7 @@ To report a vulnerability, open a private security advisory on this repository i
 
 ## Contributing
 
-eKta is in an early pilot and the maintainer is currently the main contributor. Issues and suggestions are welcome, especially:
+eKta Social is in an early pilot and the maintainer is currently the main contributor. Issues and suggestions are welcome, especially:
 
 - Bengali and other Indian-language corrections
 - Accessibility and low-bandwidth improvements
@@ -327,7 +327,7 @@ License to be decided. Until a licence file is added, all rights are reserved by
 
 ## বাংলা সারসংক্ষেপ
 
-**eKta (একতা)** হলো ভারতের মানুষের জন্য, ভারতেই তৈরি একটি সোশ্যাল প্ল্যাটফর্ম, ইনস্টাগ্রাম ও টুইটারের (X) মতো ধাঁচে। এখানে পোস্ট, ছবি, রিলস, লাইক, কমেন্ট, ফলো ও হ্যাশট্যাগ সার্চ আছে।
+**eKta Social (একতা)** হলো ভারতের মানুষের জন্য, ভারতেই তৈরি একটি সোশ্যাল প্ল্যাটফর্ম, ইনস্টাগ্রাম ও টুইটারের (X) মতো ধাঁচে। এখানে পোস্ট, ছবি, রিলস, লাইক, কমেন্ট, ফলো ও হ্যাশট্যাগ সার্চ আছে।
 
 - **লক্ষ্য:** সারা ভারতের জন্য একটি প্ল্যাটফর্ম, ভারতীয় ভাষা সবার আগে।
 - **এখন কোথায়:** পরীক্ষামূলক (pilot) পর্যায়ে, মালদা জেলার **গাজোল ব্লকের** অল্প কিছু মানুষকে নিয়ে পরীক্ষা চলছে।

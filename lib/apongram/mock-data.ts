@@ -38,10 +38,10 @@ export const demoStoryHighlights = [
 
 const demoCreator: Profile = {
   id: "ekta-demo",
-  name: "eKta Demo",
-  handle: "ekta.demo",
+  name: "Community Demo",
+  handle: "community.demo",
   bio: "Sample community clips for preview only.",
-  initials: "eK",
+  initials: "CD",
   avatarColor: "#1F6F6B",
   region: "Gazole, Malda",
   followers: 0,

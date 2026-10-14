@@ -6,7 +6,7 @@ export const demoProfilePosts: Post[] = [
   {
     id: "demo-profile-market-note",
     author: currentUser,
-    body: "নমুনা · আজকের বাজারে ছোট ব্যবসায়ীদের সঙ্গে দেখা হলো। স্থানীয় কাজ আর মানুষের গল্প একসঙ্গে রাখাই eKta-র আনন্দ।",
+    body: "নমুনা · আজকের বাজারে ছোট ব্যবসায়ীদের সঙ্গে দেখা হলো। স্থানীয় কাজ আর মানুষের গল্প একসঙ্গে রাখাই একতার আনন্দ।",
     createdAt: "আজ",
     location: "Gazole, Malda",
     tags: ["Community", "Local life"],

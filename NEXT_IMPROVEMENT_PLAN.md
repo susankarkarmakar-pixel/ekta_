@@ -1,11 +1,11 @@
-# eKta — Next Improvement Plan
+# eKta Social (একতা) — Next Improvement Plan
 
 **Updated:** 2026-10-11  
 **Current baseline:** Reels/Stories composer with gallery/camera capture, 60-second validation, trim preview, compression metadata, bundled music preview/mix controls, sticker/text overlay preview, seeded Reels feed, Supabase repository boundary, Bengali/English UI, and Vercel deployment.
 
 ## Product goal for the next phase
 
-Move eKta from a convincing creator **preview** to a safe, durable community media workflow. A user should be able to create a Reel or Story, render the selected audio and overlays into the final media, upload it through authenticated storage, publish it durably, and see it consistently from another session.
+Move eKta Social from a convincing creator **preview** to a safe, durable community media workflow. A user should be able to create a Reel or Story, render the selected audio and overlays into the final media, upload it through authenticated storage, publish it durably, and see it consistently from another session.
 
 ## Priority order
 

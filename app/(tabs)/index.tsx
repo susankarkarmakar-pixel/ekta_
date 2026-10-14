@@ -33,7 +33,7 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.container, Platform.OS === "web" && styles.webContainer]} onScroll={handleScroll} onTouchStart={handleWebTouchStart} onTouchMove={handleWebTouchMove} onTouchEnd={handleWebTouchEnd} scrollEventThrottle={16} decelerationRate={Platform.OS === "ios" ? 0.985 : "normal"} overScrollMode="never" bounces keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reloadFeed(true)} tintColor={C.terra} colors={[C.terra]} progressBackgroundColor={C.paper} /> }>
         {Platform.OS === "web" && webPullDistance > 0 ? <View style={{ height: Math.min(webPullDistance, 72), alignItems: "center", justifyContent: "center", overflow: "hidden" }}><MaterialIcons name={webPullDistance >= 64 ? "refresh" : "arrow-downward"} size={18} color={C.terra} /><Text style={{ color: C.terra, fontFamily: bodyFont, fontSize: 10, marginTop: 2 }}>{webPullDistance >= 64 ? copy.releaseToRefresh : copy.pullToRefresh}</Text></View> : null}
         <View style={styles.topbar}>
-          <View style={styles.brandRow}><Logo variant="horizontal" width={94} height={30} accessibilityLabel="eKta" /></View>
+          <View style={styles.brandRow}><Logo variant="horizontal" width={126} height={30} /></View>
           <View style={styles.topActions}>
             <Pressable onPress={toggleLanguage} style={styles.lang}><Text style={[styles.langText, { fontFamily: mediumFont }]}>{language === "bn" ? "EN" : "বাং"}</Text></Pressable>
             <Pressable onPress={() => router.push("/(tabs)/discover")} accessibilityLabel={copy.discover}><MaterialIcons name="search" size={23} color={C.ink} /></Pressable>
