@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
+import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Avatar } from "@/components/apongram/Avatar";
 import { Colors } from "@/constants/theme";
@@ -178,6 +179,7 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
         (overlayText.trim() || overlaySticker) ? { text: overlayText.trim() || undefined, sticker: overlaySticker ?? undefined, position: overlayPosition } : undefined,
       );
       setSaved(true);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => router.replace(mode === "reel" ? "/(tabs)/reels" : "/(tabs)"), 550);
     } catch {
       setError(language === "bn" ? "পোস্ট করা যায়নি। আবার চেষ্টা করুন।" : "We could not publish this. Please try again.");
