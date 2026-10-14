@@ -115,6 +115,29 @@ export async function verifyEmailOtp(otpInput: string, emailInput?: string): Pro
   return session;
 }
 
+export function getGoogleOAuthUrl(redirectTo: string): string {
+  requireConfigured();
+  const params = new URLSearchParams({ provider: "google", redirect_to: redirectTo, response_type: "token" });
+  return `${supabaseConfig.url}/auth/v1/authorize?${params.toString()}`;
+}
+
+export async function completeGoogleOAuthRedirect(callbackUrl: string): Promise<SupabaseSession> {
+  const parsed = new URL(callbackUrl);
+  const fragment = new URLSearchParams(parsed.hash.replace(/^#/, ""));
+  const query = parsed.searchParams;
+  const error = fragment.get("error_description") ?? query.get("error_description") ?? fragment.get("error") ?? query.get("error");
+  if (error) throw new SupabaseAuthError(error);
+  const accessToken = fragment.get("access_token") ?? query.get("access_token");
+  const refreshToken = fragment.get("refresh_token") ?? query.get("refresh_token");
+  if (!accessToken || !refreshToken) throw new SupabaseAuthError("Google sign-in did not return a session");
+  const user = await authRequest<SupabaseUser>("user", { method: "GET", headers: { Authorization: `Bearer ${accessToken}` } });
+  const expiresIn = Number(fragment.get("expires_in") ?? query.get("expires_in") ?? 3600);
+  const expiresAt = Number(fragment.get("expires_at") ?? query.get("expires_at") ?? Math.floor(Date.now() / 1000) + expiresIn);
+  const session: SupabaseSession = { access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn, expires_at: expiresAt, token_type: fragment.get("token_type") ?? "bearer", user };
+  await saveSupabaseSession(session);
+  return session;
+}
+
 export async function sendPhoneOtp(phoneInput: string): Promise<void> {
   const phone = normalizePhone(phoneInput);
   await authRequest("otp", {

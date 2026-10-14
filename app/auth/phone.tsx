@@ -1,11 +1,13 @@
 import { MaterialIcons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
-import { getSupabaseSession, sendEmailOtp, SupabaseAuthError, verifyEmailOtp } from "@/lib/apongram/supabase-auth";
+import { completeGoogleOAuthRedirect, getGoogleOAuthUrl, getSupabaseSession, sendEmailOtp, SupabaseAuthError, verifyEmailOtp } from "@/lib/apongram/supabase-auth";
 import { supabaseConfig } from "@/lib/apongram/supabase-config";
 import { getStoredProfile, syncProfileToSupabase } from "@/lib/apongram/profile-store";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
@@ -54,6 +56,28 @@ export default function PhoneAuthScreen() {
       setResendIn(30);
     } catch (cause) {
       setError(cause instanceof SupabaseAuthError ? cause.message : (language === "bn" ? "OTP পাঠানো যায়নি। আবার চেষ্টা করুন।" : "We could not send the OTP. Please try again."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    if (busy || !supabaseConfig.isConfigured) {
+      if (!supabaseConfig.isConfigured) setError(language === "bn" ? "Google login চালুর আগে Supabase configure করুন।" : "Configure Supabase before using Google login.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const redirectTo = Linking.createURL("oauth/callback");
+      const result = await WebBrowser.openAuthSessionAsync(getGoogleOAuthUrl(redirectTo), redirectTo);
+      if (result.type !== "success" || !result.url) return;
+      await completeGoogleOAuthRedirect(result.url);
+      const profile = await getStoredProfile();
+      await syncProfileToSupabase(profile);
+      router.replace("/(tabs)");
+    } catch (cause) {
+      setError(cause instanceof SupabaseAuthError ? cause.message : (language === "bn" ? "Google login সম্পূর্ণ করা যায়নি।" : "Google sign-in could not be completed."));
     } finally {
       setBusy(false);
     }
@@ -124,6 +148,7 @@ export default function PhoneAuthScreen() {
           <Text style={[styles.tagline, { fontFamily: bodyFont }]}>{language === "bn" ? "একতায় আমরা · your community, connected" : "Your community, connected"}</Text>
           <View style={styles.localPill}><View style={styles.dot} /><Text style={[styles.localText, { fontFamily: bodyFont }]}>{language === "bn" ? "ইমেইল OTP দিয়ে নিরাপদে সাইন ইন" : "Secure sign-in with email OTP"}</Text></View>
         </View>
+        {!verified && <Pressable onPress={signInWithGoogle} disabled={busy} style={[styles.googleButton, busy && styles.disabled]}><Text style={[styles.googleButtonText, { fontFamily: mediumFont }]}>G</Text><Text style={[styles.googleButtonLabel, { fontFamily: mediumFont }]}>{language === "bn" ? "Google দিয়ে চালিয়ে যান" : "Continue with Google"}</Text></Pressable>}
         {verified ? (
           <View style={styles.verified}>
             <MaterialIcons name="check-circle" size={48} color={LIGHT.leafGreen} />
@@ -201,6 +226,9 @@ const styles = StyleSheet.create({
   localPill: { borderWidth: 1, borderColor: LIGHT.line, borderRadius: 999, backgroundColor: LIGHT.paper, paddingHorizontal: 13, paddingVertical: 8, marginTop: 22, flexDirection: "row", alignItems: "center", gap: 7 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: LIGHT.leafGreen },
   localText: { color: LIGHT.slate, fontSize: 11 },
+  googleButton: { backgroundColor: LIGHT.paper, borderWidth: 1, borderColor: LIGHT.line, borderRadius: 12, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 10, paddingVertical: 14, marginTop: 18 },
+  googleButtonText: { color: "#4285F4", fontSize: 18, fontWeight: "900" },
+  googleButtonLabel: { color: LIGHT.inkNavy, fontSize: 13, fontWeight: "800" },
   form: { marginTop: "auto", paddingBottom: 24 },
   label: { color: LIGHT.inkNavy, fontWeight: "800", fontSize: 13, marginBottom: 8 },
   inputWrap: { backgroundColor: LIGHT.paper, borderWidth: 1, borderColor: LIGHT.line, borderRadius: 14, height: 54, flexDirection: "row", alignItems: "center", marginBottom: 15 },
