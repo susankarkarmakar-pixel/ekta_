@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Animated, AppState, Modal, Platform, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type NativeTouchEvent } from "react-native";
 import { Avatar } from "@/components/apongram/Avatar";
 import { PostCard } from "@/components/apongram/PostCard";
+import { FeedSkeleton } from "@/components/apongram/FeedSkeleton";
 import { TopicChip } from "@/components/apongram/TopicChip";
 import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
@@ -43,24 +44,6 @@ function StoryVideo({ uri, paused, language }: { uri: string | number; paused: b
     {status === "error" ? <View style={styles.storyVideoFallback}><MaterialIcons name="broken-image" size={35} color={C.ochre} /><Text style={styles.storyVideoFallbackTitle}>{language === "bn" ? "ভিডিও চালানো যাচ্ছে না" : "Video unavailable"}</Text><Text style={styles.storyVideoFallbackText}>{language === "bn" ? "এই story-টি পরে আবার চেষ্টা করুন।" : "Try this story again later."}</Text></View> : <VideoView player={player} style={styles.storyVideo} contentFit="contain" nativeControls={false} />}
     {status === "loading" ? <View style={styles.storyVideoLoading}><ActivityIndicator color={C.ivory} /><Text style={styles.storyVideoLoadingText}>{language === "bn" ? "ভিডিও লোড হচ্ছে…" : "Loading video…"}</Text></View> : null}
     {status === "ready" ? <View style={styles.storyVideoProgress}><View style={[styles.storyVideoProgressFill, { width: `${progress * 100}%` }]} /></View> : null}
-  </View>;
-}
-
-function FeedSkeleton() {
-  const [opacity] = useState(() => new Animated.Value(0.42));
-  useEffect(() => {
-    const animation = Animated.loop(Animated.sequence([
-      Animated.timing(opacity, { toValue: 0.9, duration: 750, useNativeDriver: true }),
-      Animated.timing(opacity, { toValue: 0.42, duration: 750, useNativeDriver: true }),
-    ]));
-    animation.start();
-    return () => animation.stop();
-  }, [opacity]);
-  return <View accessibilityLabel="Loading feed" accessible>
-    {[0, 1].map((item) => <Animated.View key={item} style={[styles.skeletonCard, { opacity }]}>
-      <View style={styles.skeletonHeader}><View style={styles.skeletonAvatar} /><View style={styles.skeletonHeaderCopy}><View style={styles.skeletonName} /><View style={styles.skeletonMeta} /></View><View style={styles.skeletonMenu} /></View>
-      <View style={styles.skeletonLineWide} /><View style={styles.skeletonLine} /><View style={styles.skeletonMedia} /><View style={styles.skeletonLocation} /><View style={styles.skeletonTags}><View style={styles.skeletonTag} /><View style={styles.skeletonTagShort} /></View><View style={styles.skeletonActions}><View style={styles.skeletonAction} /><View style={styles.skeletonAction} /><View style={styles.skeletonActionSmall} /></View>
-    </Animated.View>)}
   </View>;
 }
 
@@ -526,21 +509,4 @@ const styles = StyleSheet.create({
   errorBody: { color: C.muted, fontSize: 11, lineHeight: 16, marginTop: 3 },
   retryButton: { minHeight: 44, borderRadius: 22, backgroundColor: C.terra, paddingHorizontal: 15, alignItems: "center", justifyContent: "center" },
   retryText: { color: C.ivory, fontSize: 11, fontWeight: "900" },
-  skeletonCard: { backgroundColor: C.paper, borderRadius: 22, padding: 15, marginBottom: 16, borderWidth: 1, borderColor: C.line },
-  skeletonHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-  skeletonAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.line },
-  skeletonHeaderCopy: { flex: 1, gap: 7 },
-  skeletonMenu: { width: 24, height: 10, borderRadius: 5, backgroundColor: C.primaryContainer },
-  skeletonName: { width: "42%", height: 12, borderRadius: 6, backgroundColor: C.line },
-  skeletonMeta: { width: "28%", height: 9, borderRadius: 5, backgroundColor: C.primaryContainer },
-  skeletonLineWide: { width: "92%", height: 13, borderRadius: 7, backgroundColor: C.primaryContainer, marginTop: 17 },
-  skeletonLine: { width: "68%", height: 13, borderRadius: 7, backgroundColor: C.primaryContainer, marginTop: 8 },
-  skeletonMedia: { width: "100%", aspectRatio: 4 / 3, borderRadius: 18, backgroundColor: C.line, marginTop: 13 },
-  skeletonLocation: { width: 106, height: 20, borderRadius: 999, backgroundColor: C.primaryContainer, marginTop: 10 },
-  skeletonTags: { flexDirection: "row", gap: 6, marginTop: 11 },
-  skeletonTag: { width: 72, height: 22, borderRadius: 999, backgroundColor: C.primaryContainer },
-  skeletonTagShort: { width: 58, height: 22, borderRadius: 999, backgroundColor: C.primaryContainer },
-  skeletonActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 13, paddingVertical: 4, paddingHorizontal: 3, borderRadius: 15, backgroundColor: C.primaryContainer },
-  skeletonAction: { width: "23%", height: 12, borderRadius: 6, backgroundColor: C.primaryContainer },
-  skeletonActionSmall: { width: "12%", height: 12, borderRadius: 6, backgroundColor: C.primaryContainer },
 });
