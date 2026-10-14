@@ -5,8 +5,9 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
-import { sendEmailOtp, SupabaseAuthError, verifyEmailOtp } from "@/lib/apongram/supabase-auth";
+import { getSupabaseSession, sendEmailOtp, SupabaseAuthError, verifyEmailOtp } from "@/lib/apongram/supabase-auth";
 import { supabaseConfig } from "@/lib/apongram/supabase-config";
+import { getStoredProfile, syncProfileToSupabase } from "@/lib/apongram/profile-store";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
 
 const LIGHT = Colors.light;
@@ -24,6 +25,12 @@ export default function PhoneAuthScreen() {
   const [error, setError] = useState("");
   const [resendIn, setResendIn] = useState(0);
   const otpRefs = useRef<(TextInput | null)[]>([]);
+
+  useEffect(() => {
+    getSupabaseSession().then((session) => {
+      if (session?.user?.id) router.replace("/(tabs)");
+    }).catch(() => undefined);
+  }, [router]);
 
   useEffect(() => {
     if (!resendIn) return;
@@ -61,6 +68,8 @@ export default function PhoneAuthScreen() {
         if (otp.replace(/\D/g, "").length < 6) throw new Error(language === "bn" ? "৬ সংখ্যার OTP লিখুন।" : "Enter the 6-digit OTP.");
       } else {
         await verifyEmailOtp(otp, email);
+        const profile = await getStoredProfile();
+        await syncProfileToSupabase(profile);
       }
       setVerified(true);
     } catch (cause) {

@@ -1,6 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Colors } from "@/constants/theme";
 import { ScreenContainer } from "@/components/screen-container";
@@ -9,13 +9,15 @@ import { plannedLanguages } from "@/lib/apongram/languages";
 import { useFeedPreferences } from "@/lib/apongram/FeedPreferencesContext";
 import { FEED_REGIONS, FEED_TOPIC_OPTIONS } from "@/lib/apongram/feed-preferences";
 import { useNotificationPreferences } from "@/lib/apongram/NotificationPreferencesContext";
+import { clearSupabaseSession, getSupabaseSession } from "@/lib/apongram/supabase-auth";
 
 export default function SettingsScreen() {
-  const router = useRouter(); const { language, setLanguage, copy } = useLanguage(); const { preferences, setRegion, toggleTopic, resetPreferences } = useFeedPreferences(); const { bulletins, replies, setBulletins, setReplies } = useNotificationPreferences(); const [showPlannedLanguages, setShowPlannedLanguages] = useState(false);
+  const router = useRouter(); const { language, setLanguage, copy } = useLanguage(); const { preferences, setRegion, toggleTopic, resetPreferences } = useFeedPreferences(); const { bulletins, replies, setBulletins, setReplies } = useNotificationPreferences(); const [showPlannedLanguages, setShowPlannedLanguages] = useState(false); const [accountLabel, setAccountLabel] = useState("Email OTP account");
   const bn = language === "bn";
   const bodyFont = bn ? "HindSiliguri" : "HindSiliguriLatin";
   const mediumFont = bn ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
   const headingFont = bn ? "NotoSerifBengaliBold" : "Fraunces";
+  useEffect(() => { getSupabaseSession().then((session) => { const identifier = session?.user.email ?? session?.user.phone; if (identifier) setAccountLabel(identifier); }).catch(() => undefined); }, []);
   const rowLink = (icon: React.ComponentProps<typeof MaterialIcons>["name"], title: string, sub: string, onPress?: () => void) => <Pressable onPress={onPress} style={styles.linkRow}><View style={styles.iconBubble}><MaterialIcons name={icon} size={19} color={Colors.light.inkNavy} /></View><View style={{ flex: 1 }}><Text style={[styles.rowTitle, { fontFamily: mediumFont }]}>{title}</Text><Text style={[styles.rowSub, { fontFamily: bodyFont }]}>{sub}</Text></View><MaterialIcons name="chevron-right" size={22} color={Colors.light.slate} /></Pressable>;
   return <ScreenContainer safeAreaClassName="bg-background" className="bg-background"><ScrollView contentContainerStyle={styles.container}>
     <View style={styles.header}><Pressable onPress={() => router.back()} style={styles.back}><MaterialIcons name="arrow-back" size={22} color={Colors.light.inkNavy} /></Pressable><Text style={[styles.title, { fontFamily: headingFont }]}>{bn ? "সেটিংস" : "Settings"}</Text><View style={{ width: 32 }} /></View>
@@ -37,10 +39,10 @@ export default function SettingsScreen() {
         <Pressable onPress={resetPreferences} style={styles.resetPreferences}><Text style={styles.resetText}>{bn ? "পছন্দের সেটিংস রিসেট করুন" : "Reset feed preferences"}</Text></Pressable>
       </View>
     </View>
-    <Text style={styles.groupLabel}>{bn ? "অ্যাকাউন্ট" : "ACCOUNT"}</Text><View style={styles.card}>{rowLink("phone-android", bn ? "নিবন্ধিত মোবাইল নম্বর" : "Registered phone number", "+91 98765 43210 · Demo account")}{rowLink("edit", bn ? "প্রোফাইল সম্পাদনা" : "Edit profile", bn ? "নাম, পরিচিতি ও ছবি" : "Name, bio and profile photo", () => router.push("/auth/phone"))}</View>
+    <Text style={styles.groupLabel}>{bn ? "অ্যাকাউন্ট" : "ACCOUNT"}</Text><View style={styles.card}>{rowLink("account-circle", bn ? "নিবন্ধিত ইমেইল" : "Registered email", accountLabel)}{rowLink("edit", bn ? "প্রোফাইল সম্পাদনা" : "Edit profile", bn ? "নাম, পরিচিতি ও ছবি" : "Name, bio and profile photo", () => router.push("/auth/phone"))}</View>
     <Text style={styles.groupLabel}>{bn ? "বিজ্ঞপ্তি" : "NOTIFICATIONS"}</Text><View style={styles.card}><View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.rowTitle}>{bn ? "পাড়া ও জরুরি নোটিশ" : "Community & urgent notices"}</Text><Text style={styles.rowSub}>{bn ? "পঞ্চায়েতের খবর ও জরুরি আপডেট" : "Panchayat bulletins and civic alerts"}</Text></View><Switch value={bulletins} onValueChange={setBulletins} trackColor={{ false: "#E3DACB", true: "#C85A3A" }} thumbColor="#FFFFFF" /></View><View style={styles.divider} /><View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.rowTitle}>{bn ? "মন্তব্য ও আলোচনা" : "Replies & discussions"}</Text><Text style={styles.rowSub}>{bn ? "আপনার পোস্টের উত্তর" : "Replies to your posts"}</Text></View><Switch value={replies} onValueChange={setReplies} trackColor={{ false: "#E3DACB", true: "#C85A3A" }} thumbColor="#FFFFFF" /></View><View style={styles.divider} />{rowLink("cloud-off", copy.offlineTitle, copy.offlineBody, () => router.push("/states/offline"))}</View>
     <Text style={styles.groupLabel}>{bn ? "নিয়মাবলি ও সহায়তা" : "CHARTER & SUPPORT"}</Text><View style={styles.card}>{rowLink("verified-user", bn ? "পাড়া সংহতি ও নীতি" : "Community guidelines", bn ? "কমিউনিটির নিয়ম ও নাগরিক নীতি" : "Community guidelines & civic ethics")}{rowLink("lock-outline", bn ? "গোপনীয়তার সনদ" : "Privacy charter", bn ? "নাগরিক তথ্যের অধিকার" : "Citizen data rights")}{rowLink("help-outline", bn ? "সাহায্য ও জিজ্ঞাসা" : "Help & FAQs", bn ? "প্রায়শই জিজ্ঞাসিত প্রশ্ন" : "Frequently asked questions")}</View>
-    <Pressable onPress={() => router.replace("/auth/phone")} style={styles.logout}><View style={styles.logoutIcon}><MaterialIcons name="logout" size={20} color="#C85A3A" /></View><View style={{ flex: 1 }}><Text style={styles.logoutTitle}>{bn ? "লগআউট" : "Log out"}</Text><Text style={styles.rowSub}>{bn ? "এই ডিভাইস থেকে সাইন আউট করুন" : "Sign out from this device"}</Text></View><MaterialIcons name="arrow-forward" size={20} color="#C85A3A" /></Pressable>
+    <Pressable onPress={async () => { await clearSupabaseSession(); router.replace("/auth/phone"); }} style={styles.logout}><View style={styles.logoutIcon}><MaterialIcons name="logout" size={20} color="#C85A3A" /></View><View style={{ flex: 1 }}><Text style={styles.logoutTitle}>{bn ? "লগআউট" : "Log out"}</Text><Text style={styles.rowSub}>{bn ? "এই ডিভাইস থেকে সাইন আউট করুন" : "Sign out from this device"}</Text></View><MaterialIcons name="arrow-forward" size={20} color="#C85A3A" /></Pressable>
     <Text style={styles.footer}>Ekta · {bn ? "ভারতের পাড়া, একসঙ্গে" : "Made in India, for communities across India"}</Text>
   </ScrollView></ScreenContainer>;
 }

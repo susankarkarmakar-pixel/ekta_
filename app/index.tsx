@@ -8,6 +8,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
 import { DEMO_MODE } from "@/lib/apongram/demo-mode";
+import { getSupabaseSession } from "@/lib/apongram/supabase-auth";
 
 const WELCOME_KEY = "ekta-welcome-seen";
 const LIGHT = Colors.light;
@@ -23,8 +24,9 @@ export default function EntryScreen() {
       router.replace("/(tabs)");
       return;
     }
-    AsyncStorage.getItem(WELCOME_KEY).then((seen) => {
-      if (seen === "true") router.replace("/auth/phone");
+    Promise.all([AsyncStorage.getItem(WELCOME_KEY), getSupabaseSession()]).then(([seen, session]) => {
+      if (session?.user?.id) router.replace("/(tabs)");
+      else if (seen === "true") router.replace("/auth/phone");
       else setChecking(false);
     }).catch(() => setChecking(false));
   }, [router]);
