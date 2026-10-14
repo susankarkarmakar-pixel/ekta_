@@ -1,4 +1,4 @@
-# Google OAuth setup for eKta
+# Google OAuth setup for eKta Social (একতা)
 
 The app now has a **Continue with Google** button on the Supabase auth screen. The remaining setup requires Google Cloud OAuth credentials.
 
@@ -7,7 +7,7 @@ The app now has a **Continue with Google** button on the Supabase auth screen. T
 Create or select a Google Cloud project, then:
 
 1. Open **APIs & Services → OAuth consent screen**.
-2. Configure the app name as `eKta` and add the support email.
+2. Configure the app name as `eKta Social` and add the support email. The Bengali product name shown in-app is `একতা`.
 3. Add the required scopes: `openid`, `email`, and `profile`.
 4. Open **APIs & Services → Credentials → Create credentials → OAuth client ID**.
 5. Create a **Web application** client.

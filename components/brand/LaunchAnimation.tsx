@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 /* Animated.Value refs are intentionally stable animation handles. */
 /* eslint-disable react-hooks/refs */
 import { AccessibilityInfo, Animated, Easing, Image, Platform, StyleSheet, Text, View } from "react-native";
+import { useLanguage } from "@/lib/apongram/LanguageContext";
 
 type LaunchAnimationProps = {
   onFinished: () => void;
@@ -17,6 +18,8 @@ const C = {
 };
 
 export function LaunchAnimation({ onFinished }: LaunchAnimationProps) {
+  const { language } = useLanguage();
+  const brandName = language === "bn" ? "একতা" : "eKta Social";
   const [reducedMotion, setReducedMotion] = useState(false);
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.86)).current;
@@ -66,7 +69,7 @@ export function LaunchAnimation({ onFinished }: LaunchAnimationProps) {
   }, [companyOpacity, logoOpacity, logoScale, nameOpacity, nameY, onFinished, overlayOpacity, reducedMotion]);
 
   return (
-    <Animated.View accessibilityRole="alert" accessibilityLabel="eKta Social. Sanket Pixel Technologies." style={[styles.overlay, { opacity: overlayOpacity }]}>
+    <Animated.View accessibilityRole="alert" accessibilityLabel={`${brandName}. Sanket Pixel Technologies.`} style={[styles.overlay, { opacity: overlayOpacity }]}>
       <View style={styles.brandLockup}>
         <View style={styles.logoHalo}>
           <Animated.View style={{ opacity: logoOpacity, transform: [{ scale: logoScale }] }}>
@@ -76,7 +79,7 @@ export function LaunchAnimation({ onFinished }: LaunchAnimationProps) {
           <View style={[styles.dot, styles.dotGreen]} />
         </View>
         <Animated.View style={{ opacity: nameOpacity, transform: [{ translateY: nameY }] }}>
-          <Text style={styles.name}>eKta Social</Text>
+          <Text style={[styles.name, language === "bn" && styles.nameBn]}>{brandName}</Text>
         </Animated.View>
       </View>
       <Animated.Text style={[styles.footer, { opacity: companyOpacity }]}>Sanket Pixel Technologies</Animated.Text>
@@ -93,5 +96,6 @@ const styles = StyleSheet.create({
   dotTerra: { top: 11, right: 15, backgroundColor: C.terra },
   dotGreen: { bottom: 15, left: 13, backgroundColor: C.green },
   name: { color: C.ink, fontFamily: "Georgia", fontSize: 31, fontWeight: "700", letterSpacing: -0.5, marginTop: 4 },
+  nameBn: { fontFamily: "NotoSerifBengaliBold", letterSpacing: 0, fontSize: 29 },
   footer: { position: "absolute", bottom: 28, color: C.muted, fontSize: 11, fontWeight: "700", letterSpacing: 0.7 },
 });

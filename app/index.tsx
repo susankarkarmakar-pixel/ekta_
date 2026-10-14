@@ -45,7 +45,7 @@ export default function EntryScreen() {
   return (
     <ScreenContainer safeAreaClassName="bg-ivory" className="bg-ivory">
       <View style={styles.container}>
-        <View style={styles.brandRow}><Logo variant="horizontal" width={118} height={36} accessibilityLabel="eKta" /></View>
+        <View style={styles.brandRow}><Logo variant="horizontal" width={148} height={36} /></View>
         <View style={styles.landscape}><View style={styles.sun} /><View style={styles.hillBack} /><View style={styles.hillFront} /></View>
         <Text style={[styles.title, { fontFamily: language === "bn" ? "NotoSerifBengaliBold" : "Fraunces" }]}>{copy.welcomeTitle}</Text>
         <Text style={[styles.intro, { fontFamily: language === "bn" ? "HindSiliguri" : "HindSiliguriLatin" }]}>{copy.welcomeIntro}</Text>

@@ -24,7 +24,7 @@ export default function HomeScreen() {
   const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
   const headingFont = language === "bn" ? "NotoSerifBengaliBold" : "Fraunces";
   const { preferences } = useFeedPreferences();
-  const story = useStoryController({ onCreateStory: () => router.push("/(tabs)/create") });
+  const story = useStoryController({ onCreateStory: () => router.push({ pathname: "/(tabs)/create", params: { mode: "story" } }) });
   const { feed, feedMode, setFeedMode, loadingMore, refreshing, feedError, feedOffline, refreshNotice, hiddenPostIds, setHiddenPostIds, hasMore, activeVideoId, webPullDistance, reloadFeed, handleScroll, handleWebTouchStart, handleWebTouchMove, handleWebTouchEnd, handleCardLayout, toggleLike, repositoryMode } = useFeedController({ preferences });
   useFocusEffect(useCallback(() => { void reloadFeed(); }, [reloadFeed]));
 
@@ -33,7 +33,7 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.container, Platform.OS === "web" && styles.webContainer]} onScroll={handleScroll} onTouchStart={handleWebTouchStart} onTouchMove={handleWebTouchMove} onTouchEnd={handleWebTouchEnd} scrollEventThrottle={16} decelerationRate={Platform.OS === "ios" ? 0.985 : "normal"} overScrollMode="never" bounces keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reloadFeed(true)} tintColor={C.terra} colors={[C.terra]} progressBackgroundColor={C.paper} /> }>
         {Platform.OS === "web" && webPullDistance > 0 ? <View style={{ height: Math.min(webPullDistance, 72), alignItems: "center", justifyContent: "center", overflow: "hidden" }}><MaterialIcons name={webPullDistance >= 64 ? "refresh" : "arrow-downward"} size={18} color={C.terra} /><Text style={{ color: C.terra, fontFamily: bodyFont, fontSize: 10, marginTop: 2 }}>{webPullDistance >= 64 ? copy.releaseToRefresh : copy.pullToRefresh}</Text></View> : null}
         <View style={styles.topbar}>
-          <View style={styles.brandRow}><Logo variant="horizontal" width={94} height={30} accessibilityLabel="eKta" /></View>
+          <View style={styles.brandRow}><Logo variant="horizontal" width={126} height={30} /></View>
           <View style={styles.topActions}>
             <Pressable onPress={toggleLanguage} style={styles.lang}><Text style={[styles.langText, { fontFamily: mediumFont }]}>{language === "bn" ? "EN" : "বাং"}</Text></Pressable>
             <Pressable onPress={() => router.push("/(tabs)/discover")} accessibilityLabel={copy.discover}><MaterialIcons name="search" size={23} color={C.ink} /></Pressable>
@@ -45,9 +45,26 @@ export default function HomeScreen() {
         </View>
 
         <StoryRail people={story.people} viewedIds={story.viewedIds} viewer={story.viewer} post={story.post} index={story.index} open={story.open} paused={story.paused} reply={story.reply} replySent={story.replySent} language={language} bodyFont={bodyFont} mediumFont={mediumFont} headingFont={headingFont} reelsLabel={copy.reels} onOpen={story.onOpen} onClose={story.close} onPause={story.setPaused} onMove={story.move} onReplyChange={story.setReply} onSendReply={story.sendReply} onShare={story.share} onReport={() => { story.close(); router.push({ pathname: "/report", params: { storyId: story.viewer?.id ?? "" } }); }} onWatchReels={() => router.push("/(tabs)/reels")} />
-        <View style={styles.hero}><Text style={[styles.heroTitle, { fontFamily: headingFont }]}>{copy.goodMorning}</Text><Text style={[styles.heroSub, { fontFamily: bodyFont }]}>{copy.feedIntro}</Text></View>
+        <View style={heroStyles.card}>
+          <View style={heroStyles.copy}>
+            <View style={heroStyles.eyebrow}><View style={heroStyles.dot} /><Text style={[heroStyles.eyebrowText, { fontFamily: mediumFont }]}>{language === "bn" ? "আপনার স্থানীয় কমিউনিটি" : "YOUR LOCAL COMMUNITY"}</Text></View>
+            <Text style={[styles.heroTitle, heroStyles.title, { fontFamily: headingFont }]}>{copy.goodMorning}</Text>
+            <Text style={[styles.heroSub, heroStyles.subtitle, { fontFamily: bodyFont }]}>{copy.feedIntro}</Text>
+            <Pressable onPress={() => router.push("/(tabs)/create")} style={heroStyles.action} accessibilityRole="button" accessibilityLabel={language === "bn" ? "স্থানীয় আপডেট শেয়ার করুন" : "Share a local update"}>
+              <MaterialIcons name="edit" size={15} color={C.card} />
+              <Text style={[heroStyles.actionText, { fontFamily: mediumFont }]}>{language === "bn" ? "আপডেট শেয়ার করুন" : "Share an update"}</Text>
+              <MaterialIcons name="arrow-forward" size={15} color={C.card} />
+            </Pressable>
+          </View>
+          <View pointerEvents="none" style={heroStyles.illustration}>
+            <View style={heroStyles.sun} />
+            <View style={heroStyles.bubble}><MaterialIcons name="forum" size={25} color={C.terra} /></View>
+            <View style={heroStyles.people}><MaterialIcons name="groups" size={21} color={C.green} /></View>
+          </View>
+        </View>
         {repositoryMode === "demo" && __DEV__ && <View style={styles.demoBanner}><MaterialIcons name="info-outline" size={17} color={C.terra} /><Text style={[styles.demoText, { fontFamily: bodyFont }]}>{copy.demoModeText}</Text></View>}
 
+        <View style={feedDecorationStyles.topicHeader}><View><Text style={[feedDecorationStyles.topicTitle, { fontFamily: headingFont }]}>{copy.trendingNow}</Text><Text style={[feedDecorationStyles.topicSubtitle, { fontFamily: bodyFont }]}>{copy.popularTopics}</Text></View><View style={feedDecorationStyles.trendingIcon}><MaterialIcons name="trending-up" size={18} color={C.terra} /></View></View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.topics}>
           {topics.map((topic) => <TopicChip key={topic} label={topicLabels[topic]?.[language] ?? topic} onPress={() => router.push({ pathname: "/(tabs)/discover", params: { q: topic } })} />)}
         </ScrollView>
@@ -116,4 +133,27 @@ const styles = StyleSheet.create({
   errorBody: { color: C.muted, fontSize: 11, lineHeight: 16, marginTop: 3 },
   retryButton: { minHeight: 44, borderRadius: 22, backgroundColor: C.terra, paddingHorizontal: 15, alignItems: "center", justifyContent: "center" },
   retryText: { color: C.ivory, fontSize: 11, fontWeight: "900" },
+});
+
+const heroStyles = StyleSheet.create({
+  card: { minHeight: 194, backgroundColor: "#E7EFE8", borderRadius: 24, borderWidth: 1, borderColor: "#D3E1D5", padding: 17, marginTop: 4, marginBottom: 16, overflow: "hidden", position: "relative" },
+  copy: { width: "78%", position: "relative", zIndex: 1 },
+  eyebrow: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 8 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: C.green },
+  eyebrowText: { color: C.green, fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
+  title: { paddingTop: 0, paddingBottom: 0, fontSize: 25, lineHeight: 31 },
+  subtitle: { marginTop: 4, maxWidth: 245, fontSize: 12, lineHeight: 17 },
+  action: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 42, alignSelf: "flex-start", backgroundColor: C.terra, paddingHorizontal: 13, borderRadius: 999, marginTop: 12 },
+  actionText: { color: C.card, fontSize: 11, fontWeight: "900" },
+  illustration: { position: "absolute", right: 0, top: 0, bottom: 0, width: 125 },
+  sun: { position: "absolute", right: -11, top: -14, width: 91, height: 91, borderRadius: 46, backgroundColor: "#F0C66E", opacity: 0.72 },
+  bubble: { position: "absolute", right: 16, top: 70, width: 48, height: 48, borderRadius: 17, backgroundColor: "#FFF8EA", alignItems: "center", justifyContent: "center", transform: [{ rotate: "-8deg" }] },
+  people: { position: "absolute", right: 60, bottom: 14, width: 38, height: 38, borderRadius: 14, backgroundColor: "#D4E7D7", alignItems: "center", justifyContent: "center", transform: [{ rotate: "8deg" }] },
+});
+
+const feedDecorationStyles = StyleSheet.create({
+  topicHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 1, marginBottom: 8 },
+  topicTitle: { color: C.ink, fontSize: 15, fontWeight: "800" },
+  topicSubtitle: { color: C.muted, fontSize: 10, marginTop: 2 },
+  trendingIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.primaryContainer, alignItems: "center", justifyContent: "center" },
 });

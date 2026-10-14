@@ -1,4 +1,4 @@
-# eKta on Vercel
+# eKta Social (একতা) on Vercel
 
 The app is an Expo Router project using Expo's static web output. The repository includes an explicit Vercel build configuration so it does not depend on framework auto-detection.
 
@@ -9,7 +9,7 @@ The app is an Expo Router project using Expo's static web output. The repository
 - **Routes:** clean URLs with an SPA fallback for refresh/deep links
 - **Package manager:** pnpm
 
-Deploy the `main` branch from the repository root. The same build command can be checked locally. Phone OTP is a demo flow; the preview uses seeded data unless browser-safe backend values are configured.
+Deploy the `main` branch from the repository root. The same build command can be checked locally. Real email OTP requires `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` in the Vercel Preview and Production environments, plus enabled Email Auth and a working SMTP provider in Supabase.
 
 Do not add Supabase service-role credentials to the client bundle. If a live backend is configured, only publishable client values belong in Expo/Vercel settings.
 

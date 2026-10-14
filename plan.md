@@ -1,8 +1,8 @@
-# eKta — বাস্তবায়ন পরিকল্পনা
+# eKta Social (একতা) — বাস্তবায়ন পরিকল্পনা
 
 ## পণ্যের দিকনির্দেশ
 
-eKta হলো Malda/North Bengal-এর civic ও public-service community-র জন্য Bengali-first social network। এটি India-wide Twitter clone নয়; প্রথম দিনে একটি বাস্তব seed network-কে useful, পরিচিত এবং নিরাপদ অনুভব করানোই লক্ষ্য। Phase 1-এ ছোট, chronological এবং community-led experience থাকবে।
+eKta Social (বাংলা নাম: একতা) হলো Malda/North Bengal-এর civic ও public-service community-র জন্য Bengali-first social network। এটি India-wide Twitter clone নয়; প্রথম দিনে একটি বাস্তব seed network-কে useful, পরিচিত এবং নিরাপদ অনুভব করানোই লক্ষ্য। Phase 1-এ ছোট, chronological এবং community-led experience থাকবে।
 
 ## বাস্তবায়ন পদ্ধতি
 
@@ -45,7 +45,7 @@ eKta হলো Malda/North Bengal-এর civic ও public-service community-র 
 - **Typography:** headings-এ system `Georgia`-সদৃশ editorial serif fallback, body-তে `Inter`/system sans fallback। Bengali glyph-এর জন্য platform system font ব্যবহার হবে; hierarchy: 30/36 display, 20/26 section, 15/22 body, 12/16 metadata।
 - **Brand Essence:** “নিজের এলাকার খবর, কাজ আর কথার জন্য Bengali-first community network।” Personality: **আত্মীয়, কার্যকর, বিশ্বস্ত**।
 - **Brand Voice:** headline ছোট এবং স্থানীয়; CTA সরাসরি কিন্তু উষ্ণ। উদাহরণ: “আজ Gazole-এ কী ঘটছে?” এবং “আপনার এলাকার খবরটি শেয়ার করুন।”
-- **Wordmark & Logo:** `eKta` wordmark-এর পাশে দুইটি offset terracotta/green leaf-dot, যা “নিজের গ্রাম/নিজের মানুষ” বোঝায়। Native icon-এ একটিমাত্র abstract leaf + conversation notch থাকবে, baked-in rounded corner ছাড়া।
+- **Wordmark & Logo:** English locale-এ `eKta Social`, Bengali locale-এ `একতা` wordmark; পাশে দুইটি offset terracotta/green leaf-dot, যা “নিজের গ্রাম/নিজের মানুষ” বোঝায়। Native icon-এ একটিমাত্র abstract leaf + conversation notch থাকবে, baked-in rounded corner ছাড়া।
 
 ## Project structure
 

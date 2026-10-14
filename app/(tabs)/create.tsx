@@ -2,12 +2,13 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useAudioPlayer } from "expo-audio";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Avatar } from "@/components/apongram/Avatar";
+import { AccessibleSlider } from "@/components/apongram/AccessibleSlider";
 import { Colors } from "@/constants/theme";
 import { ScreenContainer } from "@/components/screen-container";
 import { createPost } from "@/lib/apongram/repository";
@@ -36,17 +37,18 @@ function VideoPreview({ uri, start, end, volume }: { uri: string; start: number;
     });
     return () => subscription.remove();
   }, [end, player, start]);
-  return <VideoView player={player} style={styles.previewImage} contentFit="cover" nativeControls />;
+  return <VideoView player={player} style={styles.previewImage} contentFit="cover" nativeControls={false} />;
 }
 
 export default function CreateScreen() {
   const params = useLocalSearchParams<{ mode?: string }>();
-  const initialMode: PublishMode = params.mode === "reel" ? "reel" : "post";
+  const initialMode: PublishMode = params.mode === "reel" ? "reel" : params.mode === "story" ? "story" : "post";
   return <CreateComposer key={params.mode ?? "default"} initialMode={initialMode} />;
 }
 
 function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
   const { copy, language } = useLanguage();
   const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
   const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
@@ -67,6 +69,13 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
   const [overlaySticker, setOverlaySticker] = useState<OverlaySticker | null>(null);
   const [overlayPosition, setOverlayPosition] = useState<OverlayPosition>("center");
   const selectedTrack = musicTracks.find((track) => track.id === musicTrackId);
+  const portraitFrameHeight = Math.min(420, Math.max(300, windowWidth * 1.05));
+  const portraitFrameWidth = Math.min(Math.max(170, windowWidth - 36), portraitFrameHeight * 9 / 16);
+  const usesPortraitVideo = mediaType === "video" && (mode === "reel" || mode === "story");
+  const parsedTrimStart = Number(trimStart);
+  const sliderTrimStart = Math.min(Math.max(0, videoDuration - 1), Math.max(0, Number.isFinite(parsedTrimStart) ? Math.round(parsedTrimStart) : 0));
+  const parsedTrimEnd = Number(trimEnd);
+  const sliderTrimEnd = Math.min(videoDuration, Math.max(sliderTrimStart + 1, trimEnd.trim() && Number.isFinite(parsedTrimEnd) ? Math.round(parsedTrimEnd) : videoDuration));
   const musicPlayer = useAudioPlayer(selectedTrack?.source);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -96,7 +105,7 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
       const allowedTypes: ImagePicker.MediaType[] = mode === "reel" ? ["videos"] : mode === "post" ? ["images"] : ["images", "videos"];
       const result = source === "camera"
         ? await ImagePicker.launchCameraAsync({ mediaTypes: allowedTypes, videoMaxDuration: 60, quality: 0.85 })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: allowedTypes, videoMaxDuration: 60, allowsMultipleSelection: false, quality: 0.85, allowsEditing: mode !== "reel", aspect: [4, 3] });
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: allowedTypes, videoMaxDuration: 60, allowsMultipleSelection: false, quality: 0.85, allowsEditing: mode !== "reel", aspect: mode === "story" ? [9, 16] : [4, 3] });
       const asset = !result.canceled ? result.assets[0] : undefined;
       if (!asset?.uri) return;
       if (mode === "reel" && asset.type !== "video") {
@@ -159,13 +168,13 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
       return;
     }
     if (!body.trim() && !mediaUri) return;
-    let videoOptions: { start: number; end: number; compression: VideoCompression } | undefined;
-    if (mediaType === "video" && mode === "reel") {
+    let videoOptions: { start: number; end: number; compression: VideoCompression; aspectRatio: "9:16" } | undefined;
+    if (mediaType === "video" && (mode === "reel" || mode === "story")) {
       const start = Number(trimStart); const end = Number(trimEnd);
       if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > videoDuration || end - start < 1) {
         setError(language === "bn" ? "ট্রিম সময় ঠিক করুন: কমপক্ষে ১ সেকেন্ড এবং সর্বোচ্চ ৬০ সেকেন্ড।" : "Choose a valid trim range between 1 and 60 seconds."); return;
       }
-      videoOptions = { start, end, compression };
+      videoOptions = { start, end, compression, aspectRatio: "9:16" };
     }
     setBusy(true);
     try {
@@ -190,14 +199,14 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
 
   const modeLabel = mode === "post" ? (language === "bn" ? "পোস্ট" : "Post") : mode === "reel" ? copy.reels : (language === "bn" ? "স্টোরি" : "Story");
   const helper = mode === "reel"
-    ? (language === "bn" ? "৬০ সেকেন্ডের মধ্যে উল্লম্ব ভিডিও · শব্দ প্রথমে বন্ধ থাকবে।" : "Vertical video up to 60 seconds · sound starts off.")
+    ? (language === "bn" ? "৯:১৬ উল্লম্ব ভিডিও · ৬০ সেকেন্ড পর্যন্ত · শব্দ প্রথমে বন্ধ থাকবে।" : "9:16 portrait video up to 60 seconds · sound starts off.")
     : mode === "story"
-      ? (language === "bn" ? "ছবি বা ভিডিও · ২৪ ঘণ্টা পরে স্টোরি মুছে যাবে।" : "Photo or video · disappears after 24 hours.")
+      ? (language === "bn" ? "৯:১৬ ভিডিও বা ছবি · ২৪ ঘণ্টা পরে স্টোরি মুছে যাবে।" : "9:16 portrait video or photo · disappears after 24 hours.")
       : copy.publicNote;
   const modeDescription = mode === "reel"
-    ? (language === "bn" ? "৬০ সেকেন্ডের মধ্যে একটি ছোট ভিডিও গল্প তৈরি করুন।" : "Create a short video story up to 60 seconds.")
+    ? (language === "bn" ? "৯:১৬ ফ্রেমে ৬০ সেকেন্ডের মধ্যে একটি ছোট ভিডিও গল্প তৈরি করুন।" : "Create a short story in a 9:16 portrait frame, up to 60 seconds.")
     : mode === "story"
-      ? (language === "bn" ? "ছবি বা ভিডিও ২৪ ঘণ্টার জন্য শেয়ার করুন।" : "Share a photo or video for 24 hours.")
+      ? (language === "bn" ? "৯:১৬ ভিডিও বা ছবি ২৪ ঘণ্টার জন্য শেয়ার করুন।" : "Share a 9:16 portrait video or photo for 24 hours.")
       : (language === "bn" ? "আপনার এলাকার জন্য লেখা বা একটি ছবি শেয়ার করুন।" : "Share a useful note or photo from your area.");
 
   return (
@@ -254,12 +263,124 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
               <View style={styles.attachmentTitle}><MaterialIcons name={mediaType === "video" ? "movie" : "photo"} size={18} color={C.green} /><Text style={styles.attachmentLabel}>{mediaType === "video" ? (mode === "story" ? "Story video" : "Reel video") : (language === "bn" ? "ছবি সংযুক্ত" : "Image attached")}</Text></View>
               <Pressable onPress={() => { setMediaUri(null); setMediaType(null); }} disabled={busy}><Text style={styles.remove}>{language === "bn" ? "সরান" : "Remove"}</Text></Pressable>
             </View>
-            <View style={styles.preview}>
+            <View style={[styles.preview, usesPortraitVideo && portraitStyles.preview, usesPortraitVideo && { width: portraitFrameWidth, height: portraitFrameHeight }]}>
               {mediaType === "video" ? <VideoPreview uri={mediaUri} start={Math.max(0, Number(trimStart) || 0)} end={Math.max(1, Number(trimEnd) || videoDuration)} volume={originalVolume} /> : <Image source={{ uri: mediaUri }} style={styles.previewImage} resizeMode="cover" />}
+              {usesPortraitVideo ? <View pointerEvents="none" style={portraitStyles.badge}><MaterialIcons name="crop-free" size={14} color="#FFF" /><Text style={portraitStyles.badgeText}>{language === "bn" ? "9:16 · উল্লম্ব" : "9:16 · Portrait"}</Text></View> : null}
               <View style={styles.previewOverlay}><MaterialIcons name="check-circle" size={18} color="#FFF" /><Text style={styles.previewText}>{mode === "story" ? (language === "bn" ? "২৪ ঘণ্টার স্টোরি" : "24-hour Story") : (language === "bn" ? "প্রকাশের জন্য প্রস্তুত" : "Ready to publish")}</Text></View>{(mode === "reel" || mode === "story") && (overlayText.trim() || overlaySticker) ? <View pointerEvents="none" style={[styles.overlayPreview, overlayPosition === "top" ? styles.overlayTop : overlayPosition === "bottom" ? styles.overlayBottom : styles.overlayCenter]}>{overlaySticker ? <MaterialIcons name={overlaySticker as keyof typeof MaterialIcons.glyphMap} size={28} color="#FFF" /> : null}{overlayText.trim() ? <Text style={styles.overlayText}>{overlayText.trim()}</Text> : null}</View> : null}
             </View>
-            {mediaType === "video" && mode === "reel" ? <View style={styles.trimPanel}><View style={styles.trimHeader}><Text style={styles.trimTitle}>{language === "bn" ? "রিল সম্পাদনা" : "Edit Reel"}</Text><Text style={styles.trimMeta}>{language === "bn" ? `মোট ${videoDuration} সেকেন্ড` : `Up to ${videoDuration}s`}</Text></View><View style={styles.trimFields}><View style={styles.trimField}><Text style={styles.trimLabel}>{language === "bn" ? "শুরু" : "Start"}</Text><TextInput value={trimStart} onChangeText={setTrimStart} keyboardType="decimal-pad" style={styles.trimInput} /></View><Text style={styles.trimDash}>–</Text><View style={styles.trimField}><Text style={styles.trimLabel}>{language === "bn" ? "শেষ" : "End"}</Text><TextInput value={trimEnd} onChangeText={setTrimEnd} keyboardType="decimal-pad" style={styles.trimInput} /></View><Text style={styles.seconds}>sec</Text></View><Text style={styles.compressionLabel}>{language === "bn" ? "কম্প্রেশন" : "Compression"}</Text><View style={styles.compressionRow}>{(["high", "balanced", "dataSaver"] as VideoCompression[]).map((profile) => <Pressable key={profile} onPress={() => setCompression(profile)} style={[styles.compressionButton, compression === profile && styles.filterActive]}><Text style={[styles.compressionText, compression === profile && styles.filterTextActive]}>{profile === "high" ? "High" : profile === "balanced" ? "Balanced" : "Data saver"}</Text></Pressable>)}</View><Text style={styles.trimNote}>{language === "bn" ? "এই রেঞ্জ ও কম্প্রেশন প্রোফাইল আপলোডে ব্যবহার হবে।" : "This trim range and compression profile will be applied at upload."}</Text></View> : null}
-            {(mode === "reel" || mode === "story") ? <View style={styles.musicPanel}><View style={styles.musicHeader}><View><Text style={styles.trimTitle}>{language === "bn" ? "সঙ্গীত যোগ করুন" : "Add music"}</Text><Text style={styles.trimMeta}>{selectedTrack ? selectedTrack.title : (language === "bn" ? "একটি ট্র্যাক বাছুন" : "Choose a track")}</Text></View>{selectedTrack ? <Pressable onPress={() => musicPlayer.playing ? musicPlayer.pause() : musicPlayer.play()} style={styles.musicPlay}><MaterialIcons name={musicPlayer.playing ? "pause" : "play-arrow"} size={17} color="#FFF" /></Pressable> : null}</View><View style={styles.trackList}>{musicTracks.map((track) => <Pressable key={track.id} onPress={() => { setMusicTrackId(track.id); musicPlayer.replace(track.source); musicPlayer.play(); }} style={[styles.trackRow, musicTrackId === track.id && styles.trackSelected]}><MaterialIcons name={musicTrackId === track.id ? "radio-button-checked" : "radio-button-unchecked"} size={17} color={musicTrackId === track.id ? C.green : C.muted} /><View style={styles.trackCopy}><Text style={styles.trackTitle}>{track.title}</Text><Text style={styles.trackMeta}>{track.artist} · {track.mood}</Text></View><MaterialIcons name="play-arrow" size={16} color={C.terra} /></Pressable>)}</View>{selectedTrack ? <View style={styles.mixControls}><View style={styles.mixRow}><Text style={styles.mixLabel}>{language === "bn" ? "মূল ভিডিও" : "Original"}</Text><Pressable onPress={() => setOriginalVolume(Math.max(0, Number((originalVolume - 0.1).toFixed(1))))}><Text style={styles.mixButton}>−</Text></Pressable><Text style={styles.mixValue}>{Math.round(originalVolume * 100)}%</Text><Pressable onPress={() => setOriginalVolume(Math.min(1, Number((originalVolume + 0.1).toFixed(1))))}><Text style={styles.mixButton}>+</Text></Pressable></View><View style={styles.mixRow}><Text style={styles.mixLabel}>{language === "bn" ? "সঙ্গীত" : "Music"}</Text><Pressable onPress={() => { const value = Math.max(0, Number((musicVolume - 0.1).toFixed(1))); setMusicVolume(value); musicPlayer.volume = value; }}><Text style={styles.mixButton}>−</Text></Pressable><Text style={styles.mixValue}>{Math.round(musicVolume * 100)}%</Text><Pressable onPress={() => { const value = Math.min(1, Number((musicVolume + 0.1).toFixed(1))); setMusicVolume(value); musicPlayer.volume = value; }}><Text style={styles.mixButton}>+</Text></Pressable></View></View> : null}<Text style={styles.trimNote}>{language === "bn" ? "সঙ্গীতটি প্রিভিউতে মিশবে এবং প্রকাশের সময় সংরক্ষিত হবে।" : "Music previews in the mix and is saved with your Reel or Story."}</Text></View> : null}
+            {usesPortraitVideo ? <Text style={portraitStyles.note}>{language === "bn" ? "প্রিভিউটি 9:16 ফ্রেমে মাঝখান থেকে crop হবে; আসল ভিডিও ফাইলটি অক্ষত থাকবে।" : "Preview uses a centered 9:16 crop; the original video file is preserved."}</Text> : null}
+            {mediaType === "video" && (mode === "reel" || mode === "story") ? (
+              <View style={styles.trimPanel}>
+                <View style={styles.trimHeader}>
+                  <Text style={styles.trimTitle}>{mode === "story" ? (language === "bn" ? "স্টোরি ভিডিও সম্পাদনা" : "Edit Story video") : (language === "bn" ? "রিল সম্পাদনা" : "Edit Reel")}</Text>
+                  <Text style={styles.trimMeta}>{language === "bn" ? `মোট ${videoDuration} সেকেন্ড` : `Up to ${videoDuration}s`}</Text>
+                </View>
+                <View style={styles.selectedRange}>
+                  <Text style={styles.trimMeta}>{language === "bn" ? "নির্বাচিত ক্লিপ" : "Selected clip"}</Text>
+                  <Text style={styles.selectedRangeValue}>
+                    {language === "bn" ? `${sliderTrimEnd - sliderTrimStart} সেকেন্ড` : `${sliderTrimEnd - sliderTrimStart}s`}
+                  </Text>
+                </View>
+                <AccessibleSlider
+                  label={language === "bn" ? "শুরুর সময়" : "Start time"}
+                  value={sliderTrimStart}
+                  min={0}
+                  max={Math.max(0, sliderTrimEnd - 1)}
+                  valueText={language === "bn" ? `${sliderTrimStart} সেকেন্ড` : `${sliderTrimStart}s`}
+                  fontFamily={bodyFont}
+                  increaseActionLabel={language === "bn" ? "বাড়ান" : "Increase"}
+                  decreaseActionLabel={language === "bn" ? "কমান" : "Decrease"}
+                  onValueChange={(value) => setTrimStart(String(Math.min(Math.round(value), sliderTrimEnd - 1)))}
+                />
+                <AccessibleSlider
+                  label={language === "bn" ? "শেষের সময়" : "End time"}
+                  value={sliderTrimEnd}
+                  min={Math.min(videoDuration, sliderTrimStart + 1)}
+                  max={videoDuration}
+                  valueText={language === "bn" ? `${sliderTrimEnd} সেকেন্ড` : `${sliderTrimEnd}s`}
+                  fontFamily={bodyFont}
+                  increaseActionLabel={language === "bn" ? "বাড়ান" : "Increase"}
+                  decreaseActionLabel={language === "bn" ? "কমান" : "Decrease"}
+                  onValueChange={(value) => setTrimEnd(String(Math.max(sliderTrimStart + 1, Math.min(videoDuration, Math.round(value)))))}
+                />
+                <View style={styles.trimFields}>
+                  <View style={styles.trimField}>
+                    <Text style={styles.trimLabel}>{language === "bn" ? "শুরু (সেকেন্ড)" : "Start (seconds)"}</Text>
+                    <TextInput value={trimStart} onChangeText={setTrimStart} keyboardType="decimal-pad" style={styles.trimInput} accessibilityLabel={language === "bn" ? "ট্রিম শুরুর সময়" : "Trim start time"} />
+                  </View>
+                  <Text style={styles.trimDash}>–</Text>
+                  <View style={styles.trimField}>
+                    <Text style={styles.trimLabel}>{language === "bn" ? "শেষ (সেকেন্ড)" : "End (seconds)"}</Text>
+                    <TextInput value={trimEnd} onChangeText={setTrimEnd} keyboardType="decimal-pad" style={styles.trimInput} accessibilityLabel={language === "bn" ? "ট্রিম শেষের সময়" : "Trim end time"} />
+                  </View>
+                </View>
+                <Text style={styles.compressionLabel}>{language === "bn" ? "কম্প্রেশন" : "Compression"}</Text>
+                <View style={styles.compressionRow}>
+                  {(["high", "balanced", "dataSaver"] as VideoCompression[]).map((profile) => (
+                    <Pressable key={profile} onPress={() => setCompression(profile)} style={[styles.compressionButton, compression === profile && styles.filterActive]} accessibilityRole="button" accessibilityState={{ selected: compression === profile }}>
+                      <Text style={[styles.compressionText, compression === profile && styles.filterTextActive]}>{profile === "high" ? "High" : profile === "balanced" ? "Balanced" : "Data saver"}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text style={styles.trimNote}>{language === "bn" ? "দ্রুত ট্রিমে স্লাইডার ব্যবহার করুন; নির্দিষ্ট সময় দিতে নিচের ঘরগুলো ব্যবহার করুন।" : "Drag the sliders for a quick trim, or use the fields for exact seconds."}</Text>
+              </View>
+            ) : null}
+            {(mode === "reel" || mode === "story") ? (
+              <View style={styles.musicPanel}>
+                <View style={styles.musicHeader}>
+                  <View>
+                    <Text style={styles.trimTitle}>{language === "bn" ? "সঙ্গীত যোগ করুন" : "Add music"}</Text>
+                    <Text style={styles.trimMeta}>{selectedTrack ? selectedTrack.title : (language === "bn" ? "একটি ট্র্যাক বাছুন" : "Choose a track")}</Text>
+                  </View>
+                  {selectedTrack ? (
+                    <Pressable onPress={() => musicPlayer.playing ? musicPlayer.pause() : musicPlayer.play()} style={styles.musicPlay} accessibilityRole="button" accessibilityLabel={musicPlayer.playing ? (language === "bn" ? "সঙ্গীত থামান" : "Pause music") : (language === "bn" ? "সঙ্গীত চালান" : "Play music")}>
+                      <MaterialIcons name={musicPlayer.playing ? "pause" : "play-arrow"} size={17} color="#FFF" />
+                    </Pressable>
+                  ) : null}
+                </View>
+                <View style={styles.trackList}>
+                  {musicTracks.map((track) => (
+                    <Pressable key={track.id} onPress={() => { setMusicTrackId(track.id); musicPlayer.replace(track.source); musicPlayer.play(); }} style={[styles.trackRow, musicTrackId === track.id && styles.trackSelected]} accessibilityRole="button" accessibilityState={{ selected: musicTrackId === track.id }}>
+                      <MaterialIcons name={musicTrackId === track.id ? "radio-button-checked" : "radio-button-unchecked"} size={17} color={musicTrackId === track.id ? C.green : C.muted} />
+                      <View style={styles.trackCopy}>
+                        <Text style={styles.trackTitle}>{track.title}</Text>
+                        <Text style={styles.trackMeta}>{language === "bn" ? track.artistBn ?? track.artist : track.artist} · {track.mood}</Text>
+                      </View>
+                      <MaterialIcons name="play-arrow" size={16} color={C.terra} />
+                    </Pressable>
+                  ))}
+                </View>
+                {selectedTrack ? (
+                  <View style={styles.mixControls}>
+                    <AccessibleSlider
+                      label={language === "bn" ? "মূল অডিওর ভলিউম" : "Original audio volume"}
+                      value={Math.round(originalVolume * 100)}
+                      min={0}
+                      max={100}
+                      step={5}
+                      valueText={`${Math.round(originalVolume * 100)}%`}
+                      fontFamily={bodyFont}
+                      increaseActionLabel={language === "bn" ? "বাড়ান" : "Increase"}
+                      decreaseActionLabel={language === "bn" ? "কমান" : "Decrease"}
+                      onValueChange={(value) => setOriginalVolume(value / 100)}
+                    />
+                    <AccessibleSlider
+                      label={language === "bn" ? "সঙ্গীতের ভলিউম" : "Music volume"}
+                      value={Math.round(musicVolume * 100)}
+                      min={0}
+                      max={100}
+                      step={5}
+                      valueText={`${Math.round(musicVolume * 100)}%`}
+                      fontFamily={bodyFont}
+                      increaseActionLabel={language === "bn" ? "বাড়ান" : "Increase"}
+                      decreaseActionLabel={language === "bn" ? "কমান" : "Decrease"}
+                      onValueChange={(value) => setMusicVolume(value / 100)}
+                    />
+                  </View>
+                ) : null}
+                <Text style={styles.trimNote}>{language === "bn" ? "সঙ্গীতটি প্রিভিউতে মিশবে এবং প্রকাশের সময় সংরক্ষিত হবে।" : "Music previews in the mix and is saved with your Reel or Story."}</Text>
+              </View>
+            ) : null}
             {(mode === "reel" || mode === "story") ? <View style={styles.overlayPanel}><View style={styles.musicHeader}><View><Text style={styles.trimTitle}>{language === "bn" ? "স্টিকার ও টেক্সট" : "Stickers & text"}</Text><Text style={styles.trimMeta}>{language === "bn" ? "মিডিয়ার উপরে যোগ করুন" : "Layered over your media"}</Text></View><Pressable onPress={() => { setOverlayText(""); setOverlaySticker(null); }}><Text style={styles.remove}>{language === "bn" ? "মুছুন" : "Clear"}</Text></Pressable></View><TextInput value={overlayText} onChangeText={setOverlayText} maxLength={60} placeholder={language === "bn" ? "ছবির উপর লেখা..." : "Add text over your media..."} placeholderTextColor="#9A9080" style={styles.overlayInput} /><View style={styles.stickerRow}>{(["sparkles", "favorite", "location-on", "wb-sunny", "local-florist"] as OverlaySticker[]).map((sticker) => <Pressable key={sticker} onPress={() => setOverlaySticker(overlaySticker === sticker ? null : sticker)} style={[styles.stickerButton, overlaySticker === sticker && styles.filterActive]}><MaterialIcons name={sticker as keyof typeof MaterialIcons.glyphMap} size={20} color={overlaySticker === sticker ? "#FFF" : C.terra} /></Pressable>)}</View><View style={styles.positionRow}><Text style={styles.trimMeta}>{language === "bn" ? "অবস্থান" : "Position"}</Text>{(["top", "center", "bottom"] as OverlayPosition[]).map((position) => <Pressable key={position} onPress={() => setOverlayPosition(position)} style={[styles.positionButton, overlayPosition === position && styles.filterActive]}><Text style={[styles.positionText, overlayPosition === position && styles.filterTextActive]}>{position[0].toUpperCase() + position.slice(1)}</Text></Pressable>)}</View><Text style={styles.trimNote}>{language === "bn" ? "প্রিভিউতে টেনে বসানো যাবে; প্রকাশের সময় এই লেয়ার সংরক্ষিত হবে।" : "Preview the layer above your media; it will be saved with the Reel or Story."}</Text></View> : null}
             {mediaType === "image" ? (
               <View style={styles.editRow}>
@@ -319,6 +440,8 @@ const styles = StyleSheet.create({
   previewImage: { width: "100%", height: "100%" },
   previewOverlay: { position: "absolute", left: 9, bottom: 8, backgroundColor: "rgba(30,27,22,0.62)", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 5 },
   previewText: { color: "#FFF", fontSize: 10, fontWeight: "700" },
+  selectedRange: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 9, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: "#EEF6F3" },
+  selectedRangeValue: { color: C.green, fontSize: 12, fontWeight: "800" },
   overlayPanel: { marginTop: 12, paddingTop: 11, borderTopWidth: 1, borderTopColor: C.line }, overlayInput: { marginTop: 8, height: 38, borderWidth: 1, borderColor: C.line, borderRadius: 10, paddingHorizontal: 10, color: C.ink, fontSize: 12, backgroundColor: "#FBF7F0" }, stickerRow: { flexDirection: "row", gap: 7, marginTop: 8 }, stickerButton: { width: 34, height: 32, borderWidth: 1, borderColor: "#F0C8B9", borderRadius: 9, alignItems: "center", justifyContent: "center" }, positionRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 9 }, positionButton: { borderWidth: 1, borderColor: "#F0C8B9", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 }, positionText: { color: C.terra, fontSize: 9, fontWeight: "800" }, overlayPreview: { position: "absolute", alignSelf: "center", maxWidth: "88%", backgroundColor: "rgba(30,27,22,0.68)", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 7 }, overlayTop: { top: 16 }, overlayCenter: { top: "42%" }, overlayBottom: { bottom: 44 }, overlayText: { color: "#FFF", fontSize: 16, fontWeight: "800", textAlign: "center" }, musicPanel: { marginTop: 12, paddingTop: 11, borderTopWidth: 1, borderTopColor: C.line }, musicHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, musicPlay: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.green, alignItems: "center", justifyContent: "center" }, trackList: { marginTop: 8, gap: 5 }, trackRow: { flexDirection: "row", alignItems: "center", gap: 8, padding: 8, borderRadius: 10, backgroundColor: "#FBF7F0" }, trackSelected: { borderWidth: 1, borderColor: "#A7C9C2", backgroundColor: "#EEF6F3" }, trackCopy: { flex: 1 }, trackTitle: { color: C.ink, fontSize: 11, fontWeight: "800" }, trackMeta: { color: C.muted, fontSize: 9, marginTop: 2 }, mixControls: { marginTop: 8, gap: 5 }, mixRow: { flexDirection: "row", alignItems: "center", gap: 8 }, mixLabel: { color: C.muted, fontSize: 10, width: 58 }, mixButton: { color: C.terra, fontSize: 19, fontWeight: "700", width: 22, textAlign: "center" }, mixValue: { color: C.ink, fontSize: 10, fontWeight: "800", width: 38, textAlign: "center" }, trimPanel: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line }, trimHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, trimTitle: { color: C.ink, fontSize: 12, fontWeight: "800" }, trimMeta: { color: C.muted, fontSize: 10 }, trimFields: { flexDirection: "row", alignItems: "flex-end", gap: 7, marginTop: 9 }, trimField: { flex: 1 }, trimLabel: { color: C.muted, fontSize: 9, marginBottom: 3 }, trimInput: { height: 34, borderWidth: 1, borderColor: C.line, borderRadius: 9, paddingHorizontal: 9, color: C.ink, fontSize: 12, backgroundColor: "#FBF7F0" }, trimDash: { color: C.muted, paddingBottom: 9 }, seconds: { color: C.muted, fontSize: 10, paddingBottom: 9 }, compressionLabel: { color: C.muted, fontSize: 9, marginTop: 10, marginBottom: 6 }, compressionRow: { flexDirection: "row", gap: 5 }, compressionButton: { flex: 1, borderWidth: 1, borderColor: "#F0C8B9", borderRadius: 999, paddingVertical: 7, alignItems: "center" }, compressionText: { color: C.terra, fontSize: 9, fontWeight: "800" }, trimNote: { color: C.muted, fontSize: 9, lineHeight: 13, marginTop: 7 }, editRow: { flexDirection: "row", gap: 5, marginTop: 10 },
   editButton: { flex: 1, borderWidth: 1, borderColor: "#F0C8B9", borderRadius: 999, paddingVertical: 7, alignItems: "center", justifyContent: "center" },
   editText: { color: C.terra, fontSize: 9, fontWeight: "800" },
@@ -328,4 +451,11 @@ const styles = StyleSheet.create({
   errorText: { color: C.terra, flex: 1, fontSize: 10, lineHeight: 15 },
   success: { backgroundColor: "#DFF2ED", borderWidth: 1, borderColor: "#A4D7CC", padding: 14, borderRadius: 16, flexDirection: "row", gap: 8, marginTop: 18 },
   successText: { color: C.green, fontWeight: "800" },
+});
+
+const portraitStyles = StyleSheet.create({
+  preview: { alignSelf: "center" },
+  badge: { position: "absolute", top: 9, left: 9, zIndex: 2, flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(20,33,61,0.78)", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6 },
+  badgeText: { color: "#FFF", fontSize: 10, fontWeight: "800" },
+  note: { color: C.muted, fontSize: 10, lineHeight: 15, textAlign: "center", marginTop: 7, paddingHorizontal: 8 },
 });

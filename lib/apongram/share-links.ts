@@ -9,7 +9,8 @@ export function createPostShareLinks(postId: string) {
   return { webUrl, appUrl };
 }
 
-export function createPostShareMessage(postId: string, body: string, handle: string, location: string) {
+export function createPostShareMessage(postId: string, body: string, handle: string, location: string, language: "bn" | "en" = "en") {
   const { webUrl, appUrl } = createPostShareLinks(postId);
-  return `${body}\n@${handle} · ${location}\n${webUrl}\nOpen in eKta: ${appUrl}`;
+  const openLabel = language === "bn" ? "একতায় খুলুন" : "Open in eKta Social";
+  return `${body}\n@${handle} · ${location}\n${webUrl}\n${openLabel}: ${appUrl}`;
 }

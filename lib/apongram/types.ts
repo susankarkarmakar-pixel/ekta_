@@ -1,5 +1,7 @@
 export type Language = "bn" | "en";
 
+export type ProfileCategory = "community" | "creator" | "local-business" | "volunteer" | "organization";
+
 export type Profile = {
   id: string;
   name: string;
@@ -9,6 +11,9 @@ export type Profile = {
   avatarColor: string;
   avatarUrl?: string;
   region: string;
+  pronouns?: string;
+  website?: string;
+  category?: ProfileCategory;
   followers: number;
   following: number;
   verified?: boolean;
@@ -23,6 +28,7 @@ export type PublishStatus = "idle" | "uploading" | "publishing" | "published" | 
 export type RenderManifest = {
   trimStart?: number;
   trimEnd?: number;
+  aspectRatio?: "9:16";
   compression?: VideoCompression;
   musicTrackId?: string;
   musicVolume?: number;
@@ -48,6 +54,7 @@ export type Post = {
   mediaType?: "image" | "video";
   videoStart?: number;
   videoEnd?: number;
+  videoAspectRatio?: "9:16";
   videoCompression?: VideoCompression;
   musicTrackId?: string;
   musicVolume?: number;
@@ -86,7 +93,7 @@ export const copy = {
     demoMode: "Demo mode", demoModeText: "বাস্তব OTP login চালাতে Supabase URL ও publishable key configure করুন।", demoLabel: "নমুনা",
     otpTitle: "ফোন দিয়ে যোগ দিন", phoneLabel: "ফোন নম্বর", phonePlaceholder: "+91 98765 43210", otpDigit: "অঙ্ক",
     sendOtp: "OTP পাঠান", otpLabel: "৬ সংখ্যার OTP", verify: "যাচাই করুন", resend: "আবার পাঠান",
-    verifiedMessage: "আপনি এখন eKta-এর community-তে আছেন।", back: "ফিরে যান",
+    verifiedMessage: "আপনি এখন একতা কমিউনিটিতে আছেন।", back: "ফিরে যান",
     reels: "রিলস", reelsIntro: "আপনার এলাকার ছোট গল্প", createReel: "রিল তৈরি", localReel: "স্থানীয় গল্প", demoFootage: "ডেমো ফুটেজ",
     loadingReels: "রিলস লোড হচ্ছে...", noReelsYet: "এখনও কোনও রিল নেই",
     beFirstReel: "আপনার এলাকার প্রথম ছোট ভিডিও গল্পটি শেয়ার করুন।",
@@ -118,7 +125,7 @@ export const copy = {
     demoMode: "Demo mode", demoModeText: "Email OTP and Google sign-in need the Supabase URL and publishable key.", demoLabel: "Sample",
     otpTitle: "Join with your email", phoneLabel: "Email address", phonePlaceholder: "you@example.com", otpDigit: "Digit",
     sendOtp: "Send OTP", otpLabel: "6-digit OTP", verify: "Verify", resend: "Resend",
-    verifiedMessage: "You’re now part of the eKta community.", back: "Go back",
+    verifiedMessage: "You’re now part of eKta Social.", back: "Go back",
     reels: "Reels", reelsIntro: "Short stories from your community", createReel: "Create Reel", localReel: "Community", demoFootage: "Demo footage",
     loadingReels: "Loading Reels…", noReelsYet: "No Reels yet",
     beFirstReel: "Share the first short video story from your community.",

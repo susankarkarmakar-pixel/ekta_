@@ -155,8 +155,8 @@ export default function PhoneAuthScreen() {
         </View>
         <View style={styles.hero}>
           <View style={styles.landscape}><View style={styles.landscapeSun} /><View style={styles.landscapeHillBack} /><View style={styles.landscapeHillFront} /></View>
-          <View style={styles.brandRow}><Logo variant="horizontal" width={118} height={36} accessibilityLabel="eKta" /></View>
-          <Text style={[styles.tagline, { fontFamily: bodyFont }]}>{language === "bn" ? "একতায় আমরা · your community, connected" : "Your community, connected"}</Text>
+          <View style={styles.brandRow}><Logo variant="horizontal" width={148} height={36} /></View>
+          <Text style={[styles.tagline, { fontFamily: bodyFont }]}>{language === "bn" ? "একতায় আমরা · আপনার কমিউনিটি, একসঙ্গে" : "Your community, connected"}</Text>
           <View style={styles.localPill}><View style={styles.dot} /><Text style={[styles.localText, { fontFamily: bodyFont }]}>{language === "bn" ? "ইমেইল OTP দিয়ে নিরাপদে সাইন ইন" : "Secure sign-in with email OTP"}</Text></View>
         </View>
         {!verified && <Pressable onPress={signInWithGoogle} disabled={busy} style={[styles.googleButton, busy && styles.disabled]}><Text style={[styles.googleButtonText, { fontFamily: mediumFont }]}>G</Text><Text style={[styles.googleButtonLabel, { fontFamily: mediumFont }]}>{language === "bn" ? "Google দিয়ে চালিয়ে যান" : "Continue with Google"}</Text></Pressable>}

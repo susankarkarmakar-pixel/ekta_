@@ -32,7 +32,7 @@ function InlineVideo({ uri, active }: { uri: string | number; active: boolean })
     else player.pause();
     return () => player.pause();
   }, [active, player]);
-  return <VideoView player={player} style={styles.photo} contentFit="cover" nativeControls />;
+  return <VideoView player={player} style={styles.photo} contentFit="cover" nativeControls={false} />;
 }
 
 export function PostCard({ post, copy, onOpen, onLike, onReport, onAuthor, onHide, isVideoActive = true, onLayout }: { post: Post; copy: CardCopy; onOpen: () => void; onLike: () => void; onReport: () => void; onAuthor?: () => void; onHide?: () => void; isVideoActive?: boolean; onLayout?: (event: LayoutChangeEvent) => void }) {
@@ -47,7 +47,7 @@ export function PostCard({ post, copy, onOpen, onLike, onReport, onAuthor, onHid
   }, [entryProgress]);
   const sharePost = async () => {
     const links = createPostShareLinks(post.id);
-    const message = createPostShareMessage(post.id, post.body, post.author.handle, post.location);
+    const message = createPostShareMessage(post.id, post.body, post.author.handle, post.location, language);
     try {
       await Share.share({ message, url: links.webUrl }, { dialogTitle: copy.share });
     } catch {
