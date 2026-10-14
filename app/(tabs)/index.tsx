@@ -67,6 +67,7 @@ export default function HomeScreen() {
   const [viewedStoryIds, setViewedStoryIds] = useState<string[]>([]);
   const [storyViewerId, setStoryViewerId] = useState<string | null>(null);
   const [storyPaused, setStoryPaused] = useState(false);
+  const [storyNow] = useState(() => Date.now());
   const [hasMore, setHasMore] = useState(true);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [webPullDistance, setWebPullDistance] = useState(0);
@@ -233,7 +234,10 @@ export default function HomeScreen() {
     ? { ...post, likedByMe: !post.likedByMe, likes: post.likes + (post.likedByMe ? -1 : 1) }
     : post));
 
-  const storyPeople = useMemo(() => [currentUser, ...profiles.slice(1, 5)], []);
+  const storyPeople = useMemo(() => [currentUser, ...profiles.slice(1, 5)].filter((person) => {
+    const authoredStories = demoStories.filter((story) => story.author.id === person.id);
+    return !authoredStories.length || authoredStories.some((story) => !story.storyExpiresAt || new Date(story.storyExpiresAt).getTime() > storyNow);
+  }), [storyNow]);
   useEffect(() => {
     let mounted = true;
     void getViewedStoryIds().then((ids) => { if (mounted) setViewedStoryIds(ids); });
@@ -255,7 +259,7 @@ export default function HomeScreen() {
     setStoryViewerId(personId);
   };
   const storyViewer = storyPeople.find((person) => person.id === storyViewerId);
-  const storyPost = storyViewer ? demoStories.find((story) => story.author.id === storyViewer.id) : undefined;
+  const storyPost = storyViewer ? demoStories.find((story) => story.author.id === storyViewer.id && (!story.storyExpiresAt || new Date(story.storyExpiresAt).getTime() > storyNow)) : undefined;
   const storyIndex = storyViewerId ? storyPeople.findIndex((person) => person.id === storyViewerId) : -1;
   const moveStory = (direction: -1 | 1) => {
     if (storyIndex < 0) return;
