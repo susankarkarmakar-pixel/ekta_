@@ -14,6 +14,7 @@ import { currentUser, demoStories, profiles, topics } from "@/lib/apongram/mock-
 import { buildFeedPreferences, rankFeed, type FeedMode } from "@/lib/apongram/feed-ranking";
 import { useFeedPreferences } from "@/lib/apongram/FeedPreferencesContext";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
+import { getViewedStoryIds, markStoryViewed } from "@/lib/apongram/story-view-state";
 import type { Post } from "@/lib/apongram/types";
 
 const C = { ...Colors.light, card: Colors.light.paper, ink: Colors.light.inkNavy, muted: Colors.light.slate, terra: Colors.light.terracotta, line: Colors.light.line, green: Colors.light.leafGreen };
@@ -233,12 +234,23 @@ export default function HomeScreen() {
     : post));
 
   const storyPeople = useMemo(() => [currentUser, ...profiles.slice(1, 5)], []);
+  useEffect(() => {
+    let mounted = true;
+    void getViewedStoryIds().then((ids) => { if (mounted) setViewedStoryIds(ids); });
+    return () => { mounted = false; };
+  }, []);
+
+  const rememberStoryViewed = (personId: string) => {
+    setViewedStoryIds((ids) => ids.includes(personId) ? ids : [...ids, personId]);
+    void markStoryViewed(personId);
+  };
+
   const openStory = (personId: string, isOwnStory: boolean) => {
     if (isOwnStory) {
       router.push("/(tabs)/create");
       return;
     }
-    setViewedStoryIds((ids) => ids.includes(personId) ? ids : [...ids, personId]);
+    rememberStoryViewed(personId);
     setStoryPaused(false);
     setStoryViewerId(personId);
   };
@@ -250,7 +262,7 @@ export default function HomeScreen() {
     const nextIndex = storyIndex + direction;
     if (nextIndex < 0 || nextIndex >= storyPeople.length) return;
     const nextPerson = storyPeople[nextIndex];
-    setViewedStoryIds((ids) => ids.includes(nextPerson.id) ? ids : [...ids, nextPerson.id]);
+    rememberStoryViewed(nextPerson.id);
     setStoryPaused(false);
     setStoryViewerId(nextPerson.id);
   };
@@ -273,7 +285,7 @@ export default function HomeScreen() {
         return;
       }
       const nextPerson = storyPeople[nextIndex];
-      setViewedStoryIds((ids) => ids.includes(nextPerson.id) ? ids : [...ids, nextPerson.id]);
+      rememberStoryViewed(nextPerson.id);
       setStoryViewerId(nextPerson.id);
     }, 5000);
     return () => clearTimeout(timer);
