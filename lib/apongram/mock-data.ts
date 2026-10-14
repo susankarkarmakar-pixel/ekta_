@@ -29,7 +29,7 @@ export const posts: Post[] = [
 
 export const demoStories: Post[] = [
   { id: "demo-story-market", author: currentUser, body: "নমুনা · আজকের বাজার থেকে community-র জন্য ছোট্ট আপডেট।", createdAt: "2 h", location: "Gazole, Malda", tags: ["Story"], likes: 0, comments: 0, likedByMe: false, imageUrl: "community-pottery", isStory: true, isDemo: true, storyExpiresAt: new Date(Date.now() + 22 * 60 * 60 * 1000).toISOString() },
-  { id: "demo-story-community", author: currentUser, body: "নমুনা · আগামী সপ্তাহের community meet-up-এর কথা মনে রাখুন।", createdAt: "5 h", location: "Gazole, Malda", tags: ["Story"], likes: 0, comments: 0, likedByMe: false, isStory: true, isDemo: true, storyExpiresAt: new Date(Date.now() + 19 * 60 * 60 * 1000).toISOString() },
+  { id: "demo-story-community", author: currentUser, body: "নমুনা · আগামী সপ্তাহের community meet-up-এর কথা মনে রাখুন।", createdAt: "5 h", location: "Gazole, Malda", tags: ["Story"], likes: 0, comments: 0, likedByMe: false, videoUrl: "ekta-demo://market", mediaType: "video", isStory: true, isDemo: true, storyExpiresAt: new Date(Date.now() + 19 * 60 * 60 * 1000).toISOString() },
 ];
 
 export const demoStoryHighlights = [

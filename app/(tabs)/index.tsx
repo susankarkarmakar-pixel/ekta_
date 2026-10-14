@@ -1,7 +1,8 @@
 import { MaterialIcons } from "@expo/vector-icons";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type NativeTouchEvent } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Animated, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type NativeTouchEvent } from "react-native";
 import { Avatar } from "@/components/apongram/Avatar";
 import { PostCard } from "@/components/apongram/PostCard";
 import { TopicChip } from "@/components/apongram/TopicChip";
@@ -9,13 +10,24 @@ import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
 import { getFeedPage, repositoryMode } from "@/lib/apongram/repository";
-import { currentUser, profiles, topics } from "@/lib/apongram/mock-data";
+import { currentUser, demoStories, profiles, topics } from "@/lib/apongram/mock-data";
 import { buildFeedPreferences, rankFeed, type FeedMode } from "@/lib/apongram/feed-ranking";
 import { useFeedPreferences } from "@/lib/apongram/FeedPreferencesContext";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
 import type { Post } from "@/lib/apongram/types";
 
 const C = { ...Colors.light, card: Colors.light.paper, ink: Colors.light.inkNavy, muted: Colors.light.slate, terra: Colors.light.terracotta, line: Colors.light.line, green: Colors.light.leafGreen };
+const STORY_VIDEO_SOURCES: Record<string, number> = { "ekta-demo://market": require("../../assets/videos/reel-market.mp4") };
+
+function StoryVideo({ uri, paused }: { uri: string | number; paused: boolean }) {
+  const player = useVideoPlayer(typeof uri === "string" ? STORY_VIDEO_SOURCES[uri] ?? uri : uri, (instance) => { instance.loop = true; instance.muted = false; });
+  useEffect(() => {
+    if (paused) player.pause();
+    else player.play();
+    return () => player.pause();
+  }, [paused, player]);
+  return <VideoView player={player} style={styles.storyVideo} contentFit="contain" nativeControls={false} />;
+}
 
 function FeedSkeleton() {
   const [opacity] = useState(() => new Animated.Value(0.42));
@@ -51,6 +63,9 @@ export default function HomeScreen() {
   const [feedOffline, setFeedOffline] = useState(false);
   const [refreshNotice, setRefreshNotice] = useState(false);
   const [hiddenPostIds, setHiddenPostIds] = useState<string[]>([]);
+  const [viewedStoryIds, setViewedStoryIds] = useState<string[]>([]);
+  const [storyViewerId, setStoryViewerId] = useState<string | null>(null);
+  const [storyPaused, setStoryPaused] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [webPullDistance, setWebPullDistance] = useState(0);
@@ -58,6 +73,7 @@ export default function HomeScreen() {
   const activeVideoRef = useRef<string | null>(null);
   const webPullStartY = useRef<number | null>(null);
   const webPullDistanceRef = useRef(0);
+  const storyTouchStartX = useRef<number | null>(null);
   const scrollOffsetY = useRef(0);
   const cardLayouts = useRef<Record<string, { y: number; height: number }>>({});
 
@@ -216,6 +232,53 @@ export default function HomeScreen() {
     ? { ...post, likedByMe: !post.likedByMe, likes: post.likes + (post.likedByMe ? -1 : 1) }
     : post));
 
+  const storyPeople = useMemo(() => [currentUser, ...profiles.slice(1, 5)], []);
+  const openStory = (personId: string, isOwnStory: boolean) => {
+    if (isOwnStory) {
+      router.push("/(tabs)/create");
+      return;
+    }
+    setViewedStoryIds((ids) => ids.includes(personId) ? ids : [...ids, personId]);
+    setStoryPaused(false);
+    setStoryViewerId(personId);
+  };
+  const storyViewer = storyPeople.find((person) => person.id === storyViewerId);
+  const storyPost = storyViewer ? demoStories.find((story) => story.author.id === storyViewer.id) : undefined;
+  const storyIndex = storyViewerId ? storyPeople.findIndex((person) => person.id === storyViewerId) : -1;
+  const moveStory = (direction: -1 | 1) => {
+    if (storyIndex < 0) return;
+    const nextIndex = storyIndex + direction;
+    if (nextIndex < 0 || nextIndex >= storyPeople.length) return;
+    const nextPerson = storyPeople[nextIndex];
+    setViewedStoryIds((ids) => ids.includes(nextPerson.id) ? ids : [...ids, nextPerson.id]);
+    setStoryPaused(false);
+    setStoryViewerId(nextPerson.id);
+  };
+  const closeStory = () => { setStoryViewerId(null); setStoryPaused(false); };
+  const handleStoryTouchStart = (event: NativeSyntheticEvent<NativeTouchEvent>) => { storyTouchStartX.current = event.nativeEvent.pageX; };
+  const handleStoryTouchEnd = (event: NativeSyntheticEvent<NativeTouchEvent>) => {
+    const startX = storyTouchStartX.current;
+    storyTouchStartX.current = null;
+    if (startX === null) return;
+    const distance = event.nativeEvent.pageX - startX;
+    if (Math.abs(distance) < 50) return;
+    moveStory(distance < 0 ? 1 : -1);
+  };
+  useEffect(() => {
+    if (!storyViewerId || storyPaused || storyIndex < 0) return;
+    const timer = setTimeout(() => {
+      const nextIndex = storyIndex + 1;
+      if (nextIndex >= storyPeople.length) {
+        closeStory();
+        return;
+      }
+      const nextPerson = storyPeople[nextIndex];
+      setViewedStoryIds((ids) => ids.includes(nextPerson.id) ? ids : [...ids, nextPerson.id]);
+      setStoryViewerId(nextPerson.id);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [storyIndex, storyPaused, storyPeople, storyViewerId]);
+
   return (
       <ScreenContainer safeAreaClassName="bg-background" className="bg-background">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container} onScroll={handleScroll} onTouchStart={handleWebTouchStart} onTouchMove={handleWebTouchMove} onTouchEnd={handleWebTouchEnd} scrollEventThrottle={16} decelerationRate={Platform.OS === "ios" ? 0.985 : "normal"} overScrollMode="never" bounces keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reloadFeed(true)} tintColor={C.terra} colors={[C.terra]} progressBackgroundColor={C.paper} /> }>
@@ -243,9 +306,9 @@ export default function HomeScreen() {
           </Pressable>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.storyRail}>
-          {[currentUser, ...profiles.slice(1, 5)].map((person, index) => (
-            <Pressable key={person.id} onPress={() => index === 0 ? router.push("/(tabs)/create") : router.push({ pathname: "/(tabs)/profile", params: { id: person.id } })} style={styles.storyItem} accessibilityRole="button" accessibilityLabel={index === 0 ? (language === "bn" ? "আপনার স্টোরি তৈরি করুন" : "Create your story") : `View ${person.name}'s story`}>
-              <View style={[styles.storyRing, index === 0 && styles.storyRingOwn]}>
+          {storyPeople.map((person, index) => (
+            <Pressable key={person.id} onPress={() => openStory(person.id, index === 0)} style={styles.storyItem} accessibilityRole="button" accessibilityLabel={index === 0 ? (language === "bn" ? "আপনার স্টোরি তৈরি করুন" : "Create your story") : `View ${person.name}'s story`}>
+              <View style={[styles.storyRing, index === 0 && styles.storyRingOwn, viewedStoryIds.includes(person.id) && styles.storyRingViewed]}>
                 <Avatar profile={person} size={48} />
                 {index === 0 && <View style={styles.storyPlus}><MaterialIcons name="add" size={12} color="#FFF" /></View>}
               </View>
@@ -278,6 +341,13 @@ export default function HomeScreen() {
         {loadingMore ? <View style={styles.feedFooter}><ActivityIndicator color={C.terra} /><Text style={[styles.footerText, { fontFamily: bodyFont }]}>{language === "bn" ? "আরও আপডেট আসছে..." : "Loading more updates…"}</Text></View> : null}
         {!loadingMore && !hasMore && feed.length ? <Text style={[styles.endText, { fontFamily: bodyFont }]}>{language === "bn" ? "এখানেই আপাতত শেষ।" : "You’re all caught up for now."}</Text> : null}
       </ScrollView>
+      <Modal visible={Boolean(storyViewer)} animationType="fade" presentationStyle="fullScreen" onRequestClose={closeStory}>
+        <View style={styles.storyViewer}>
+          <View style={styles.storyProgressRow}>{storyPeople.map((person, index) => <View key={person.id} style={[styles.storyProgressTrack, index === storyIndex && styles.storyProgressCurrent, index < storyIndex && styles.storyProgressSeen]} />)}</View>
+          <View style={styles.storyViewerHeader}><Avatar profile={storyViewer ?? currentUser} size={38} /><View style={styles.storyViewerCopy}><Text style={[styles.storyViewerName, { fontFamily: mediumFont }]}>{storyViewer?.name}</Text><Text style={[styles.storyViewerMeta, { fontFamily: bodyFont }]}>{storyPost?.createdAt ?? "now"} · {storyViewer?.region}</Text></View><Pressable onPress={() => setStoryPaused((paused) => !paused)} style={styles.storyClose} accessibilityRole="button" accessibilityLabel={storyPaused ? (language === "bn" ? "স্টোরি চালু করুন" : "Resume story") : (language === "bn" ? "স্টোরি থামান" : "Pause story")}><MaterialIcons name={storyPaused ? "play-arrow" : "pause"} size={23} color="#FFF" /></Pressable><Pressable onPress={closeStory} style={styles.storyClose} accessibilityRole="button" accessibilityLabel={language === "bn" ? "স্টোরি বন্ধ করুন" : "Close story"}><MaterialIcons name="close" size={25} color="#FFF" /></Pressable></View>
+          <View style={styles.storyViewerBody} onTouchStart={handleStoryTouchStart} onTouchEnd={handleStoryTouchEnd}><Pressable onPress={() => moveStory(-1)} style={styles.storyNavLeft} disabled={storyIndex <= 0} accessibilityRole="button" accessibilityLabel={language === "bn" ? "আগের স্টোরি" : "Previous story"}><MaterialIcons name="chevron-left" size={38} color={storyIndex <= 0 ? "rgba(255,255,255,0.2)" : "#FFF"} /></Pressable><View style={styles.storyViewerCopyBody}>{storyPost?.videoUrl ? <StoryVideo uri={storyPost.videoUrl} paused={storyPaused} /> : <MaterialIcons name="auto-stories" size={54} color={C.ochre} />}<Text style={[styles.storyViewerTitle, { fontFamily: headingFont }]}>{storyViewer?.name}</Text><Text style={[styles.storyViewerText, { fontFamily: bodyFont }]}>{storyPost?.body ?? (language === "bn" ? `${storyViewer?.region} থেকে একটি community update` : `A community update from ${storyViewer?.region}`)}</Text><Text style={[styles.storyViewerHint, { fontFamily: bodyFont }]}>{storyPost?.videoUrl ? (storyPaused ? (language === "bn" ? "ভিডিও পজ করা হয়েছে · play চাপুন" : "Video paused · press play") : (language === "bn" ? "ভিডিও চলছে · swipe করে story বদলান" : "Video playing · swipe to change story")) : (storyPaused ? (language === "bn" ? "পজ করা হয়েছে · চালু করতে play চাপুন" : "Paused · press play") : (language === "bn" ? "আগে/পরে যেতে swipe করুন" : "Swipe to navigate"))}</Text></View><Pressable onPress={() => moveStory(1)} style={styles.storyNavRight} disabled={storyIndex >= storyPeople.length - 1} accessibilityRole="button" accessibilityLabel={language === "bn" ? "পরের স্টোরি" : "Next story"}><MaterialIcons name="chevron-right" size={38} color={storyIndex >= storyPeople.length - 1 ? "rgba(255,255,255,0.2)" : "#FFF"} /></Pressable></View>
+        </View>
+      </Modal>
       {refreshNotice ? <View style={styles.toast} accessibilityRole="alert"><MaterialIcons name="check-circle" size={18} color="#FFF" /><Text style={[styles.toastText, { fontFamily: mediumFont }]}>{language === "bn" ? "ফিড আপডেট হয়েছে" : "Feed updated"}</Text></View> : null}
     </ScreenContainer>
   );
@@ -306,8 +376,9 @@ const styles = StyleSheet.create({
   watchReelsText: { color: C.terra, fontSize: 10, fontWeight: "900" },
   storyRail: { marginBottom: 15, flexGrow: 0 },
   storyItem: { width: 68, alignItems: "center", marginRight: 8 },
-  storyRing: { borderWidth: 2, borderColor: C.terra, borderRadius: 33, padding: 2, position: "relative" },
+  storyRing: { borderWidth: 3, borderColor: C.terra, borderRadius: 33, padding: 2, position: "relative" },
   storyRingOwn: { borderColor: C.green },
+  storyRingViewed: { borderColor: C.muted, opacity: 0.72 },
   storyPlus: { position: "absolute", right: -1, bottom: -1, width: 17, height: 17, borderRadius: 9, backgroundColor: C.terra, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: C.card },
   storyName: { color: C.muted, fontSize: 10, marginTop: 5, maxWidth: 66, textAlign: "center" },
   topics: { marginBottom: 17, flexGrow: 0 },
@@ -322,6 +393,24 @@ const styles = StyleSheet.create({
   liveText: { color: C.muted, fontSize: 10, fontWeight: "700" },
   toast: { position: "absolute", bottom: 28, left: 18, right: 18, backgroundColor: C.green, padding: 13, borderRadius: 14, flexDirection: "row", alignItems: "center", gap: 8 },
   toastText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
+  storyViewer: { flex: 1, backgroundColor: C.ink, paddingTop: 54, paddingHorizontal: 18 },
+  storyProgressRow: { height: 3, flexDirection: "row", gap: 4 },
+  storyProgressTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.3)" },
+  storyProgressCurrent: { backgroundColor: C.ivory },
+  storyProgressSeen: { backgroundColor: "rgba(255,255,255,0.72)" },
+  storyViewerHeader: { flexDirection: "row", alignItems: "center", marginTop: 16, gap: 10 },
+  storyViewerCopy: { flex: 1 },
+  storyViewerName: { color: C.ivory, fontSize: 14, fontWeight: "800" },
+  storyViewerMeta: { color: "rgba(255,255,255,0.68)", fontSize: 11, marginTop: 2 },
+  storyClose: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  storyViewerBody: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  storyViewerCopyBody: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 18 },
+  storyVideo: { width: "100%", height: 250, borderRadius: 20, backgroundColor: "#0B172B", overflow: "hidden" },
+  storyNavLeft: { width: 54, height: 120, alignItems: "center", justifyContent: "center" },
+  storyNavRight: { width: 54, height: 120, alignItems: "center", justifyContent: "center" },
+  storyViewerTitle: { color: C.ivory, fontSize: 28, textAlign: "center", marginTop: 22 },
+  storyViewerText: { color: "rgba(255,255,255,0.88)", fontSize: 17, lineHeight: 26, textAlign: "center", marginTop: 13 },
+  storyViewerHint: { color: "rgba(255,255,255,0.56)", fontSize: 11, marginTop: 34 },
   feedFooter: { minHeight: 58, alignItems: "center", justifyContent: "center", gap: 6 },
   footerText: { color: C.muted, fontSize: 11 },
   endText: { color: C.muted, fontSize: 11, textAlign: "center", paddingVertical: 18 },
