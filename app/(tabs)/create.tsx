@@ -2,7 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useAudioPlayer } from "expo-audio";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as Haptics from "expo-haptics";
@@ -37,17 +37,18 @@ function VideoPreview({ uri, start, end, volume }: { uri: string; start: number;
     });
     return () => subscription.remove();
   }, [end, player, start]);
-  return <VideoView player={player} style={styles.previewImage} contentFit="cover" nativeControls />;
+  return <VideoView player={player} style={styles.previewImage} contentFit="cover" nativeControls={false} />;
 }
 
 export default function CreateScreen() {
   const params = useLocalSearchParams<{ mode?: string }>();
-  const initialMode: PublishMode = params.mode === "reel" ? "reel" : "post";
+  const initialMode: PublishMode = params.mode === "reel" ? "reel" : params.mode === "story" ? "story" : "post";
   return <CreateComposer key={params.mode ?? "default"} initialMode={initialMode} />;
 }
 
 function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
   const { copy, language } = useLanguage();
   const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
   const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
@@ -68,6 +69,9 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
   const [overlaySticker, setOverlaySticker] = useState<OverlaySticker | null>(null);
   const [overlayPosition, setOverlayPosition] = useState<OverlayPosition>("center");
   const selectedTrack = musicTracks.find((track) => track.id === musicTrackId);
+  const portraitFrameHeight = Math.min(420, Math.max(300, windowWidth * 1.05));
+  const portraitFrameWidth = Math.min(Math.max(170, windowWidth - 36), portraitFrameHeight * 9 / 16);
+  const usesPortraitVideo = mediaType === "video" && (mode === "reel" || mode === "story");
   const parsedTrimStart = Number(trimStart);
   const sliderTrimStart = Math.min(Math.max(0, videoDuration - 1), Math.max(0, Number.isFinite(parsedTrimStart) ? Math.round(parsedTrimStart) : 0));
   const parsedTrimEnd = Number(trimEnd);
@@ -101,7 +105,7 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
       const allowedTypes: ImagePicker.MediaType[] = mode === "reel" ? ["videos"] : mode === "post" ? ["images"] : ["images", "videos"];
       const result = source === "camera"
         ? await ImagePicker.launchCameraAsync({ mediaTypes: allowedTypes, videoMaxDuration: 60, quality: 0.85 })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: allowedTypes, videoMaxDuration: 60, allowsMultipleSelection: false, quality: 0.85, allowsEditing: mode !== "reel", aspect: [4, 3] });
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: allowedTypes, videoMaxDuration: 60, allowsMultipleSelection: false, quality: 0.85, allowsEditing: mode !== "reel", aspect: mode === "story" ? [9, 16] : [4, 3] });
       const asset = !result.canceled ? result.assets[0] : undefined;
       if (!asset?.uri) return;
       if (mode === "reel" && asset.type !== "video") {
@@ -164,13 +168,13 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
       return;
     }
     if (!body.trim() && !mediaUri) return;
-    let videoOptions: { start: number; end: number; compression: VideoCompression } | undefined;
-    if (mediaType === "video" && mode === "reel") {
+    let videoOptions: { start: number; end: number; compression: VideoCompression; aspectRatio: "9:16" } | undefined;
+    if (mediaType === "video" && (mode === "reel" || mode === "story")) {
       const start = Number(trimStart); const end = Number(trimEnd);
       if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > videoDuration || end - start < 1) {
         setError(language === "bn" ? "ট্রিম সময় ঠিক করুন: কমপক্ষে ১ সেকেন্ড এবং সর্বোচ্চ ৬০ সেকেন্ড।" : "Choose a valid trim range between 1 and 60 seconds."); return;
       }
-      videoOptions = { start, end, compression };
+      videoOptions = { start, end, compression, aspectRatio: "9:16" };
     }
     setBusy(true);
     try {
@@ -195,14 +199,14 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
 
   const modeLabel = mode === "post" ? (language === "bn" ? "পোস্ট" : "Post") : mode === "reel" ? copy.reels : (language === "bn" ? "স্টোরি" : "Story");
   const helper = mode === "reel"
-    ? (language === "bn" ? "৬০ সেকেন্ডের মধ্যে উল্লম্ব ভিডিও · শব্দ প্রথমে বন্ধ থাকবে।" : "Vertical video up to 60 seconds · sound starts off.")
+    ? (language === "bn" ? "৯:১৬ উল্লম্ব ভিডিও · ৬০ সেকেন্ড পর্যন্ত · শব্দ প্রথমে বন্ধ থাকবে।" : "9:16 portrait video up to 60 seconds · sound starts off.")
     : mode === "story"
-      ? (language === "bn" ? "ছবি বা ভিডিও · ২৪ ঘণ্টা পরে স্টোরি মুছে যাবে।" : "Photo or video · disappears after 24 hours.")
+      ? (language === "bn" ? "৯:১৬ ভিডিও বা ছবি · ২৪ ঘণ্টা পরে স্টোরি মুছে যাবে।" : "9:16 portrait video or photo · disappears after 24 hours.")
       : copy.publicNote;
   const modeDescription = mode === "reel"
-    ? (language === "bn" ? "৬০ সেকেন্ডের মধ্যে একটি ছোট ভিডিও গল্প তৈরি করুন।" : "Create a short video story up to 60 seconds.")
+    ? (language === "bn" ? "৯:১৬ ফ্রেমে ৬০ সেকেন্ডের মধ্যে একটি ছোট ভিডিও গল্প তৈরি করুন।" : "Create a short story in a 9:16 portrait frame, up to 60 seconds.")
     : mode === "story"
-      ? (language === "bn" ? "ছবি বা ভিডিও ২৪ ঘণ্টার জন্য শেয়ার করুন।" : "Share a photo or video for 24 hours.")
+      ? (language === "bn" ? "৯:১৬ ভিডিও বা ছবি ২৪ ঘণ্টার জন্য শেয়ার করুন।" : "Share a 9:16 portrait video or photo for 24 hours.")
       : (language === "bn" ? "আপনার এলাকার জন্য লেখা বা একটি ছবি শেয়ার করুন।" : "Share a useful note or photo from your area.");
 
   return (
@@ -259,14 +263,16 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
               <View style={styles.attachmentTitle}><MaterialIcons name={mediaType === "video" ? "movie" : "photo"} size={18} color={C.green} /><Text style={styles.attachmentLabel}>{mediaType === "video" ? (mode === "story" ? "Story video" : "Reel video") : (language === "bn" ? "ছবি সংযুক্ত" : "Image attached")}</Text></View>
               <Pressable onPress={() => { setMediaUri(null); setMediaType(null); }} disabled={busy}><Text style={styles.remove}>{language === "bn" ? "সরান" : "Remove"}</Text></Pressable>
             </View>
-            <View style={styles.preview}>
+            <View style={[styles.preview, usesPortraitVideo && portraitStyles.preview, usesPortraitVideo && { width: portraitFrameWidth, height: portraitFrameHeight }]}>
               {mediaType === "video" ? <VideoPreview uri={mediaUri} start={Math.max(0, Number(trimStart) || 0)} end={Math.max(1, Number(trimEnd) || videoDuration)} volume={originalVolume} /> : <Image source={{ uri: mediaUri }} style={styles.previewImage} resizeMode="cover" />}
+              {usesPortraitVideo ? <View pointerEvents="none" style={portraitStyles.badge}><MaterialIcons name="crop-free" size={14} color="#FFF" /><Text style={portraitStyles.badgeText}>{language === "bn" ? "9:16 · উল্লম্ব" : "9:16 · Portrait"}</Text></View> : null}
               <View style={styles.previewOverlay}><MaterialIcons name="check-circle" size={18} color="#FFF" /><Text style={styles.previewText}>{mode === "story" ? (language === "bn" ? "২৪ ঘণ্টার স্টোরি" : "24-hour Story") : (language === "bn" ? "প্রকাশের জন্য প্রস্তুত" : "Ready to publish")}</Text></View>{(mode === "reel" || mode === "story") && (overlayText.trim() || overlaySticker) ? <View pointerEvents="none" style={[styles.overlayPreview, overlayPosition === "top" ? styles.overlayTop : overlayPosition === "bottom" ? styles.overlayBottom : styles.overlayCenter]}>{overlaySticker ? <MaterialIcons name={overlaySticker as keyof typeof MaterialIcons.glyphMap} size={28} color="#FFF" /> : null}{overlayText.trim() ? <Text style={styles.overlayText}>{overlayText.trim()}</Text> : null}</View> : null}
             </View>
-            {mediaType === "video" && mode === "reel" ? (
+            {usesPortraitVideo ? <Text style={portraitStyles.note}>{language === "bn" ? "প্রিভিউটি 9:16 ফ্রেমে মাঝখান থেকে crop হবে; আসল ভিডিও ফাইলটি অক্ষত থাকবে।" : "Preview uses a centered 9:16 crop; the original video file is preserved."}</Text> : null}
+            {mediaType === "video" && (mode === "reel" || mode === "story") ? (
               <View style={styles.trimPanel}>
                 <View style={styles.trimHeader}>
-                  <Text style={styles.trimTitle}>{language === "bn" ? "রিল সম্পাদনা" : "Edit Reel"}</Text>
+                  <Text style={styles.trimTitle}>{mode === "story" ? (language === "bn" ? "স্টোরি ভিডিও সম্পাদনা" : "Edit Story video") : (language === "bn" ? "রিল সম্পাদনা" : "Edit Reel")}</Text>
                   <Text style={styles.trimMeta}>{language === "bn" ? `মোট ${videoDuration} সেকেন্ড` : `Up to ${videoDuration}s`}</Text>
                 </View>
                 <View style={styles.selectedRange}>
@@ -445,4 +451,11 @@ const styles = StyleSheet.create({
   errorText: { color: C.terra, flex: 1, fontSize: 10, lineHeight: 15 },
   success: { backgroundColor: "#DFF2ED", borderWidth: 1, borderColor: "#A4D7CC", padding: 14, borderRadius: 16, flexDirection: "row", gap: 8, marginTop: 18 },
   successText: { color: C.green, fontWeight: "800" },
+});
+
+const portraitStyles = StyleSheet.create({
+  preview: { alignSelf: "center" },
+  badge: { position: "absolute", top: 9, left: 9, zIndex: 2, flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(20,33,61,0.78)", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6 },
+  badgeText: { color: "#FFF", fontSize: 10, fontWeight: "800" },
+  note: { color: C.muted, fontSize: 10, lineHeight: 15, textAlign: "center", marginTop: 7, paddingHorizontal: 8 },
 });

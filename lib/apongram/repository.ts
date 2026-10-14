@@ -90,7 +90,7 @@ export async function getReels(): Promise<Post[]> {
 
   try {
     const rows = await supabaseFetch<ReelRow[]>(
-      "posts?select=id,body,video_path,is_story,created_at,location,author:profiles(id,name,handle,bio,avatar_path,region)&video_path=not.is.null&is_story=eq.false&order=created_at.desc",
+      "posts?select=id,body,video_path,is_story,created_at,location,author:profiles(id,name,handle,bio,avatar_path,region,pronouns,website,category)&video_path=not.is.null&is_story=eq.false&order=created_at.desc",
     );
     const remoteReels = rows.map(toReel).filter((reel): reel is Post => Boolean(reel));
     const unique = new Map<string, Post>();
@@ -116,6 +116,9 @@ type ReelRow = {
     bio?: string | null;
     avatar_path?: string | null;
     region?: string | null;
+    pronouns?: string | null;
+    website?: string | null;
+    category?: Profile["category"] | null;
   } | null;
 };
 
@@ -123,7 +126,7 @@ function toReel(row: ReelRow): Post | null {
   if (!row.id || !row.body || !row.video_path || row.is_story) return null;
   const videoUrl = /^https?:\/\//i.test(row.video_path)
     ? row.video_path
-    : storagePublicUrl("community-reels", row.video_path);
+    : storagePublicUrl("community-media", row.video_path);
   if (!videoUrl) return null;
 
   const remoteAuthor = row.author;
@@ -137,6 +140,9 @@ function toReel(row: ReelRow): Post | null {
         avatarColor: "#365C57",
         avatarUrl: remoteAuthor.avatar_path?.startsWith("http") ? remoteAuthor.avatar_path : undefined,
         region: remoteAuthor.region ?? "India",
+        pronouns: remoteAuthor.pronouns ?? undefined,
+        website: remoteAuthor.website ?? undefined,
+        category: remoteAuthor.category ?? undefined,
         followers: 0,
         following: 0,
       }
@@ -148,6 +154,7 @@ function toReel(row: ReelRow): Post | null {
     body: row.body,
     videoUrl,
     mediaType: "video",
+    videoAspectRatio: "9:16",
     isStory: false,
     createdAt: row.created_at ?? "recently",
     location: row.location ?? author.region,
@@ -184,7 +191,7 @@ export async function addComment(postId: string, body: string): Promise<Comment>
   return comment;
 }
 
-export async function createPost(body: string, imagePath?: string, videoPath?: string, isStory = false, videoOptions?: { start: number; end: number; compression: VideoCompression }, musicOptions?: { trackId: string; musicVolume: number; originalVolume: number }, overlayOptions?: { text?: string; sticker?: OverlaySticker; position: OverlayPosition }): Promise<Post> {
+export async function createPost(body: string, imagePath?: string, videoPath?: string, isStory = false, videoOptions?: { start: number; end: number; compression: VideoCompression; aspectRatio?: "9:16" }, musicOptions?: { trackId: string; musicVolume: number; originalVolume: number }, overlayOptions?: { text?: string; sticker?: OverlaySticker; position: OverlayPosition }): Promise<Post> {
   const hasLocalMedia = [imagePath, videoPath].some((path) => path && /^(file:|content:|blob:)/i.test(path));
   let uploadedMedia: MediaUpload | undefined;
   let durableImagePath = imagePath;
@@ -214,6 +221,7 @@ export async function createPost(body: string, imagePath?: string, videoPath?: s
     mediaType: durableVideoPath ? "video" : durableImagePath ? "image" : undefined,
     videoStart: videoOptions?.start,
     videoEnd: videoOptions?.end,
+    videoAspectRatio: videoOptions?.aspectRatio,
     videoCompression: videoOptions?.compression,
     musicTrackId: musicOptions?.trackId,
     musicVolume: musicOptions?.musicVolume,
@@ -243,7 +251,7 @@ export async function createPost(body: string, imagePath?: string, videoPath?: s
         media_mime_type: uploadedMedia?.mimeType ?? null,
         media_size_bytes: uploadedMedia?.sizeBytes ?? null,
         render_status: "ready",
-        render_manifest: { trim_start: videoOptions?.start ?? null, trim_end: videoOptions?.end ?? null, compression: videoOptions?.compression ?? null, music_track_id: musicOptions?.trackId ?? null, music_volume: musicOptions?.musicVolume ?? null, original_volume: musicOptions?.originalVolume ?? null, overlay_text: overlayOptions?.text ?? null, overlay_sticker: overlayOptions?.sticker ?? null, overlay_position: overlayOptions?.position ?? null },
+        render_manifest: { trim_start: videoOptions?.start ?? null, trim_end: videoOptions?.end ?? null, aspect_ratio: videoOptions?.aspectRatio ?? null, compression: videoOptions?.compression ?? null, music_track_id: musicOptions?.trackId ?? null, music_volume: musicOptions?.musicVolume ?? null, original_volume: musicOptions?.originalVolume ?? null, overlay_text: overlayOptions?.text ?? null, overlay_sticker: overlayOptions?.sticker ?? null, overlay_position: overlayOptions?.position ?? null },
         is_story: isStory,
       }),
     });

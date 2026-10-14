@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type NativeTouchEvent, type NativeSyntheticEvent } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions, type NativeTouchEvent, type NativeSyntheticEvent } from "react-native";
 import { Avatar } from "./Avatar";
 import { Colors } from "@/constants/theme";
 import type { Post, Profile } from "@/lib/apongram/types";
@@ -28,6 +28,9 @@ type StoryRailProps = StoryState & {
 };
 
 function StoryVideo({ uri, paused, language }: { uri: string | number; paused: boolean; language: "bn" | "en" }) {
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const frameHeight = Math.min(390, windowHeight * 0.44);
+  const frameWidth = Math.min(Math.max(120, windowWidth - 180), frameHeight * 9 / 16);
   const player = useVideoPlayer(typeof uri === "string" ? STORY_VIDEO_SOURCES[uri] ?? uri : uri, (instance) => { instance.loop = true; instance.muted = false; instance.timeUpdateEventInterval = 0.25; });
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [progress, setProgress] = useState(0);
@@ -37,8 +40,8 @@ function StoryVideo({ uri, paused, language }: { uri: string | number; paused: b
     const progressSubscription = player.addListener("timeUpdate", ({ currentTime }) => setProgress(player.duration > 0 ? Math.min(1, currentTime / player.duration) : 0));
     return () => { statusSubscription.remove(); progressSubscription.remove(); };
   }, [player]);
-  return <View style={styles.storyVideoFrame}>
-    {status === "error" ? <View style={styles.storyVideoFallback}><MaterialIcons name="broken-image" size={35} color={C.ochre} /><Text style={styles.storyVideoFallbackTitle}>{language === "bn" ? "ভিডিও চালানো যাচ্ছে না" : "Video unavailable"}</Text><Text style={styles.storyVideoFallbackText}>{language === "bn" ? "এই story-টি পরে আবার চেষ্টা করুন।" : "Try this story again later."}</Text></View> : <VideoView player={player} style={styles.storyVideo} contentFit="contain" nativeControls={false} />}
+  return <View style={[styles.storyVideoFrame, { width: frameWidth, height: frameHeight }]}>
+    {status === "error" ? <View style={styles.storyVideoFallback}><MaterialIcons name="broken-image" size={35} color={C.ochre} /><Text style={styles.storyVideoFallbackTitle}>{language === "bn" ? "ভিডিও চালানো যাচ্ছে না" : "Video unavailable"}</Text><Text style={styles.storyVideoFallbackText}>{language === "bn" ? "এই story-টি পরে আবার চেষ্টা করুন।" : "Try this story again later."}</Text></View> : <VideoView player={player} style={[styles.storyVideo, { width: frameWidth, height: frameHeight }]} contentFit="cover" nativeControls={false} />}
     {status === "loading" ? <View style={styles.storyVideoLoading}><ActivityIndicator color={C.ivory} /><Text style={styles.storyVideoLoadingText}>{language === "bn" ? "ভিডিও লোড হচ্ছে…" : "Loading video…"}</Text></View> : null}
     {status === "ready" ? <View style={styles.storyVideoProgress}><View style={[styles.storyVideoProgressFill, { width: `${progress * 100}%` }]} /></View> : null}
   </View>;

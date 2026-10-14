@@ -200,6 +200,7 @@ Rules:
 
 1. Create a Supabase project.
 2. Apply the SQL files in `supabase/migrations/` in order (Supabase CLI or the SQL editor).
+   The profile editor's pronouns, website and category fields need `005_profile_public_fields.sql` applied before those fields can sync remotely; local editing still works without it.
 3. Enable **Phone** auth under Authentication, and connect an SMS provider.
 4. Create Storage buckets as described in the migration notes (profile photos, post images, Reels).
 5. Confirm Row Level Security is enabled on every table before inviting users.
@@ -289,7 +290,8 @@ To report a vulnerability, open a private security advisory on this repository i
 ## Known limitations
 
 - Most data is **demo data** until Supabase is configured.
-- Videos chosen by users are **not stored durably** yet. They exist only in the current session.
+- In live mode, original user videos are uploaded to the public `community-media` bucket; the 9:16 editor/player frame is a centered presentation crop, not a re-encoded file.
+- Hidden player controls remove an easy save action, but public video URLs can still be copied or screen-recorded. This is not DRM or download-proof storage.
 - Notifications are a placeholder.
 - Only Bengali and English are available.
 - The Settings region option is display-only.

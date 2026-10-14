@@ -1,5 +1,7 @@
 export type Language = "bn" | "en";
 
+export type ProfileCategory = "community" | "creator" | "local-business" | "volunteer" | "organization";
+
 export type Profile = {
   id: string;
   name: string;
@@ -9,6 +11,9 @@ export type Profile = {
   avatarColor: string;
   avatarUrl?: string;
   region: string;
+  pronouns?: string;
+  website?: string;
+  category?: ProfileCategory;
   followers: number;
   following: number;
   verified?: boolean;
@@ -23,6 +28,7 @@ export type PublishStatus = "idle" | "uploading" | "publishing" | "published" | 
 export type RenderManifest = {
   trimStart?: number;
   trimEnd?: number;
+  aspectRatio?: "9:16";
   compression?: VideoCompression;
   musicTrackId?: string;
   musicVolume?: number;
@@ -48,6 +54,7 @@ export type Post = {
   mediaType?: "image" | "video";
   videoStart?: number;
   videoEnd?: number;
+  videoAspectRatio?: "9:16";
   videoCompression?: VideoCompression;
   musicTrackId?: string;
   musicVolume?: number;

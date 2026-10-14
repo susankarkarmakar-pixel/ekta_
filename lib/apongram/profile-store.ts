@@ -50,6 +50,9 @@ export async function syncProfileToSupabase(profile: Profile): Promise<{ profile
         handle: syncedProfile.handle,
         bio: syncedProfile.bio,
         region: syncedProfile.region,
+        pronouns: syncedProfile.pronouns ?? null,
+        website: syncedProfile.website ?? null,
+        category: syncedProfile.category ?? null,
         avatar_path: avatarPath,
       }),
     });
