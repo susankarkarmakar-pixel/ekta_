@@ -2,7 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type NativeTouchEvent } from "react-native";
+import { ActivityIndicator, Animated, Modal, Platform, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type NativeTouchEvent } from "react-native";
 import { Avatar } from "@/components/apongram/Avatar";
 import { PostCard } from "@/components/apongram/PostCard";
 import { TopicChip } from "@/components/apongram/TopicChip";
@@ -83,6 +83,8 @@ export default function HomeScreen() {
   const [storyViewerId, setStoryViewerId] = useState<string | null>(null);
   const [storyPaused, setStoryPaused] = useState(false);
   const [storyNow] = useState(() => Date.now());
+  const [storyReply, setStoryReply] = useState("");
+  const [storyReplySent, setStoryReplySent] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [webPullDistance, setWebPullDistance] = useState(0);
@@ -285,7 +287,13 @@ export default function HomeScreen() {
     setStoryPaused(false);
     setStoryViewerId(nextPerson.id);
   };
-  const closeStory = () => { setStoryViewerId(null); setStoryPaused(false); };
+  const closeStory = () => { setStoryViewerId(null); setStoryPaused(false); setStoryReply(""); setStoryReplySent(false); };
+  const sendStoryReply = () => { if (!storyReply.trim()) return; setStoryReply(""); setStoryReplySent(true); };
+  const shareStory = async () => {
+    if (!storyViewer) return;
+    const message = `${storyPost?.body ?? `A community update from ${storyViewer.region}`}\n@${storyViewer.handle} · ${storyViewer.region}\nhttps://ekta.app/story/${encodeURIComponent(storyViewer.id)}`;
+    try { await Share.share({ message }); } catch { /* share sheet dismissed */ }
+  };
   const handleStoryTouchStart = (event: NativeSyntheticEvent<NativeTouchEvent>) => { storyTouchStartX.current = event.nativeEvent.pageX; };
   const handleStoryTouchEnd = (event: NativeSyntheticEvent<NativeTouchEvent>) => {
     const startX = storyTouchStartX.current;
@@ -377,6 +385,8 @@ export default function HomeScreen() {
           <View style={styles.storyProgressRow}>{storyPeople.map((person, index) => <View key={person.id} style={[styles.storyProgressTrack, index === storyIndex && styles.storyProgressCurrent, index < storyIndex && styles.storyProgressSeen]} />)}</View>
           <View style={styles.storyViewerHeader}><Avatar profile={storyViewer ?? currentUser} size={38} /><View style={styles.storyViewerCopy}><Text style={[styles.storyViewerName, { fontFamily: mediumFont }]}>{storyViewer?.name}</Text><Text style={[styles.storyViewerMeta, { fontFamily: bodyFont }]}>{storyPost?.createdAt ?? "now"} · {storyViewer?.region}</Text></View><Pressable onPress={() => setStoryPaused((paused) => !paused)} style={styles.storyClose} accessibilityRole="button" accessibilityLabel={storyPaused ? (language === "bn" ? "স্টোরি চালু করুন" : "Resume story") : (language === "bn" ? "স্টোরি থামান" : "Pause story")}><MaterialIcons name={storyPaused ? "play-arrow" : "pause"} size={23} color="#FFF" /></Pressable><Pressable onPress={closeStory} style={styles.storyClose} accessibilityRole="button" accessibilityLabel={language === "bn" ? "স্টোরি বন্ধ করুন" : "Close story"}><MaterialIcons name="close" size={25} color="#FFF" /></Pressable></View>
           <View style={styles.storyViewerBody} onTouchStart={handleStoryTouchStart} onTouchEnd={handleStoryTouchEnd}><Pressable onPress={() => moveStory(-1)} style={styles.storyNavLeft} disabled={storyIndex <= 0} accessibilityRole="button" accessibilityLabel={language === "bn" ? "আগের স্টোরি" : "Previous story"}><MaterialIcons name="chevron-left" size={38} color={storyIndex <= 0 ? "rgba(255,255,255,0.2)" : "#FFF"} /></Pressable><View style={styles.storyViewerCopyBody}>{storyPost?.videoUrl ? <StoryVideo uri={storyPost.videoUrl} paused={storyPaused} language={language} /> : <MaterialIcons name="auto-stories" size={54} color={C.ochre} />}<Text style={[styles.storyViewerTitle, { fontFamily: headingFont }]}>{storyViewer?.name}</Text><Text style={[styles.storyViewerText, { fontFamily: bodyFont }]}>{storyPost?.body ?? (language === "bn" ? `${storyViewer?.region} থেকে একটি community update` : `A community update from ${storyViewer?.region}`)}</Text><Text style={[styles.storyViewerHint, { fontFamily: bodyFont }]}>{storyPost?.videoUrl ? (storyPaused ? (language === "bn" ? "ভিডিও পজ করা হয়েছে · play চাপুন" : "Video paused · press play") : (language === "bn" ? "ভিডিও চলছে · swipe করে story বদলান" : "Video playing · swipe to change story")) : (storyPaused ? (language === "bn" ? "পজ করা হয়েছে · play চাপুন" : "Paused · press play") : (language === "bn" ? "আগে/পরে যেতে swipe করুন" : "Swipe to navigate"))}</Text></View><Pressable onPress={() => moveStory(1)} style={styles.storyNavRight} disabled={storyIndex >= storyPeople.length - 1} accessibilityRole="button" accessibilityLabel={language === "bn" ? "পরের স্টোরি" : "Next story"}><MaterialIcons name="chevron-right" size={38} color={storyIndex >= storyPeople.length - 1 ? "rgba(255,255,255,0.2)" : "#FFF"} /></Pressable></View>
+          <View style={styles.storyActions}><Pressable onPress={() => setStoryReplySent(false)} style={styles.storyAction} accessibilityRole="button" accessibilityLabel={language === "bn" ? "স্টোরিতে উত্তর দিন" : "Reply to story"}><MaterialIcons name="chat-bubble-outline" size={19} color={C.ivory} /><Text style={[styles.storyActionText, { fontFamily: mediumFont }]}>{language === "bn" ? "উত্তর" : "Reply"}</Text></Pressable><Pressable onPress={() => void shareStory()} style={styles.storyAction} accessibilityRole="button" accessibilityLabel={language === "bn" ? "স্টোরি শেয়ার করুন" : "Share story"}><MaterialIcons name="share" size={19} color={C.ivory} /><Text style={[styles.storyActionText, { fontFamily: mediumFont }]}>{language === "bn" ? "শেয়ার" : "Share"}</Text></Pressable><Pressable onPress={() => { closeStory(); router.push({ pathname: "/report", params: { storyId: storyViewer?.id ?? "" } }); }} style={styles.storyAction} accessibilityRole="button" accessibilityLabel={language === "bn" ? "স্টোরি রিপোর্ট করুন" : "Report story"}><MaterialIcons name="flag" size={19} color={C.ivory} /><Text style={[styles.storyActionText, { fontFamily: mediumFont }]}>{language === "bn" ? "রিপোর্ট" : "Report"}</Text></Pressable></View>
+          {storyReplySent ? <Text style={[styles.storyReplySent, { fontFamily: bodyFont }]}>{language === "bn" ? "আপনার উত্তর পাঠানো হয়েছে (নমুনা)।" : "Your reply was sent (demo)."}</Text> : <View style={styles.storyReplyRow}><TextInput value={storyReply} onChangeText={setStoryReply} placeholder={language === "bn" ? "উত্তর লিখুন…" : "Reply to this story…"} placeholderTextColor="rgba(255,255,255,0.55)" style={[styles.storyReplyInput, { fontFamily: bodyFont }]} returnKeyType="send" onSubmitEditing={sendStoryReply} /><Pressable onPress={sendStoryReply} disabled={!storyReply.trim()} accessibilityRole="button" accessibilityLabel={language === "bn" ? "উত্তর পাঠান" : "Send reply"}><MaterialIcons name="send" size={20} color={storyReply.trim() ? C.ochre : "rgba(255,255,255,0.35)"} /></Pressable></View>}
         </View>
       </Modal>
       {refreshNotice ? <View style={styles.toast} accessibilityRole="alert"><MaterialIcons name="check-circle" size={18} color="#FFF" /><Text style={[styles.toastText, { fontFamily: mediumFont }]}>{language === "bn" ? "ফিড আপডেট হয়েছে" : "Feed updated"}</Text></View> : null}
@@ -450,6 +460,12 @@ const styles = StyleSheet.create({
   storyViewerTitle: { color: C.ivory, fontSize: 28, textAlign: "center", marginTop: 22 },
   storyViewerText: { color: "rgba(255,255,255,0.88)", fontSize: 17, lineHeight: 26, textAlign: "center", marginTop: 13 },
   storyViewerHint: { color: "rgba(255,255,255,0.56)", fontSize: 11, marginTop: 34 },
+  storyActions: { flexDirection: "row", justifyContent: "space-around", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.18)", paddingTop: 12, marginBottom: 10 },
+  storyAction: { minHeight: 40, minWidth: 82, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 20, paddingHorizontal: 10 },
+  storyActionText: { color: C.ivory, fontSize: 11 },
+  storyReplyRow: { minHeight: 46, borderWidth: 1, borderColor: "rgba(255,255,255,0.28)", borderRadius: 24, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 },
+  storyReplyInput: { flex: 1, color: C.ivory, fontSize: 13, minHeight: 42 },
+  storyReplySent: { color: C.ochre, textAlign: "center", fontSize: 12, minHeight: 46, paddingTop: 12, marginBottom: 14 },
   feedFooter: { minHeight: 58, alignItems: "center", justifyContent: "center", gap: 6 },
   footerText: { color: C.muted, fontSize: 11 },
   endText: { color: C.muted, fontSize: 11, textAlign: "center", paddingVertical: 18 },
