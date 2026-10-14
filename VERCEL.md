@@ -13,6 +13,10 @@ Deploy the `main` branch from the repository root. The same build command can be
 
 Do not add Supabase service-role credentials to the client bundle. If a live backend is configured, only publishable client values belong in Expo/Vercel settings.
 
+## Live email OTP configuration
+
+Add `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` to Vercel's Production and Preview environments before building. These values are embedded in the static web bundle, so create a fresh deployment after adding or changing them. Enable Email in Supabase Auth; configure custom SMTP for reliable delivery to users outside the Supabase project's test recipients.
+
 ## Git author for deployments
 
 Vercel must be able to associate each pushed commit with this GitHub account. If the author-email check fails, configure this repository (not your whole machine) with the valid GitHub noreply address and push a new commit:
