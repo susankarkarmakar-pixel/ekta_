@@ -3,11 +3,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 export const FEED_PREFERENCES_KEY = "ekta.feed.preferences";
 
 export const FEED_REGIONS = [
+  { value: "Gazole, Malda", bn: "গাজোল, মালদা", en: "Gazole, Malda" },
+  { value: "Malda, West Bengal", bn: "মালদা, পশ্চিমবঙ্গ", en: "Malda, West Bengal" },
+  { value: "Kaliachak, Malda", bn: "কালিয়াচক, মালদা", en: "Kaliachak, Malda" },
+  { value: "Chanchal, Malda", bn: "চাঁচল, মালদা", en: "Chanchal, Malda" },
   { value: "India", bn: "ভারত · সব অঞ্চল", en: "India · all regions" },
-  { value: "Jaipur, Rajasthan", bn: "জয়পুর, রাজস্থান", en: "Jaipur, Rajasthan" },
-  { value: "Mysuru, Karnataka", bn: "মাইসুরু, কর্ণাটক", en: "Mysuru, Karnataka" },
-  { value: "Hyderabad, Telangana", bn: "হায়দরাবাদ, তেলেঙ্গানা", en: "Hyderabad, Telangana" },
-  { value: "Guwahati, Assam", bn: "গুয়াহাটি, অসম", en: "Guwahati, Assam" },
 ] as const;
 
 export const FEED_TOPIC_OPTIONS = [
@@ -25,7 +25,7 @@ export type FeedPreferences = {
 };
 
 export const DEFAULT_FEED_PREFERENCES: FeedPreferences = {
-  region: "India",
+  region: "Gazole, Malda",
   preferredTopics: FEED_TOPIC_OPTIONS.map((topic) => topic.value),
 };
 

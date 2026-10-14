@@ -1,5 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useVideoPlayer, VideoView } from "expo-video";
+import * as Haptics from "expo-haptics";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Animated, AppState, Modal, Platform, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type NativeTouchEvent } from "react-native";
@@ -10,7 +11,7 @@ import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
 import { FEED_BACKGROUND_SYNC_INTERVAL_MS, getCachedFeedPage, getFeedPage, repositoryMode, syncFeedCache } from "@/lib/apongram/repository";
-import { currentUser, demoStories, profiles, topics } from "@/lib/apongram/mock-data";
+import { currentUser, demoStories, profiles, topicLabels, topics } from "@/lib/apongram/mock-data";
 import { buildFeedPreferences, rankFeed, type FeedMode } from "@/lib/apongram/feed-ranking";
 import { useFeedPreferences } from "@/lib/apongram/FeedPreferencesContext";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
@@ -289,9 +290,12 @@ export default function HomeScreen() {
     if (shouldRefresh) void reloadFeed(true);
   };
 
-  const toggleLike = (id: string) => setFeed((items) => items.map((post) => post.id === id
-    ? { ...post, likedByMe: !post.likedByMe, likes: post.likes + (post.likedByMe ? -1 : 1) }
-    : post));
+  const toggleLike = (id: string) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFeed((items) => items.map((post) => post.id === id
+      ? { ...post, likedByMe: !post.likedByMe, likes: post.likes + (post.likedByMe ? -1 : 1) }
+      : post));
+  };
 
   const storyPeople = useMemo(() => [currentUser, ...profiles.slice(1, 5)].filter((person) => {
     const authoredStories = demoStories.filter((story) => story.author.id === person.id);
@@ -362,7 +366,7 @@ export default function HomeScreen() {
 
   return (
       <ScreenContainer safeAreaClassName="bg-background" className="bg-background">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container} onScroll={handleScroll} onTouchStart={handleWebTouchStart} onTouchMove={handleWebTouchMove} onTouchEnd={handleWebTouchEnd} scrollEventThrottle={16} decelerationRate={Platform.OS === "ios" ? 0.985 : "normal"} overScrollMode="never" bounces keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reloadFeed(true)} tintColor={C.terra} colors={[C.terra]} progressBackgroundColor={C.paper} /> }>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.container, Platform.OS === "web" && styles.webContainer]} onScroll={handleScroll} onTouchStart={handleWebTouchStart} onTouchMove={handleWebTouchMove} onTouchEnd={handleWebTouchEnd} scrollEventThrottle={16} decelerationRate={Platform.OS === "ios" ? 0.985 : "normal"} overScrollMode="never" bounces keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reloadFeed(true)} tintColor={C.terra} colors={[C.terra]} progressBackgroundColor={C.paper} /> }>
         {Platform.OS === "web" && webPullDistance > 0 ? <View style={{ height: Math.min(webPullDistance, 72), alignItems: "center", justifyContent: "center", overflow: "hidden" }}><MaterialIcons name={webPullDistance >= 64 ? "refresh" : "arrow-downward"} size={18} color={C.terra} /><Text style={{ color: C.terra, fontFamily: bodyFont, fontSize: 10, marginTop: 2 }}>{webPullDistance >= 64 ? copy.releaseToRefresh : copy.pullToRefresh}</Text></View> : null}
         <View style={styles.topbar}>
           <View style={styles.brandRow}><Logo variant="horizontal" width={94} height={30} accessibilityLabel="eKta" /></View>
@@ -399,10 +403,10 @@ export default function HomeScreen() {
         </ScrollView>
 
         <View style={styles.hero}><Text style={[styles.heroTitle, { fontFamily: headingFont }]}>{copy.goodMorning}</Text><Text style={[styles.heroSub, { fontFamily: bodyFont }]}>{copy.feedIntro}</Text></View>
-        {repositoryMode === "demo" && <View style={styles.demoBanner}><MaterialIcons name="info-outline" size={17} color={C.terra} /><Text style={[styles.demoText, { fontFamily: bodyFont }]}>{copy.demoModeText}</Text></View>}
+        {repositoryMode === "demo" && __DEV__ && <View style={styles.demoBanner}><MaterialIcons name="info-outline" size={17} color={C.terra} /><Text style={[styles.demoText, { fontFamily: bodyFont }]}>{copy.demoModeText}</Text></View>}
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.topics}>
-          {topics.map((topic) => <TopicChip key={topic} label={topic} onPress={() => router.push({ pathname: "/(tabs)/discover", params: { q: topic } })} />)}
+          {topics.map((topic) => <TopicChip key={topic} label={topicLabels[topic]?.[language] ?? topic} onPress={() => router.push({ pathname: "/(tabs)/discover", params: { q: topic } })} />)}
         </ScrollView>
         <View style={styles.feedHeader}>
           <Text style={[styles.sectionTitle, { fontFamily: headingFont }]}>{language === "bn" ? "আপনার জন্য" : "For you"}</Text>
@@ -438,6 +442,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 18, paddingBottom: 32 },
+  webContainer: { width: "100%", maxWidth: 520, alignSelf: "center" },
   topbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 10, paddingBottom: 4 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 9 },
   wordmarkWrap: { flexDirection: "row", alignItems: "center", gap: 4 },

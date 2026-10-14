@@ -7,7 +7,7 @@ export const currentUser: Profile = {
   bio: "Sharing useful community updates from across India.",
   initials: "AV",
   avatarColor: "#C85C3A",
-  region: "India",
+  region: "Gazole, Malda",
   followers: 248,
   following: 126,
   verified: true,
@@ -15,16 +15,16 @@ export const currentUser: Profile = {
 
 export const profiles: Profile[] = [
   currentUser,
-  { id: "p-1", name: "Aarav Sharma", handle: "aarav.jaipur", bio: "Local streets, public services and community news.", initials: "AS", avatarColor: "#365C57", region: "Jaipur, Rajasthan", followers: 531, following: 204, verified: true },
-  { id: "p-2", name: "Ananya Rao", handle: "ananya.mysuru", bio: "Teacher · books · neighborhood stories.", initials: "AR", avatarColor: "#8B5E3C", region: "Mysuru, Karnataka", followers: 186, following: 92 },
-  { id: "p-3", name: "Irfan Khan", handle: "irfan.hyderabad", bio: "Community clean-ups and youth volunteering.", initials: "IK", avatarColor: "#5C6B73", region: "Hyderabad, Telangana", followers: 407, following: 175 },
-  { id: "p-4", name: "Meera Das", handle: "meera.guwahati", bio: "Health camps and community care.", initials: "MD", avatarColor: "#9B4E4E", region: "Guwahati, Assam", followers: 154, following: 64 },
+  { id: "p-1", name: "Aarav Sharma", handle: "aarav.gazole", bio: "Local roads, public services and community news.", initials: "AS", avatarColor: "#365C57", region: "Gazole, Malda", followers: 531, following: 204, verified: true },
+  { id: "p-2", name: "Ananya Rao", handle: "ananya.malda", bio: "Teacher · books · neighborhood stories.", initials: "AR", avatarColor: "#8B5E3C", region: "Malda, West Bengal", followers: 186, following: 92 },
+  { id: "p-3", name: "Irfan Khan", handle: "irfan.kaliachak", bio: "Community clean-ups and youth volunteering.", initials: "IK", avatarColor: "#5C6B73", region: "Kaliachak, Malda", followers: 407, following: 175 },
+  { id: "p-4", name: "Meera Das", handle: "meera.chanchal", bio: "Health camps and community care.", initials: "MD", avatarColor: "#9B4E4E", region: "Chanchal, Malda", followers: 154, following: 64 },
 ];
 
 export const posts: Post[] = [
-  { id: "post-1", author: profiles[1], body: "A temporary traffic diversion is in place near the central market while the road is repaired. Please follow the signs and allow a little extra time.", createdAt: "18 min", location: "Jaipur, Rajasthan", tags: ["Public service", "Road update"], likes: 42, comments: 8, likedByMe: false },
-  { id: "post-2", author: profiles[2], body: "Our neighborhood library is refreshing its shelves this weekend. If you have a good book to pass on, bring it along and help more people discover it.", createdAt: "1 h", location: "Mysuru, Karnataka", tags: ["Books", "Community"], likes: 67, comments: 14, likedByMe: true, imageUrl: "community-pottery" },
-  { id: "post-3", author: profiles[3], body: "Volunteers are organizing a clean-up near the riverside this Sunday. Everyone is welcome to join for an hour and help keep our shared spaces clean.", createdAt: "3 h", location: "Hyderabad, Telangana", tags: ["Volunteering", "Local update"], likes: 29, comments: 5, likedByMe: false },
+  { id: "post-1", author: profiles[1], body: "শনিবার গাজোল হাট বসবে সকাল থেকে। রাস্তার কাজ চলবে, তাই বাজারে আসার সময় একটু বাড়তি সময় হাতে রাখুন।", createdAt: "18 min", location: "Gazole, Malda", tags: ["Public service", "হাটের দিন"], likes: 42, comments: 8, likedByMe: false },
+  { id: "post-2", author: profiles[2], body: "মালদার নদীর ঘাটে এই সপ্তাহান্তে বই বিনিময়ের ছোট আয়োজন হচ্ছে। পড়ে শেষ করা বই নিয়ে আসুন, অন্যের গল্প বাড়িতে নিয়ে যান।", createdAt: "1 h", location: "Malda, West Bengal", tags: ["Books", "Community"], likes: 67, comments: 14, likedByMe: true, imageUrl: "community-pottery" },
+  { id: "post-3", author: profiles[3], body: "গাজোল কলেজের সামনে রবিবার সকালে পরিচ্ছন্নতা অভিযান হবে। এক ঘণ্টা সময় দিতে পারলে আমাদের সঙ্গে যোগ দিন।", createdAt: "3 h", location: "Gazole, Malda", tags: ["Volunteering", "Local update"], likes: 29, comments: 5, likedByMe: false },
 ];
 
 export const demoStories: Post[] = [
@@ -43,7 +43,7 @@ const demoCreator: Profile = {
   bio: "Sample community clips for preview only.",
   initials: "eK",
   avatarColor: "#1F6F6B",
-  region: "India",
+  region: "Gazole, Malda",
   followers: 0,
   following: 0,
 };
@@ -57,7 +57,7 @@ export const demoReels: Post[] = [
     mediaType: "video",
     isDemo: true,
     createdAt: "demo",
-    location: "South Asia · sample clip",
+    location: "Gazole, Malda",
     tags: ["LocalMarket", "Community"],
     likes: 184,
     comments: 12,
@@ -71,7 +71,7 @@ export const demoReels: Post[] = [
     mediaType: "video",
     isDemo: true,
     createdAt: "demo",
-    location: "Sample clip · Pexels",
+    location: "Malda, West Bengal",
     tags: ["Community", "CleanUp"],
     likes: 96,
     comments: 8,
@@ -85,7 +85,7 @@ export const demoReels: Post[] = [
     mediaType: "video",
     isDemo: true,
     createdAt: "demo",
-    location: "Sample clip · Pexels",
+    location: "Malda, West Bengal",
     tags: ["GreenNeighbourhood", "Together"],
     likes: 73,
     comments: 5,
@@ -102,3 +102,10 @@ export const commentsByPost: Record<string, Comment[]> = {
 };
 
 export const topics = ["#India", "#CommunityUpdates", "#PublicService", "#Books", "#Volunteering"];
+export const topicLabels: Record<string, { bn: string; en: string }> = {
+  "#India": { bn: "#ভারত", en: "#India" },
+  "#CommunityUpdates": { bn: "#কমিউনিটি_খবর", en: "#CommunityUpdates" },
+  "#PublicService": { bn: "#জনপরিষেবা", en: "#PublicService" },
+  "#Books": { bn: "#বই", en: "#Books" },
+  "#Volunteering": { bn: "#স্বেচ্ছাসেবা", en: "#Volunteering" },
+};

@@ -18,8 +18,8 @@ describe("feed ranking", () => {
   });
 
   it("boosts posts from the selected locality", () => {
-    const preferences = buildFeedPreferences(currentUser, { region: "Mysuru" });
-    expect(getFeedScore(posts[1], preferences)).toBeGreaterThan(getFeedScore(posts[0], preferences));
+    const preferences = buildFeedPreferences(currentUser, { region: "Gazole, Malda" });
+    expect(getFeedScore(posts[0], preferences)).toBeGreaterThan(getFeedScore(posts[1], preferences));
   });
 
   it("does not mutate the source feed", () => {

@@ -16,6 +16,7 @@ import { ThemeProvider } from "@/lib/theme-provider";
 import { LanguageProvider } from "@/lib/apongram/LanguageContext";
 import { FeedPreferencesProvider } from "@/lib/apongram/FeedPreferencesContext";
 import { NotificationPreferencesProvider } from "@/lib/apongram/NotificationPreferencesContext";
+import { AccessibilityPreferencesProvider } from "@/lib/apongram/AccessibilityPreferencesContext";
 import { PushNotificationsProvider } from "@/lib/apongram/PushNotificationsProvider";
 import { SafeAreaFrameContext, SafeAreaInsetsContext, SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-context";
 import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
@@ -66,7 +67,7 @@ export default function RootLayout() {
   if (Platform.OS === "android" && liveWebViewUrl) {
     return <WebView source={{ uri: liveWebViewUrl }} originWhitelist={["https://*"]} javaScriptEnabled domStorageEnabled startInLoadingState pullToRefreshEnabled setSupportMultipleWindows={false} />;
   }
-  const content = <GestureHandlerRootView style={{ flex: 1 }}><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><LanguageProvider><FeedPreferencesProvider><NotificationPreferencesProvider><PushNotificationsProvider><Stack screenOptions={{ headerShown: false }}><Stack.Screen name="index" /><Stack.Screen name="(tabs)" /><Stack.Screen name="post/[id]" /><Stack.Screen name="report" options={{ presentation: "modal" }} /><Stack.Screen name="settings" /><Stack.Screen name="language" /><Stack.Screen name="profile-edit" /><Stack.Screen name="auth/phone" /><Stack.Screen name="auth/login" /><Stack.Screen name="oauth/callback" /></Stack><StatusBar style="dark" /></PushNotificationsProvider></NotificationPreferencesProvider></FeedPreferencesProvider></LanguageProvider></QueryClientProvider></trpc.Provider></GestureHandlerRootView>;
+  const content = <GestureHandlerRootView style={{ flex: 1 }}><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><LanguageProvider><AccessibilityPreferencesProvider><FeedPreferencesProvider><NotificationPreferencesProvider><PushNotificationsProvider><Stack screenOptions={{ headerShown: false }}><Stack.Screen name="index" /><Stack.Screen name="(tabs)" /><Stack.Screen name="post/[id]" /><Stack.Screen name="report" options={{ presentation: "modal" }} /><Stack.Screen name="settings" /><Stack.Screen name="language" /><Stack.Screen name="profile-edit" /><Stack.Screen name="auth/phone" /><Stack.Screen name="auth/login" /><Stack.Screen name="oauth/callback" /></Stack><StatusBar style="dark" /></PushNotificationsProvider></NotificationPreferencesProvider></FeedPreferencesProvider></AccessibilityPreferencesProvider></LanguageProvider></QueryClientProvider></trpc.Provider></GestureHandlerRootView>;
   if (!fontsLoaded) return null;
   const appSurface = <View style={{ flex: 1 }}>{content}{showLaunch ? <LaunchAnimation onFinished={finishLaunch} /> : null}</View>;
   if (Platform.OS === "web") return <ThemeProvider><SafeAreaProvider initialMetrics={providerInitialMetrics}><SafeAreaFrameContext.Provider value={frame}><SafeAreaInsetsContext.Provider value={insets}>{appSurface}</SafeAreaInsetsContext.Provider></SafeAreaFrameContext.Provider></SafeAreaProvider></ThemeProvider>;
