@@ -31,6 +31,7 @@ export async function getFeedPage(page = 0, pageSize = 6): Promise<{ items: Post
   const to = from + pageSize - 1;
   if (!supabaseConfig.isConfigured) {
     const demoFeed = [...posts.filter((post) => !post.isStory), ...demoReels];
+    if (page === 0) await writeFeedCache(demoFeed);
     const items = demoFeed.slice(from, to + 1);
     return { items, hasMore: to + 1 < demoFeed.length, fromCache: false };
   }
@@ -46,6 +47,14 @@ export async function getFeedPage(page = 0, pageSize = 6): Promise<{ items: Post
     const items = source.slice(from, to + 1);
     return { items, hasMore: to + 1 < source.length, fromCache: true };
   }
+}
+
+export async function getCachedFeedPage(page = 0, pageSize = 6): Promise<{ items: Post[]; hasMore: boolean; fromCache: true }> {
+  const cachedFeed = await readFeedCache();
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+  const items = cachedFeed.slice(from, to + 1);
+  return { items, hasMore: to + 1 < cachedFeed.length, fromCache: true };
 }
 
 export async function getFeed(): Promise<Post[]> {

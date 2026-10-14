@@ -9,7 +9,7 @@ import { TopicChip } from "@/components/apongram/TopicChip";
 import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
-import { getFeedPage, repositoryMode } from "@/lib/apongram/repository";
+import { getCachedFeedPage, getFeedPage, repositoryMode } from "@/lib/apongram/repository";
 import { currentUser, demoStories, profiles, topics } from "@/lib/apongram/mock-data";
 import { buildFeedPreferences, rankFeed, type FeedMode } from "@/lib/apongram/feed-ranking";
 import { useFeedPreferences } from "@/lib/apongram/FeedPreferencesContext";
@@ -113,7 +113,17 @@ export default function HomeScreen() {
     loadingRef.current = true;
     setRefreshing(true);
     setFeedError(false);
+    let servedCachedFeed = false;
     try {
+      const cached = await getCachedFeedPage(0, 3);
+      if (cached.items.length) {
+        servedCachedFeed = true;
+        setFeed(rankFeed(cached.items, feedMode, { ...buildFeedPreferences(currentUser), ...preferences }));
+        setPage(0);
+        setHasMore(cached.hasMore);
+        setFeedOffline(false);
+        setRefreshing(false);
+      }
       const { items, hasMore: nextHasMore, fromCache } = await getFeedPage(0, 3);
       setFeed(rankFeed(items, feedMode, { ...buildFeedPreferences(currentUser), ...preferences }));
       setPage(0);
@@ -125,7 +135,8 @@ export default function HomeScreen() {
         setTimeout(() => setRefreshNotice(false), 2200);
       }
     } catch {
-      setFeedError(true);
+      setFeedError(!servedCachedFeed);
+      setFeedOffline(servedCachedFeed);
     } finally {
       loadingRef.current = false;
       setRefreshing(false);
