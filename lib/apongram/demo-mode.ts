@@ -1,5 +1,5 @@
 /**
  * Preview toggle for Vercel/demo testing.
- * Set to false when the production phone/OTP gate should return.
+ * Keep false in production so users authenticate before entering the app.
  */
-export const DEMO_MODE = true;
+export const DEMO_MODE = false;

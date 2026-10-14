@@ -46,12 +46,26 @@ export default function PhoneAuthScreen() {
     setError("");
     try {
       if (!supabaseConfig.isConfigured) {
-        setSent(true);
-        setResendIn(30);
+        setError(language === "bn" ? "বাস্তব ইমেইল OTP চালাতে Supabase URL ও publishable key configure করুন।" : "Email OTP is unavailable until the Supabase URL and publishable key are configured.");
         return;
       }
       await sendEmailOtp(email);
       setSent(true);
+      setOtp("");
+      setResendIn(30);
+    } catch (cause) {
+      setError(cause instanceof SupabaseAuthError ? cause.message : (language === "bn" ? "OTP পাঠানো যায়নি। আবার চেষ্টা করুন।" : "We could not send the OTP. Please try again."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    if (busy || resendIn > 0) return;
+    setBusy(true);
+    setError("");
+    try {
+      if (supabaseConfig.isConfigured) await sendEmailOtp(email);
       setOtp("");
       setResendIn(30);
     } catch (cause) {
@@ -88,13 +102,10 @@ export default function PhoneAuthScreen() {
     setBusy(true);
     setError("");
     try {
-      if (!supabaseConfig.isConfigured) {
-        if (otp.replace(/\D/g, "").length < 6) throw new Error(language === "bn" ? "৬ সংখ্যার OTP লিখুন।" : "Enter the 6-digit OTP.");
-      } else {
-        await verifyEmailOtp(otp, email);
-        const profile = await getStoredProfile();
-        await syncProfileToSupabase(profile);
-      }
+      if (!supabaseConfig.isConfigured) throw new SupabaseAuthError(language === "bn" ? "বাস্তব ইমেইল OTP চালাতে Supabase URL ও publishable key configure করুন।" : "Email OTP is unavailable until the Supabase URL and publishable key are configured.");
+      await verifyEmailOtp(otp, email);
+      const profile = await getStoredProfile();
+      await syncProfileToSupabase(profile);
       setVerified(true);
     } catch (cause) {
       setError(cause instanceof SupabaseAuthError || cause instanceof Error ? cause.message : (language === "bn" ? "OTP যাচাই করা যায়নি।" : "We could not verify the OTP."));
@@ -198,7 +209,14 @@ export default function PhoneAuthScreen() {
               <Text style={[styles.buttonText, { fontFamily: mediumFont }]}>{busy ? (language === "bn" ? "অপেক্ষা করুন..." : "Please wait...") : sent ? copy.verify : resendIn ? `${copy.resend} (${resendIn}s)` : copy.sendOtp}</Text>
               <MaterialIcons name="arrow-forward" size={20} color={LIGHT.ivory} />
             </Pressable>
-            {sent && <Pressable onPress={() => { setSent(false); setOtp(""); setError(""); }} disabled={busy}><Text style={[styles.resend, { fontFamily: mediumFont }]}>{copy.resend}</Text></Pressable>}
+            {sent && <View style={styles.resendActions}>
+              <Pressable onPress={() => void resendOtp()} disabled={busy || resendIn > 0} accessibilityRole="button">
+                <Text style={[styles.resend, { fontFamily: mediumFont }, (busy || resendIn > 0) && styles.resendDisabled]}>{resendIn > 0 ? `${copy.resend} (${resendIn}s)` : copy.resend}</Text>
+              </Pressable>
+              <Pressable onPress={() => { setSent(false); setOtp(""); setError(""); }} disabled={busy} accessibilityRole="button">
+                <Text style={[styles.resend, { fontFamily: mediumFont }, busy && styles.resendDisabled]}>{language === "bn" ? "ইমেইল পরিবর্তন করুন" : "Change email"}</Text>
+              </Pressable>
+            </View>}
             {error ? <Text style={[styles.error, { fontFamily: bodyFont }]}>{error}</Text> : null}
             {!supabaseConfig.isConfigured && <Text style={[styles.demoNote, { fontFamily: bodyFont }]}>{copy.demoModeText}</Text>}
             <Text style={[styles.disclaimer, { fontFamily: bodyFont }]}>{language === "bn" ? "সাইন ইন করে আপনি আমাদের কমিউনিটি নির্দেশিকা ও প্রতিবেশীর গোপনীয়তা নীতিতে সম্মতি দিচ্ছেন।" : "By signing in, you agree to our community guidelines and neighborhood privacy charter."}</Text>
@@ -242,7 +260,9 @@ const styles = StyleSheet.create({
   button: { backgroundColor: LIGHT.terracotta, borderRadius: 12, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 9, paddingVertical: 15 },
   disabled: { opacity: 0.42 },
   buttonText: { color: LIGHT.ivory, fontWeight: "800", fontSize: 14 },
-  resend: { color: LIGHT.terracotta, textAlign: "center", fontSize: 12, fontWeight: "800", marginTop: 15 },
+  resendActions: { flexDirection: "row", justifyContent: "center", gap: 22, marginTop: 15 },
+  resend: { color: LIGHT.terracotta, textAlign: "center", fontSize: 12, fontWeight: "800" },
+  resendDisabled: { opacity: 0.45 },
   error: { color: LIGHT.error, textAlign: "center", lineHeight: 18, fontSize: 11, marginTop: 12 },
   demoNote: { color: LIGHT.slate, backgroundColor: LIGHT.primaryContainer, borderRadius: 10, padding: 9, textAlign: "center", lineHeight: 16, fontSize: 10, marginTop: 12 },
   disclaimer: { color: LIGHT.slate, textAlign: "center", lineHeight: 18, fontSize: 11, marginTop: 18, paddingHorizontal: 8 },
