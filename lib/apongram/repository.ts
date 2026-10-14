@@ -6,6 +6,7 @@ import type { Comment, Post, Profile, VideoCompression, OverlayPosition, Overlay
 
 export const repositoryMode = supabaseConfig.isConfigured ? "supabase" : "demo";
 const FEED_CACHE_KEY = "@ekta/feed-cache-v1";
+export const FEED_BACKGROUND_SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
 async function readFeedCache(): Promise<Post[]> {
   try {
@@ -24,6 +25,21 @@ async function writeFeedCache(items: Post[]): Promise<void> {
   } catch {
     // Caching is best effort and must never block the feed.
   }
+}
+
+/** Refresh persisted feed data without changing the currently visible feed. */
+export async function syncFeedCache(pageSize = 12): Promise<{ items: Post[]; updated: boolean }> {
+  const cachedFeed = await readFeedCache();
+  const source = !supabaseConfig.isConfigured
+    ? posts.filter((post) => !post.isStory)
+    : await supabaseFetch<Post[]>(`posts?select=*&order=created_at.desc&limit=${pageSize}`);
+  const merged = [...source, ...cachedFeed];
+  const unique = [...new Map(merged.map((item) => [item.id, item])).values()];
+  const previousSignature = JSON.stringify(cachedFeed);
+  const nextSignature = JSON.stringify(unique);
+  const updated = previousSignature !== nextSignature;
+  if (updated) await writeFeedCache(unique);
+  return { items: unique, updated };
 }
 
 export async function getFeedPage(page = 0, pageSize = 6): Promise<{ items: Post[]; hasMore: boolean; fromCache: boolean }> {

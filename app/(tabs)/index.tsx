@@ -2,14 +2,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Modal, Platform, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type NativeTouchEvent } from "react-native";
+import { ActivityIndicator, Animated, AppState, Modal, Platform, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type NativeTouchEvent } from "react-native";
 import { Avatar } from "@/components/apongram/Avatar";
 import { PostCard } from "@/components/apongram/PostCard";
 import { TopicChip } from "@/components/apongram/TopicChip";
 import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
-import { getCachedFeedPage, getFeedPage, repositoryMode } from "@/lib/apongram/repository";
+import { FEED_BACKGROUND_SYNC_INTERVAL_MS, getCachedFeedPage, getFeedPage, repositoryMode, syncFeedCache } from "@/lib/apongram/repository";
 import { currentUser, demoStories, profiles, topics } from "@/lib/apongram/mock-data";
 import { buildFeedPreferences, rankFeed, type FeedMode } from "@/lib/apongram/feed-ranking";
 import { useFeedPreferences } from "@/lib/apongram/FeedPreferencesContext";
@@ -190,6 +190,37 @@ export default function HomeScreen() {
   useFocusEffect(useCallback(() => {
     void reloadFeed();
   }, [reloadFeed]));
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let disposed = false;
+
+    const syncInBackground = () => {
+      if (disposed || loadingRef.current) return;
+      void syncFeedCache().catch(() => {
+        // Background cache refresh is best effort; the visible feed stays intact.
+      });
+    };
+    const stop = () => {
+      if (interval) clearInterval(interval);
+      interval = null;
+    };
+    const start = () => {
+      stop();
+      syncInBackground();
+      interval = setInterval(syncInBackground, FEED_BACKGROUND_SYNC_INTERVAL_MS);
+    };
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") start();
+      else stop();
+    });
+    if (AppState.currentState === "active") start();
+    return () => {
+      disposed = true;
+      stop();
+      subscription.remove();
+    };
+  }, []);
 
   const loadMore = useCallback(async () => {
     if (loadingRef.current || !hasMore) return;
