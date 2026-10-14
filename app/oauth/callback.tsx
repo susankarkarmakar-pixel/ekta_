@@ -1,6 +1,7 @@
 import { ThemedView } from "@/components/themed-view";
 import * as Api from "@/lib/_core/api";
 import * as Auth from "@/lib/_core/auth";
+import { completeGoogleOAuthRedirect, getSupabaseSession } from "@/lib/apongram/supabase-auth";
 import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -75,14 +76,33 @@ export default function OAuthCallback() {
           console.log("[OAuth] Constructed callback URL from params");
         } else {
           console.log("[OAuth] No params found, checking Linking.getInitialURL()...");
-          // Fallback: try to get from Linking
-          const initialUrl = await Linking.getInitialURL();
-          if (initialUrl) {
-            console.log("[OAuth] Initial callback URL present");
-            url = initialUrl;
-          } else {
-            console.log("[OAuth] Initial callback URL missing");
+          if (typeof window !== "undefined" && window.location.href) {
+            url = window.location.href;
+            console.log("[OAuth] Browser callback URL present");
           }
+          // Fallback: try to get from Linking
+          if (!url) {
+            const initialUrl = await Linking.getInitialURL();
+            if (initialUrl) {
+              console.log("[OAuth] Initial callback URL present");
+              url = initialUrl;
+            } else {
+              console.log("[OAuth] Initial callback URL missing");
+            }
+          }
+        }
+
+        // Supabase returns the Google session in the URL fragment for its
+        // hosted OAuth callback. Handle that before the legacy server OAuth
+        // code/state exchange below.
+        if (url && (url.includes("access_token=") || url.includes("refresh_token="))) {
+          console.log("[OAuth] Supabase session found in callback URL");
+          await completeGoogleOAuthRedirect(url);
+          const session = await getSupabaseSession();
+          if (!session) throw new Error("Supabase session was not persisted");
+          setStatus("success");
+          setTimeout(() => router.replace("/(tabs)"), 1000);
+          return;
         }
 
         // Check for error
