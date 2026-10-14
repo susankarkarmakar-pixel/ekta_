@@ -17,6 +17,27 @@ export type Profile = {
 export type VideoCompression = "high" | "balanced" | "dataSaver";
 export type OverlaySticker = "sparkles" | "favorite" | "location-on" | "wb-sunny" | "local-florist";
 export type OverlayPosition = "top" | "center" | "bottom";
+export type MediaAssetKind = "image" | "video";
+export type PublishStatus = "idle" | "uploading" | "publishing" | "published" | "failed";
+
+export type RenderManifest = {
+  trimStart?: number;
+  trimEnd?: number;
+  compression?: VideoCompression;
+  musicTrackId?: string;
+  musicVolume?: number;
+  originalVolume?: number;
+  overlayText?: string;
+  overlaySticker?: OverlaySticker;
+  overlayPosition?: OverlayPosition;
+};
+
+export type MediaUpload = {
+  bucket: string;
+  path: string;
+  mimeType: string;
+  sizeBytes: number;
+};
 
 export type Post = {
   id: string;

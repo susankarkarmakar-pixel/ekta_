@@ -1,8 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { commentsByPost, currentUser, demoReels, posts, profiles, topics } from "./mock-data";
 import { selectReels } from "./reel-utils";
-import { storagePublicUrl, supabaseConfig, supabaseFetch } from "./supabase";
-import type { Comment, Post, Profile, VideoCompression, OverlayPosition, OverlaySticker } from "./types";
+import { storagePublicUrl, supabaseConfig, supabaseFetch, uploadMedia } from "./supabase";
+import { getSupabaseSession } from "./supabase-auth";
+import type { Comment, MediaUpload, Post, Profile, VideoCompression, OverlayPosition, OverlaySticker } from "./types";
 
 export const repositoryMode = supabaseConfig.isConfigured ? "supabase" : "demo";
 const FEED_CACHE_KEY = "@ekta/feed-cache-v1";
@@ -184,13 +185,33 @@ export async function addComment(postId: string, body: string): Promise<Comment>
 }
 
 export async function createPost(body: string, imagePath?: string, videoPath?: string, isStory = false, videoOptions?: { start: number; end: number; compression: VideoCompression }, musicOptions?: { trackId: string; musicVolume: number; originalVolume: number }, overlayOptions?: { text?: string; sticker?: OverlaySticker; position: OverlayPosition }): Promise<Post> {
+  const hasLocalMedia = [imagePath, videoPath].some((path) => path && /^(file:|content:|blob:)/i.test(path));
+  let uploadedMedia: MediaUpload | undefined;
+  let durableImagePath = imagePath;
+  let durableVideoPath = videoPath;
+  let sessionUserId: string | undefined;
+
+  if (supabaseConfig.isConfigured) {
+    const session = await getSupabaseSession();
+    sessionUserId = session?.user.id;
+    if (!sessionUserId) throw new Error("Sign in before publishing to the community");
+    if (hasLocalMedia && imagePath && /^(file:|content:|blob:)/i.test(imagePath)) {
+      uploadedMedia = await uploadMedia(imagePath, sessionUserId, "image");
+      durableImagePath = uploadedMedia.path;
+    }
+    if (hasLocalMedia && videoPath && /^(file:|content:|blob:)/i.test(videoPath)) {
+      uploadedMedia = await uploadMedia(videoPath, sessionUserId, "video");
+      durableVideoPath = uploadedMedia.path;
+    }
+  }
+
   const post: Post = {
     id: `local-${Date.now()}`,
     author: currentUser,
     body,
-    imageUrl: imagePath,
-    videoUrl: videoPath,
-    mediaType: videoPath ? "video" : imagePath ? "image" : undefined,
+    imageUrl: uploadedMedia?.bucket && durableImagePath ? storagePublicUrl(uploadedMedia.bucket, durableImagePath) : durableImagePath,
+    videoUrl: uploadedMedia?.bucket && durableVideoPath ? storagePublicUrl(uploadedMedia.bucket, durableVideoPath) : durableVideoPath,
+    mediaType: durableVideoPath ? "video" : durableImagePath ? "image" : undefined,
     videoStart: videoOptions?.start,
     videoEnd: videoOptions?.end,
     videoCompression: videoOptions?.compression,
@@ -209,21 +230,24 @@ export async function createPost(body: string, imagePath?: string, videoPath?: s
     comments: 0,
     likedByMe: false,
   };
-  posts.unshift(post);
 
-  // A picker URI is local to this device/session, not a durable Supabase Storage URL.
-  // Keep demo publishing local until authenticated upload and Storage policies are wired.
-  const hasLocalMedia = [imagePath, videoPath].some((path) => path && /^(file:|content:|blob:)/i.test(path));
-  if (supabaseConfig.isConfigured && !hasLocalMedia) {
-    try {
-      await supabaseFetch("posts", {
-        method: "POST",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ body, image_path: imagePath ?? null, video_path: videoPath ?? null, video_start: videoOptions?.start ?? null, video_end: videoOptions?.end ?? null, video_compression: videoOptions?.compression ?? null, music_track_id: musicOptions?.trackId ?? null, music_volume: musicOptions?.musicVolume ?? null, original_volume: musicOptions?.originalVolume ?? null, overlay_text: overlayOptions?.text ?? null, overlay_sticker: overlayOptions?.sticker ?? null, overlay_position: overlayOptions?.position ?? null, is_story: isStory }),
-      });
-    } catch {
-      // Keep the preview responsive when live persistence is unavailable.
-    }
+  if (supabaseConfig.isConfigured) {
+    await supabaseFetch("posts", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({
+        author_id: sessionUserId,
+        body,
+        image_path: durableImagePath ?? null,
+        video_path: durableVideoPath ?? null,
+        media_mime_type: uploadedMedia?.mimeType ?? null,
+        media_size_bytes: uploadedMedia?.sizeBytes ?? null,
+        render_status: "ready",
+        render_manifest: { trim_start: videoOptions?.start ?? null, trim_end: videoOptions?.end ?? null, compression: videoOptions?.compression ?? null, music_track_id: musicOptions?.trackId ?? null, music_volume: musicOptions?.musicVolume ?? null, original_volume: musicOptions?.originalVolume ?? null, overlay_text: overlayOptions?.text ?? null, overlay_sticker: overlayOptions?.sticker ?? null, overlay_position: overlayOptions?.position ?? null },
+        is_story: isStory,
+      }),
+    });
   }
+  posts.unshift(post);
   return post;
 }
