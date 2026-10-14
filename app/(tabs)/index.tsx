@@ -122,7 +122,7 @@ export default function HomeScreen() {
         setPage(0);
         setHasMore(cached.hasMore);
         setFeedOffline(false);
-        setRefreshing(false);
+        if (!showFeedback) setRefreshing(false);
       }
       const { items, hasMore: nextHasMore, fromCache } = await getFeedPage(0, 3);
       setFeed(rankFeed(items, feedMode, { ...buildFeedPreferences(currentUser), ...preferences }));
