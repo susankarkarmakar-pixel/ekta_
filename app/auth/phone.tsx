@@ -46,8 +46,7 @@ export default function PhoneAuthScreen() {
     setError("");
     try {
       if (!supabaseConfig.isConfigured) {
-        setSent(true);
-        setResendIn(30);
+        setError(language === "bn" ? "বাস্তব ইমেইল OTP চালাতে Supabase URL ও publishable key configure করুন।" : "Email OTP is unavailable until the Supabase URL and publishable key are configured.");
         return;
       }
       await sendEmailOtp(email);
@@ -103,13 +102,10 @@ export default function PhoneAuthScreen() {
     setBusy(true);
     setError("");
     try {
-      if (!supabaseConfig.isConfigured) {
-        if (otp.replace(/\D/g, "").length < 6) throw new Error(language === "bn" ? "৬ সংখ্যার OTP লিখুন।" : "Enter the 6-digit OTP.");
-      } else {
-        await verifyEmailOtp(otp, email);
-        const profile = await getStoredProfile();
-        await syncProfileToSupabase(profile);
-      }
+      if (!supabaseConfig.isConfigured) throw new SupabaseAuthError(language === "bn" ? "বাস্তব ইমেইল OTP চালাতে Supabase URL ও publishable key configure করুন।" : "Email OTP is unavailable until the Supabase URL and publishable key are configured.");
+      await verifyEmailOtp(otp, email);
+      const profile = await getStoredProfile();
+      await syncProfileToSupabase(profile);
       setVerified(true);
     } catch (cause) {
       setError(cause instanceof SupabaseAuthError || cause instanceof Error ? cause.message : (language === "bn" ? "OTP যাচাই করা যায়নি।" : "We could not verify the OTP."));
