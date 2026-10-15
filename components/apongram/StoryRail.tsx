@@ -1,15 +1,48 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions, type NativeTouchEvent, type NativeSyntheticEvent } from "react-native";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+  type NativeTouchEvent,
+  type NativeSyntheticEvent,
+} from "react-native";
 import { Avatar } from "./Avatar";
 import { Colors } from "@/constants/theme";
 import type { Post, Profile } from "@/lib/apongram/types";
 
-const C = { ...Colors.light, card: Colors.light.paper, ink: Colors.light.inkNavy, muted: Colors.light.slate, terra: Colors.light.terracotta, green: Colors.light.leafGreen };
-const STORY_VIDEO_SOURCES: Record<string, number> = { "ekta-demo://market": require("../../assets/videos/reel-market.mp4") };
+const C = {
+  ...Colors.light,
+  card: Colors.light.paper,
+  ink: Colors.light.inkNavy,
+  muted: Colors.light.slate,
+  terra: Colors.light.terracotta,
+  green: Colors.light.leafGreen,
+};
+const STORY_VIDEO_SOURCES: Record<string, number> = {
+  "ekta-demo://market": require("../../assets/videos/reel-market.mp4"),
+};
 
-type StoryState = { people: Profile[]; viewedIds: string[]; viewer?: Profile; post?: Post; index: number; open: boolean; paused: boolean; reply: string; replySent: boolean };
+type StoryState = {
+  people: Profile[];
+  viewedIds: string[];
+  viewer?: Profile;
+  post?: Post;
+  index: number;
+  storyIndex: number;
+  storyCount: number;
+  open: boolean;
+  paused: boolean;
+  reply: string;
+  replySent: boolean;
+};
 type StoryRailProps = StoryState & {
   language: "bn" | "en";
   bodyFont: string;
@@ -27,46 +60,673 @@ type StoryRailProps = StoryState & {
   onWatchReels: () => void;
 };
 
-function StoryVideo({ uri, paused, language }: { uri: string | number; paused: boolean; language: "bn" | "en" }) {
+function StoryVideo({
+  uri,
+  paused,
+  language,
+}: {
+  uri: string | number;
+  paused: boolean;
+  language: "bn" | "en";
+}) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const frameHeight = Math.min(390, windowHeight * 0.44);
-  const frameWidth = Math.min(Math.max(120, windowWidth - 180), frameHeight * 9 / 16);
-  const player = useVideoPlayer(typeof uri === "string" ? STORY_VIDEO_SOURCES[uri] ?? uri : uri, (instance) => { instance.loop = true; instance.muted = false; instance.timeUpdateEventInterval = 0.25; });
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const frameWidth = Math.min(
+    Math.max(120, windowWidth - 180),
+    (frameHeight * 9) / 16,
+  );
+  const player = useVideoPlayer(
+    typeof uri === "string" ? (STORY_VIDEO_SOURCES[uri] ?? uri) : uri,
+    (instance) => {
+      instance.loop = true;
+      instance.muted = false;
+      instance.timeUpdateEventInterval = 0.25;
+    },
+  );
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   const [progress, setProgress] = useState(0);
-  useEffect(() => { if (paused) player.pause(); else player.play(); return () => player.pause(); }, [paused, player]);
   useEffect(() => {
-    const statusSubscription = player.addListener("statusChange", ({ status: nextStatus }) => setStatus(nextStatus === "error" ? "error" : nextStatus === "readyToPlay" ? "ready" : "loading"));
-    const progressSubscription = player.addListener("timeUpdate", ({ currentTime }) => setProgress(player.duration > 0 ? Math.min(1, currentTime / player.duration) : 0));
-    return () => { statusSubscription.remove(); progressSubscription.remove(); };
+    if (paused) player.pause();
+    else player.play();
+    return () => player.pause();
+  }, [paused, player]);
+  useEffect(() => {
+    const statusSubscription = player.addListener(
+      "statusChange",
+      ({ status: nextStatus }) =>
+        setStatus(
+          nextStatus === "error"
+            ? "error"
+            : nextStatus === "readyToPlay"
+              ? "ready"
+              : "loading",
+        ),
+    );
+    const progressSubscription = player.addListener(
+      "timeUpdate",
+      ({ currentTime }) =>
+        setProgress(
+          player.duration > 0 ? Math.min(1, currentTime / player.duration) : 0,
+        ),
+    );
+    return () => {
+      statusSubscription.remove();
+      progressSubscription.remove();
+    };
   }, [player]);
-  return <View style={[styles.storyVideoFrame, { width: frameWidth, height: frameHeight }]}>
-    {status === "error" ? <View style={styles.storyVideoFallback}><MaterialIcons name="broken-image" size={35} color={C.ochre} /><Text style={styles.storyVideoFallbackTitle}>{language === "bn" ? "ভিডিও চালানো যাচ্ছে না" : "Video unavailable"}</Text><Text style={styles.storyVideoFallbackText}>{language === "bn" ? "এই story-টি পরে আবার চেষ্টা করুন।" : "Try this story again later."}</Text></View> : <VideoView player={player} style={[styles.storyVideo, { width: frameWidth, height: frameHeight }]} contentFit="cover" nativeControls={false} />}
-    {status === "loading" ? <View style={styles.storyVideoLoading}><ActivityIndicator color={C.ivory} /><Text style={styles.storyVideoLoadingText}>{language === "bn" ? "ভিডিও লোড হচ্ছে…" : "Loading video…"}</Text></View> : null}
-    {status === "ready" ? <View style={styles.storyVideoProgress}><View style={[styles.storyVideoProgressFill, { width: `${progress * 100}%` }]} /></View> : null}
-  </View>;
+  return (
+    <View
+      style={[
+        styles.storyVideoFrame,
+        { width: frameWidth, height: frameHeight },
+      ]}
+    >
+      {status === "error" ? (
+        <View style={styles.storyVideoFallback}>
+          <MaterialIcons name="broken-image" size={35} color={C.ochre} />
+          <Text style={styles.storyVideoFallbackTitle}>
+            {language === "bn" ? "ভিডিও চালানো যাচ্ছে না" : "Video unavailable"}
+          </Text>
+          <Text style={styles.storyVideoFallbackText}>
+            {language === "bn"
+              ? "এই story-টি পরে আবার চেষ্টা করুন।"
+              : "Try this story again later."}
+          </Text>
+        </View>
+      ) : (
+        <VideoView
+          player={player}
+          style={[
+            styles.storyVideo,
+            { width: frameWidth, height: frameHeight },
+          ]}
+          contentFit="cover"
+          nativeControls={false}
+        />
+      )}
+      {status === "loading" ? (
+        <View style={styles.storyVideoLoading}>
+          <ActivityIndicator color={C.ivory} />
+          <Text style={styles.storyVideoLoadingText}>
+            {language === "bn" ? "ভিডিও লোড হচ্ছে…" : "Loading video…"}
+          </Text>
+        </View>
+      ) : null}
+      {status === "ready" ? (
+        <View style={styles.storyVideoProgress}>
+          <View
+            style={[
+              styles.storyVideoProgressFill,
+              { width: `${progress * 100}%` },
+            ]}
+          />
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
-export function StoryRail({ people, viewedIds, viewer, post, index, open, paused, reply, replySent, language, bodyFont, mediumFont, headingFont, reelsLabel, onOpen, onClose, onPause, onMove, onReplyChange, onSendReply, onShare, onReport, onWatchReels }: StoryRailProps) {
+export function StoryRail({
+  people,
+  viewedIds,
+  viewer,
+  post,
+  index,
+  storyIndex,
+  storyCount,
+  open,
+  paused,
+  reply,
+  replySent,
+  language,
+  bodyFont,
+  mediumFont,
+  headingFont,
+  reelsLabel,
+  onOpen,
+  onClose,
+  onPause,
+  onMove,
+  onReplyChange,
+  onSendReply,
+  onShare,
+  onReport,
+  onWatchReels,
+}: StoryRailProps) {
   const touchStartX = useRef<number | null>(null);
-  const handleTouchStart = (event: NativeSyntheticEvent<NativeTouchEvent>) => { touchStartX.current = event.nativeEvent.pageX; };
-  const handleTouchEnd = (event: NativeSyntheticEvent<NativeTouchEvent>) => { const start = touchStartX.current; touchStartX.current = null; if (start === null) return; const distance = event.nativeEvent.pageX - start; if (Math.abs(distance) >= 50) onMove(distance < 0 ? 1 : -1); };
-  return <>
-    <View style={styles.storyHeader}><Text style={[styles.sectionTitle, { fontFamily: headingFont }]}>{language === "bn" ? "স্টোরি" : "Stories"}</Text><Text style={[styles.storyHint, { fontFamily: bodyFont }]}>{language === "bn" ? "২৪ ঘণ্টা" : "24 hours"}</Text><View style={styles.storyHeaderSpacer} /><Pressable onPress={onWatchReels} style={styles.watchReels} accessibilityLabel={reelsLabel}><MaterialIcons name="movie" size={15} color={C.terra} /><Text style={[styles.watchReelsText, { fontFamily: mediumFont }]}>{reelsLabel}</Text><MaterialIcons name="chevron-right" size={15} color={C.terra} /></Pressable></View>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.storyRail}>
-      {people.map((person, personIndex) => <Pressable key={person.id} onPress={() => onOpen(person.id, personIndex === 0)} style={styles.storyItem} accessibilityRole="button" accessibilityLabel={personIndex === 0 ? (language === "bn" ? "আপনার স্টোরি তৈরি করুন" : "Create your story") : `View ${person.name}'s story`}><View style={[styles.storyRing, personIndex === 0 && styles.storyRingOwn, viewedIds.includes(person.id) && styles.storyRingViewed]}><Avatar profile={person} size={44} />{personIndex === 0 && <View style={styles.storyPlus}><MaterialIcons name="add" size={12} color="#FFF" /></View>}</View><Text numberOfLines={1} style={[styles.storyName, { fontFamily: bodyFont }]}>{personIndex === 0 ? (language === "bn" ? "আপনার স্টোরি" : "Your story") : person.name.split(" ")[0]}</Text></Pressable>)}
-    </ScrollView>
-    <Modal visible={open} animationType="fade" presentationStyle="fullScreen" onRequestClose={onClose}>
-      <View style={styles.storyViewer}><View style={styles.storyProgressRow}>{people.map((person, personIndex) => <View key={person.id} style={[styles.storyProgressTrack, personIndex === index && styles.storyProgressCurrent, personIndex < index && styles.storyProgressSeen]} />)}</View>
-        <View style={styles.storyViewerHeader}><Avatar profile={viewer ?? people[0]} size={38} /><View style={styles.storyViewerCopy}><Text style={[styles.storyViewerName, { fontFamily: mediumFont }]}>{viewer?.name}</Text><Text style={[styles.storyViewerMeta, { fontFamily: bodyFont }]}>{post?.createdAt ?? "now"} · {viewer?.region}</Text></View><Pressable onPress={onPause} style={styles.storyClose} accessibilityRole="button" accessibilityLabel={paused ? (language === "bn" ? "স্টোরি চালু করুন" : "Resume story") : (language === "bn" ? "স্টোরি থামান" : "Pause story")}><MaterialIcons name={paused ? "play-arrow" : "pause"} size={23} color="#FFF" /></Pressable><Pressable onPress={onClose} style={styles.storyClose} accessibilityRole="button" accessibilityLabel={language === "bn" ? "স্টোরি বন্ধ করুন" : "Close story"}><MaterialIcons name="close" size={25} color="#FFF" /></Pressable></View>
-        <View style={styles.storyViewerBody} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}><Pressable onPress={() => onMove(-1)} style={styles.storyNavLeft} disabled={index <= 0} accessibilityRole="button" accessibilityLabel={language === "bn" ? "আগের স্টোরি" : "Previous story"}><MaterialIcons name="chevron-left" size={38} color={index <= 0 ? "rgba(255,255,255,0.2)" : "#FFF"} /></Pressable><View style={styles.storyViewerCopyBody}>{post?.videoUrl ? <StoryVideo uri={post.videoUrl} paused={paused} language={language} /> : <MaterialIcons name="auto-stories" size={54} color={C.ochre} />}<Text style={[styles.storyViewerTitle, { fontFamily: headingFont }]}>{viewer?.name}</Text><Text style={[styles.storyViewerText, { fontFamily: bodyFont }]}>{post?.body ?? (language === "bn" ? `${viewer?.region} থেকে একটি community update` : `A community update from ${viewer?.region}`)}</Text><Text style={[styles.storyViewerHint, { fontFamily: bodyFont }]}>{post?.videoUrl ? (paused ? (language === "bn" ? "ভিডিও পজ করা হয়েছে · play চাপুন" : "Video paused · press play") : (language === "bn" ? "ভিডিও চলছে · swipe করে story বদলান" : "Video playing · swipe to change story")) : (paused ? (language === "bn" ? "পজ করা হয়েছে · play চাপুন" : "Paused · press play") : (language === "bn" ? "আগে/পরে যেতে swipe করুন" : "Swipe to navigate"))}</Text></View><Pressable onPress={() => onMove(1)} style={styles.storyNavRight} disabled={index >= people.length - 1} accessibilityRole="button" accessibilityLabel={language === "bn" ? "পরের স্টোরি" : "Next story"}><MaterialIcons name="chevron-right" size={38} color={index >= people.length - 1 ? "rgba(255,255,255,0.2)" : "#FFF"} /></Pressable></View>
-        <View style={styles.storyActions}><Pressable onPress={onPause} style={styles.storyAction} accessibilityRole="button" accessibilityLabel={language === "bn" ? "স্টোরিতে উত্তর দিন" : "Reply to story"}><MaterialIcons name="chat-bubble-outline" size={19} color={C.ivory} /><Text style={[styles.storyActionText, { fontFamily: mediumFont }]}>{language === "bn" ? "উত্তর" : "Reply"}</Text></Pressable><Pressable onPress={onShare} style={styles.storyAction} accessibilityRole="button" accessibilityLabel={language === "bn" ? "স্টোরি শেয়ার করুন" : "Share story"}><MaterialIcons name="share" size={19} color={C.ivory} /><Text style={[styles.storyActionText, { fontFamily: mediumFont }]}>{language === "bn" ? "শেয়ার" : "Share"}</Text></Pressable><Pressable onPress={onReport} style={styles.storyAction} accessibilityRole="button" accessibilityLabel={language === "bn" ? "স্টোরি রিপোর্ট করুন" : "Report story"}><MaterialIcons name="flag" size={19} color={C.ivory} /><Text style={[styles.storyActionText, { fontFamily: mediumFont }]}>{language === "bn" ? "রিপোর্ট" : "Report"}</Text></Pressable></View>
-        {replySent ? <Text style={[styles.storyReplySent, { fontFamily: bodyFont }]}>{language === "bn" ? "আপনার উত্তর পাঠানো হয়েছে (নমুনা)।" : "Your reply was sent (demo)."}</Text> : <View style={styles.storyReplyRow}><TextInput value={reply} onChangeText={onReplyChange} placeholder={language === "bn" ? "উত্তর লিখুন…" : "Reply to this story…"} placeholderTextColor="rgba(255,255,255,0.55)" style={[styles.storyReplyInput, { fontFamily: bodyFont }]} returnKeyType="send" onSubmitEditing={onSendReply} /><Pressable onPress={onSendReply} disabled={!reply.trim()} accessibilityRole="button" accessibilityLabel={language === "bn" ? "উত্তর পাঠান" : "Send reply"}><MaterialIcons name="send" size={20} color={reply.trim() ? C.ochre : "rgba(255,255,255,0.35)"} /></Pressable></View>}
+  const handleTouchStart = (event: NativeSyntheticEvent<NativeTouchEvent>) => {
+    touchStartX.current = event.nativeEvent.pageX;
+  };
+  const handleTouchEnd = (event: NativeSyntheticEvent<NativeTouchEvent>) => {
+    const start = touchStartX.current;
+    touchStartX.current = null;
+    if (start === null) return;
+    const distance = event.nativeEvent.pageX - start;
+    if (Math.abs(distance) >= 50) onMove(distance < 0 ? 1 : -1);
+  };
+  return (
+    <>
+      <View style={styles.storyHeader}>
+        <Text style={[styles.sectionTitle, { fontFamily: headingFont }]}>
+          {language === "bn" ? "স্টোরি" : "Stories"}
+        </Text>
+        <Text style={[styles.storyHint, { fontFamily: bodyFont }]}>
+          {language === "bn" ? "২৪ ঘণ্টা" : "24 hours"}
+        </Text>
+        <View style={styles.storyHeaderSpacer} />
+        <Pressable
+          onPress={onWatchReels}
+          style={styles.watchReels}
+          accessibilityLabel={reelsLabel}
+        >
+          <MaterialIcons name="movie" size={15} color={C.terra} />
+          <Text style={[styles.watchReelsText, { fontFamily: mediumFont }]}>
+            {reelsLabel}
+          </Text>
+          <MaterialIcons name="chevron-right" size={15} color={C.terra} />
+        </Pressable>
       </View>
-    </Modal>
-  </>;
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.storyRail}
+      >
+        {people.map((person, personIndex) => (
+          <Pressable
+            key={person.id}
+            onPress={() => onOpen(person.id, personIndex === 0)}
+            style={styles.storyItem}
+            accessibilityRole="button"
+            accessibilityLabel={
+              personIndex === 0
+                ? language === "bn"
+                  ? "আপনার স্টোরি তৈরি করুন"
+                  : "Create your story"
+                : `View ${person.name}'s story`
+            }
+          >
+            <View
+              style={[
+                styles.storyRing,
+                personIndex === 0 && styles.storyRingOwn,
+                viewedIds.includes(person.id) && styles.storyRingViewed,
+              ]}
+            >
+              <Avatar profile={person} size={44} />
+              {personIndex === 0 && (
+                <View style={styles.storyPlus}>
+                  <MaterialIcons name="add" size={12} color="#FFF" />
+                </View>
+              )}
+            </View>
+            <Text
+              numberOfLines={1}
+              style={[styles.storyName, { fontFamily: bodyFont }]}
+            >
+              {personIndex === 0
+                ? language === "bn"
+                  ? "আপনার স্টোরি"
+                  : "Your story"
+                : person.name.split(" ")[0]}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+      <Modal
+        visible={open}
+        animationType="fade"
+        presentationStyle="fullScreen"
+        onRequestClose={onClose}
+      >
+        <View style={styles.storyViewer}>
+          <View style={styles.storyProgressRow}>
+            {Array.from({ length: storyCount }, (_, segment) => (
+              <View
+                key={`story-segment-${segment}`}
+                style={[
+                  styles.storyProgressTrack,
+                  segment === storyIndex && styles.storyProgressCurrent,
+                  segment < storyIndex && styles.storyProgressSeen,
+                ]}
+              />
+            ))}
+          </View>
+          <View style={styles.storyViewerHeader}>
+            <Avatar profile={viewer ?? people[0]} size={38} />
+            <View style={styles.storyViewerCopy}>
+              <Text
+                style={[styles.storyViewerName, { fontFamily: mediumFont }]}
+              >
+                {viewer?.name}
+              </Text>
+              <Text style={[styles.storyViewerMeta, { fontFamily: bodyFont }]}>
+                {post?.createdAt ?? "now"} · {viewer?.region}
+              </Text>
+            </View>
+            <Pressable
+              onPress={onPause}
+              style={styles.storyClose}
+              accessibilityRole="button"
+              accessibilityLabel={
+                paused
+                  ? language === "bn"
+                    ? "স্টোরি চালু করুন"
+                    : "Resume story"
+                  : language === "bn"
+                    ? "স্টোরি থামান"
+                    : "Pause story"
+              }
+            >
+              <MaterialIcons
+                name={paused ? "play-arrow" : "pause"}
+                size={23}
+                color="#FFF"
+              />
+            </Pressable>
+            <Pressable
+              onPress={onClose}
+              style={styles.storyClose}
+              accessibilityRole="button"
+              accessibilityLabel={
+                language === "bn" ? "স্টোরি বন্ধ করুন" : "Close story"
+              }
+            >
+              <MaterialIcons name="close" size={25} color="#FFF" />
+            </Pressable>
+          </View>
+          <View
+            style={styles.storyViewerBody}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <Pressable
+              onPress={() => onMove(-1)}
+              style={styles.storyNavLeft}
+              disabled={index <= 0}
+              accessibilityRole="button"
+              accessibilityLabel={
+                language === "bn" ? "আগের স্টোরি" : "Previous story"
+              }
+            >
+              <MaterialIcons
+                name="chevron-left"
+                size={38}
+                color={index <= 0 ? "rgba(255,255,255,0.2)" : "#FFF"}
+              />
+            </Pressable>
+            <View style={styles.storyViewerCopyBody}>
+              {post?.videoUrl ? (
+                <StoryVideo
+                  uri={post.videoUrl}
+                  paused={paused}
+                  language={language}
+                />
+              ) : (
+                <MaterialIcons name="auto-stories" size={54} color={C.ochre} />
+              )}
+              <Text
+                style={[styles.storyViewerTitle, { fontFamily: headingFont }]}
+              >
+                {viewer?.name}
+              </Text>
+              <Text style={[styles.storyViewerText, { fontFamily: bodyFont }]}>
+                {post?.body ??
+                  (language === "bn"
+                    ? `${viewer?.region} থেকে একটি community update`
+                    : `A community update from ${viewer?.region}`)}
+              </Text>
+              <Text style={[styles.storyViewerHint, { fontFamily: bodyFont }]}>
+                {post?.videoUrl
+                  ? paused
+                    ? language === "bn"
+                      ? "ভিডিও পজ করা হয়েছে · play চাপুন"
+                      : "Video paused · press play"
+                    : language === "bn"
+                      ? "ভিডিও চলছে · swipe করে story বদলান"
+                      : "Video playing · swipe to change story"
+                  : paused
+                    ? language === "bn"
+                      ? "পজ করা হয়েছে · play চাপুন"
+                      : "Paused · press play"
+                    : language === "bn"
+                      ? "আগে/পরে যেতে swipe বা পাশে tap করুন"
+                      : "Swipe or tap the sides to navigate"}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => onMove(1)}
+              style={styles.storyNavRight}
+              disabled={index >= people.length - 1}
+              accessibilityRole="button"
+              accessibilityLabel={
+                language === "bn" ? "পরের স্টোরি" : "Next story"
+              }
+            >
+              <MaterialIcons
+                name="chevron-right"
+                size={38}
+                color={
+                  index >= people.length - 1 ? "rgba(255,255,255,0.2)" : "#FFF"
+                }
+              />
+            </Pressable>
+          </View>
+          <View style={styles.storyActions}>
+            <Pressable
+              onPress={onPause}
+              style={styles.storyAction}
+              accessibilityRole="button"
+              accessibilityLabel={
+                language === "bn" ? "স্টোরিতে উত্তর দিন" : "Reply to story"
+              }
+            >
+              <MaterialIcons
+                name="chat-bubble-outline"
+                size={19}
+                color={C.ivory}
+              />
+              <Text
+                style={[styles.storyActionText, { fontFamily: mediumFont }]}
+              >
+                {language === "bn" ? "উত্তর" : "Reply"}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={onShare}
+              style={styles.storyAction}
+              accessibilityRole="button"
+              accessibilityLabel={
+                language === "bn" ? "স্টোরি শেয়ার করুন" : "Share story"
+              }
+            >
+              <MaterialIcons name="share" size={19} color={C.ivory} />
+              <Text
+                style={[styles.storyActionText, { fontFamily: mediumFont }]}
+              >
+                {language === "bn" ? "শেয়ার" : "Share"}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={onReport}
+              style={styles.storyAction}
+              accessibilityRole="button"
+              accessibilityLabel={
+                language === "bn" ? "স্টোরি রিপোর্ট করুন" : "Report story"
+              }
+            >
+              <MaterialIcons name="flag" size={19} color={C.ivory} />
+              <Text
+                style={[styles.storyActionText, { fontFamily: mediumFont }]}
+              >
+                {language === "bn" ? "রিপোর্ট" : "Report"}
+              </Text>
+            </Pressable>
+          </View>
+          {replySent ? (
+            <Text style={[styles.storyReplySent, { fontFamily: bodyFont }]}>
+              {language === "bn"
+                ? "আপনার উত্তর পাঠানো হয়েছে (নমুনা)।"
+                : "Your reply was sent (demo)."}
+            </Text>
+          ) : (
+            <View style={styles.storyReplyRow}>
+              <TextInput
+                value={reply}
+                onChangeText={onReplyChange}
+                placeholder={
+                  language === "bn" ? "উত্তর লিখুন…" : "Reply to this story…"
+                }
+                placeholderTextColor="rgba(255,255,255,0.55)"
+                style={[styles.storyReplyInput, { fontFamily: bodyFont }]}
+                returnKeyType="send"
+                onSubmitEditing={onSendReply}
+              />
+              <Pressable
+                onPress={onSendReply}
+                disabled={!reply.trim()}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  language === "bn" ? "উত্তর পাঠান" : "Send reply"
+                }
+              >
+                <MaterialIcons
+                  name="send"
+                  size={20}
+                  color={reply.trim() ? C.ochre : "rgba(255,255,255,0.35)"}
+                />
+              </Pressable>
+            </View>
+          )}
+        </View>
+      </Modal>
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: { color: C.ink, fontSize: 16, fontFamily: "Georgia", fontWeight: "700" }, storyHeader: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 6 }, storyHint: { color: C.muted, fontSize: 10 }, storyHeaderSpacer: { flex: 1 }, watchReels: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: C.primaryContainer }, watchReelsText: { color: C.terra, fontSize: 10, fontWeight: "900" }, storyRail: { marginBottom: 9, flexGrow: 0 }, storyItem: { width: 62, alignItems: "center", marginRight: 6 }, storyRing: { borderWidth: 2, borderColor: C.terra, borderRadius: 31, padding: 2, position: "relative" }, storyRingOwn: { borderColor: C.green }, storyRingViewed: { borderColor: C.muted, opacity: 0.72 }, storyPlus: { position: "absolute", right: -1, bottom: -1, width: 17, height: 17, borderRadius: 9, backgroundColor: C.terra, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: C.card }, storyName: { color: C.muted, fontSize: 10, marginTop: 4, maxWidth: 60, textAlign: "center" }, storyViewer: { flex: 1, backgroundColor: C.ink, paddingTop: 54, paddingHorizontal: 18 }, storyProgressRow: { height: 3, flexDirection: "row", gap: 4 }, storyProgressTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.3)" }, storyProgressCurrent: { backgroundColor: C.ivory }, storyProgressSeen: { backgroundColor: "rgba(255,255,255,0.72)" }, storyViewerHeader: { flexDirection: "row", alignItems: "center", marginTop: 16, gap: 10 }, storyViewerCopy: { flex: 1 }, storyViewerName: { color: C.ivory, fontSize: 14, fontWeight: "800" }, storyViewerMeta: { color: "rgba(255,255,255,0.68)", fontSize: 11, marginTop: 2 }, storyClose: { width: 44, height: 44, alignItems: "center", justifyContent: "center" }, storyViewerBody: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, storyViewerCopyBody: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 18 }, storyVideo: { width: "100%", height: 250, borderRadius: 20, backgroundColor: "#0B172B", overflow: "hidden" }, storyVideoFrame: { width: "100%", height: 250, borderRadius: 20, backgroundColor: "#0B172B", overflow: "hidden", position: "relative" }, storyVideoFallback: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 }, storyVideoFallbackTitle: { color: C.ivory, fontSize: 15, fontWeight: "800", marginTop: 9, textAlign: "center" }, storyVideoFallbackText: { color: "rgba(255,255,255,0.68)", fontSize: 11, marginTop: 5, textAlign: "center" }, storyVideoLoading: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(8,16,29,0.42)", gap: 8 }, storyVideoLoadingText: { color: C.ivory, fontSize: 11 }, storyVideoProgress: { position: "absolute", left: 10, right: 10, bottom: 10, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.32)", overflow: "hidden" }, storyVideoProgressFill: { height: "100%", backgroundColor: C.ivory }, storyNavLeft: { width: 54, height: 120, alignItems: "center", justifyContent: "center" }, storyNavRight: { width: 54, height: 120, alignItems: "center", justifyContent: "center" }, storyViewerTitle: { color: C.ivory, fontSize: 28, textAlign: "center", marginTop: 22 }, storyViewerText: { color: "rgba(255,255,255,0.88)", fontSize: 17, lineHeight: 26, textAlign: "center", marginTop: 13 }, storyViewerHint: { color: "rgba(255,255,255,0.56)", fontSize: 11, marginTop: 34 }, storyActions: { flexDirection: "row", justifyContent: "space-around", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.18)", paddingTop: 12, marginBottom: 10 }, storyAction: { minHeight: 40, minWidth: 82, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 20, paddingHorizontal: 10 }, storyActionText: { color: C.ivory, fontSize: 11 }, storyReplyRow: { minHeight: 46, borderWidth: 1, borderColor: "rgba(255,255,255,0.28)", borderRadius: 24, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }, storyReplyInput: { flex: 1, color: C.ivory, fontSize: 13, minHeight: 42 }, storyReplySent: { color: C.ochre, textAlign: "center", fontSize: 12, minHeight: 46, paddingTop: 12, marginBottom: 14 },
+  sectionTitle: {
+    color: C.ink,
+    fontSize: 16,
+    fontFamily: "Georgia",
+    fontWeight: "700",
+  },
+  storyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    marginBottom: 6,
+  },
+  storyHint: { color: C.muted, fontSize: 10 },
+  storyHeaderSpacer: { flex: 1 },
+  watchReels: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: C.primaryContainer,
+  },
+  watchReelsText: { color: C.terra, fontSize: 10, fontWeight: "900" },
+  storyRail: { marginBottom: 9, flexGrow: 0 },
+  storyItem: { width: 62, alignItems: "center", marginRight: 6 },
+  storyRing: {
+    borderWidth: 2,
+    borderColor: C.terra,
+    borderRadius: 31,
+    padding: 2,
+    position: "relative",
+  },
+  storyRingOwn: { borderColor: C.green },
+  storyRingViewed: { borderColor: C.muted, opacity: 0.72 },
+  storyPlus: {
+    position: "absolute",
+    right: -1,
+    bottom: -1,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: C.terra,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: C.card,
+  },
+  storyName: {
+    color: C.muted,
+    fontSize: 10,
+    marginTop: 4,
+    maxWidth: 60,
+    textAlign: "center",
+  },
+  storyViewer: {
+    flex: 1,
+    backgroundColor: C.ink,
+    paddingTop: 54,
+    paddingHorizontal: 18,
+  },
+  storyProgressRow: { height: 3, flexDirection: "row", gap: 4 },
+  storyProgressTrack: {
+    flex: 1,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.3)",
+  },
+  storyProgressCurrent: { backgroundColor: C.ivory },
+  storyProgressSeen: { backgroundColor: "rgba(255,255,255,0.72)" },
+  storyViewerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+    gap: 10,
+  },
+  storyViewerCopy: { flex: 1 },
+  storyViewerName: { color: C.ivory, fontSize: 14, fontWeight: "800" },
+  storyViewerMeta: {
+    color: "rgba(255,255,255,0.68)",
+    fontSize: 11,
+    marginTop: 2,
+  },
+  storyClose: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  storyViewerBody: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  storyViewerCopyBody: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+  },
+  storyVideo: {
+    width: "100%",
+    height: 250,
+    borderRadius: 20,
+    backgroundColor: "#0B172B",
+    overflow: "hidden",
+  },
+  storyVideoFrame: {
+    width: "100%",
+    height: 250,
+    borderRadius: 20,
+    backgroundColor: "#0B172B",
+    overflow: "hidden",
+    position: "relative",
+  },
+  storyVideoFallback: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  storyVideoFallbackTitle: {
+    color: C.ivory,
+    fontSize: 15,
+    fontWeight: "800",
+    marginTop: 9,
+    textAlign: "center",
+  },
+  storyVideoFallbackText: {
+    color: "rgba(255,255,255,0.68)",
+    fontSize: 11,
+    marginTop: 5,
+    textAlign: "center",
+  },
+  storyVideoLoading: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(8,16,29,0.42)",
+    gap: 8,
+  },
+  storyVideoLoadingText: { color: C.ivory, fontSize: 11 },
+  storyVideoProgress: {
+    position: "absolute",
+    left: 10,
+    right: 10,
+    bottom: 10,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.32)",
+    overflow: "hidden",
+  },
+  storyVideoProgressFill: { height: "100%", backgroundColor: C.ivory },
+  storyNavLeft: {
+    width: 54,
+    height: 120,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  storyNavRight: {
+    width: 54,
+    height: 120,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  storyViewerTitle: {
+    color: C.ivory,
+    fontSize: 28,
+    textAlign: "center",
+    marginTop: 22,
+  },
+  storyViewerText: {
+    color: "rgba(255,255,255,0.88)",
+    fontSize: 17,
+    lineHeight: 26,
+    textAlign: "center",
+    marginTop: 13,
+  },
+  storyViewerHint: {
+    color: "rgba(255,255,255,0.56)",
+    fontSize: 11,
+    marginTop: 34,
+  },
+  storyActions: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.18)",
+    paddingTop: 12,
+    marginBottom: 10,
+  },
+  storyAction: {
+    minHeight: 40,
+    minWidth: 82,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+  },
+  storyActionText: { color: C.ivory, fontSize: 11 },
+  storyReplyRow: {
+    minHeight: 46,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+    borderRadius: 24,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 14,
+  },
+  storyReplyInput: { flex: 1, color: C.ivory, fontSize: 13, minHeight: 42 },
+  storyReplySent: {
+    color: C.ochre,
+    textAlign: "center",
+    fontSize: 12,
+    minHeight: 46,
+    paddingTop: 12,
+    marginBottom: 14,
+  },
 });

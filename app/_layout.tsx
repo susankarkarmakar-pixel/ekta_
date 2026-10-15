@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Expo font assets require static Metro imports. */
 import "@/global.css";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -18,10 +17,17 @@ import { FeedPreferencesProvider } from "@/lib/apongram/FeedPreferencesContext";
 import { NotificationPreferencesProvider } from "@/lib/apongram/NotificationPreferencesContext";
 import { AccessibilityPreferencesProvider } from "@/lib/apongram/AccessibilityPreferencesContext";
 import { PushNotificationsProvider } from "@/lib/apongram/PushNotificationsProvider";
-import { SafeAreaFrameContext, SafeAreaInsetsContext, SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-context";
+import {
+  SafeAreaFrameContext,
+  SafeAreaInsetsContext,
+  SafeAreaProvider,
+  initialWindowMetrics,
+} from "react-native-safe-area-context";
 import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
-import { trpc, createTRPCClient } from "@/lib/trpc";
-import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+import {
+  initManusRuntime,
+  subscribeSafeAreaInsets,
+} from "@/lib/_core/manus-runtime";
 import { LaunchAnimation } from "@/components/brand/LaunchAnimation";
 
 void SplashScreen.preventAutoHideAsync();
@@ -31,8 +37,10 @@ const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
 export const unstable_settings = { anchor: "(tabs)" };
 
 export default function RootLayout() {
-  const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS; const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
-  const [insets, setInsets] = useState<EdgeInsets>(initialInsets); const [frame, setFrame] = useState<Rect>(initialFrame);
+  const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
+  const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
+  const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
+  const [frame, setFrame] = useState<Rect>(initialFrame);
   const [fontsLoaded] = useFonts({
     Fraunces: require("../assets/fonts/fraunces-latin-700-normal.woff2"),
     NotoSerifBengali: require("../assets/fonts/noto-serif-bengali-bengali-500-normal.woff2"),
@@ -44,8 +52,12 @@ export default function RootLayout() {
     HindSiliguriLatinMedium: require("../assets/fonts/hind-siliguri-latin-500-normal.woff2"),
     HindSiliguriLatinSemiBold: require("../assets/fonts/hind-siliguri-latin-600-normal.woff2"),
   });
-  useEffect(() => { if (fontsLoaded) void SplashScreen.hideAsync(); }, [fontsLoaded]);
-  useEffect(() => { initManusRuntime(); }, []);
+  useEffect(() => {
+    if (fontsLoaded) void SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+  useEffect(() => {
+    initManusRuntime();
+  }, []);
   useEffect(() => {
     if (Platform.OS !== "web") return;
     const preventMediaActions = (event: Event) => event.preventDefault();
@@ -56,20 +68,102 @@ export default function RootLayout() {
       document.removeEventListener("dragstart", preventMediaActions);
     };
   }, []);
-  const handleSafeAreaUpdate = useCallback((metrics: Metrics) => { setInsets(metrics.insets); setFrame(metrics.frame); }, []);
-  useEffect(() => { if (Platform.OS !== "web") return; const unsubscribe = subscribeSafeAreaInsets(handleSafeAreaUpdate); return () => unsubscribe(); }, [handleSafeAreaUpdate]);
-  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 } } }));
-  const [trpcClient] = useState(() => createTRPCClient());
+  const handleSafeAreaUpdate = useCallback((metrics: Metrics) => {
+    setInsets(metrics.insets);
+    setFrame(metrics.frame);
+  }, []);
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const unsubscribe = subscribeSafeAreaInsets(handleSafeAreaUpdate);
+    return () => unsubscribe();
+  }, [handleSafeAreaUpdate]);
   const [showLaunch, setShowLaunch] = useState(true);
   const finishLaunch = useCallback(() => setShowLaunch(false), []);
-  const providerInitialMetrics = useMemo(() => { const metrics = initialWindowMetrics ?? { insets: initialInsets, frame: initialFrame }; return { ...metrics, insets: { ...metrics.insets, top: Math.max(metrics.insets.top, 16), bottom: Math.max(metrics.insets.bottom, 12) } }; }, [initialInsets, initialFrame]);
-  const liveWebViewUrl = Constants.expoConfig?.extra?.liveWebViewUrl as string | undefined;
-  const content = <GestureHandlerRootView style={{ flex: 1 }}><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><LanguageProvider><AccessibilityPreferencesProvider><FeedPreferencesProvider><NotificationPreferencesProvider><PushNotificationsProvider><Stack screenOptions={{ headerShown: false }}><Stack.Screen name="index" /><Stack.Screen name="(tabs)" /><Stack.Screen name="post/[id]" /><Stack.Screen name="report" options={{ presentation: "modal" }} /><Stack.Screen name="settings" /><Stack.Screen name="language" /><Stack.Screen name="profile-edit" /><Stack.Screen name="auth/phone" /><Stack.Screen name="auth/login" /><Stack.Screen name="oauth/callback" /></Stack><StatusBar style="dark" /></PushNotificationsProvider></NotificationPreferencesProvider></FeedPreferencesProvider></AccessibilityPreferencesProvider></LanguageProvider></QueryClientProvider></trpc.Provider></GestureHandlerRootView>;
+  const providerInitialMetrics = useMemo(() => {
+    const metrics = initialWindowMetrics ?? {
+      insets: initialInsets,
+      frame: initialFrame,
+    };
+    return {
+      ...metrics,
+      insets: {
+        ...metrics.insets,
+        top: Math.max(metrics.insets.top, 16),
+        bottom: Math.max(metrics.insets.bottom, 12),
+      },
+    };
+  }, [initialInsets, initialFrame]);
+  const liveWebViewUrl = Constants.expoConfig?.extra?.liveWebViewUrl as
+    | string
+    | undefined;
+  const content = (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <LanguageProvider>
+        <AccessibilityPreferencesProvider>
+          <FeedPreferencesProvider>
+            <NotificationPreferencesProvider>
+              <PushNotificationsProvider>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="post/[id]" />
+                  <Stack.Screen
+                    name="report"
+                    options={{ presentation: "modal" }}
+                  />
+                  <Stack.Screen name="settings" />
+                  <Stack.Screen name="language" />
+                  <Stack.Screen name="profile-edit" />
+                  <Stack.Screen name="auth/phone" />
+                  <Stack.Screen name="auth/login" />
+                  <Stack.Screen name="oauth/callback" />
+                </Stack>
+                <StatusBar style="dark" />
+              </PushNotificationsProvider>
+            </NotificationPreferencesProvider>
+          </FeedPreferencesProvider>
+        </AccessibilityPreferencesProvider>
+      </LanguageProvider>
+    </GestureHandlerRootView>
+  );
   if (!fontsLoaded) return null;
-  const appContent = Platform.OS === "android" && liveWebViewUrl
-    ? <WebView source={{ uri: liveWebViewUrl }} originWhitelist={["https://*"]} javaScriptEnabled domStorageEnabled startInLoadingState pullToRefreshEnabled setSupportMultipleWindows={false} />
-    : content;
-  const appSurface = <View style={{ flex: 1 }}>{appContent}{showLaunch ? <LaunchAnimation onFinished={finishLaunch} /> : null}</View>;
-  if (Platform.OS === "web") return <ThemeProvider><SafeAreaProvider initialMetrics={providerInitialMetrics}><SafeAreaFrameContext.Provider value={frame}><SafeAreaInsetsContext.Provider value={insets}>{appSurface}</SafeAreaInsetsContext.Provider></SafeAreaFrameContext.Provider></SafeAreaProvider></ThemeProvider>;
-  return <ThemeProvider><SafeAreaProvider initialMetrics={providerInitialMetrics}>{appSurface}</SafeAreaProvider></ThemeProvider>;
+  const appContent =
+    Platform.OS === "android" && liveWebViewUrl ? (
+      <WebView
+        source={{ uri: liveWebViewUrl }}
+        originWhitelist={["https://*"]}
+        javaScriptEnabled
+        domStorageEnabled
+        startInLoadingState
+        pullToRefreshEnabled
+        setSupportMultipleWindows={false}
+      />
+    ) : (
+      content
+    );
+  const appSurface = (
+    <View style={{ flex: 1 }}>
+      {appContent}
+      {showLaunch ? <LaunchAnimation onFinished={finishLaunch} /> : null}
+    </View>
+  );
+  if (Platform.OS === "web")
+    return (
+      <ThemeProvider>
+        <SafeAreaProvider initialMetrics={providerInitialMetrics}>
+          <SafeAreaFrameContext.Provider value={frame}>
+            <SafeAreaInsetsContext.Provider value={insets}>
+              {appSurface}
+            </SafeAreaInsetsContext.Provider>
+          </SafeAreaFrameContext.Provider>
+        </SafeAreaProvider>
+      </ThemeProvider>
+    );
+  return (
+    <ThemeProvider>
+      <SafeAreaProvider initialMetrics={providerInitialMetrics}>
+        {appSurface}
+      </SafeAreaProvider>
+    </ThemeProvider>
+  );
 }
