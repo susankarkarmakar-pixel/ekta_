@@ -64,12 +64,12 @@ export default function RootLayout() {
   const finishLaunch = useCallback(() => setShowLaunch(false), []);
   const providerInitialMetrics = useMemo(() => { const metrics = initialWindowMetrics ?? { insets: initialInsets, frame: initialFrame }; return { ...metrics, insets: { ...metrics.insets, top: Math.max(metrics.insets.top, 16), bottom: Math.max(metrics.insets.bottom, 12) } }; }, [initialInsets, initialFrame]);
   const liveWebViewUrl = Constants.expoConfig?.extra?.liveWebViewUrl as string | undefined;
-  if (Platform.OS === "android" && liveWebViewUrl) {
-    return <WebView source={{ uri: liveWebViewUrl }} originWhitelist={["https://*"]} javaScriptEnabled domStorageEnabled startInLoadingState pullToRefreshEnabled setSupportMultipleWindows={false} />;
-  }
   const content = <GestureHandlerRootView style={{ flex: 1 }}><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><LanguageProvider><AccessibilityPreferencesProvider><FeedPreferencesProvider><NotificationPreferencesProvider><PushNotificationsProvider><Stack screenOptions={{ headerShown: false }}><Stack.Screen name="index" /><Stack.Screen name="(tabs)" /><Stack.Screen name="post/[id]" /><Stack.Screen name="report" options={{ presentation: "modal" }} /><Stack.Screen name="settings" /><Stack.Screen name="language" /><Stack.Screen name="profile-edit" /><Stack.Screen name="auth/phone" /><Stack.Screen name="auth/login" /><Stack.Screen name="oauth/callback" /></Stack><StatusBar style="dark" /></PushNotificationsProvider></NotificationPreferencesProvider></FeedPreferencesProvider></AccessibilityPreferencesProvider></LanguageProvider></QueryClientProvider></trpc.Provider></GestureHandlerRootView>;
   if (!fontsLoaded) return null;
-  const appSurface = <View style={{ flex: 1 }}>{content}{showLaunch ? <LaunchAnimation onFinished={finishLaunch} /> : null}</View>;
+  const appContent = Platform.OS === "android" && liveWebViewUrl
+    ? <WebView source={{ uri: liveWebViewUrl }} originWhitelist={["https://*"]} javaScriptEnabled domStorageEnabled startInLoadingState pullToRefreshEnabled setSupportMultipleWindows={false} />
+    : content;
+  const appSurface = <View style={{ flex: 1 }}>{appContent}{showLaunch ? <LaunchAnimation onFinished={finishLaunch} /> : null}</View>;
   if (Platform.OS === "web") return <ThemeProvider><SafeAreaProvider initialMetrics={providerInitialMetrics}><SafeAreaFrameContext.Provider value={frame}><SafeAreaInsetsContext.Provider value={insets}>{appSurface}</SafeAreaInsetsContext.Provider></SafeAreaFrameContext.Provider></SafeAreaProvider></ThemeProvider>;
   return <ThemeProvider><SafeAreaProvider initialMetrics={providerInitialMetrics}>{appSurface}</SafeAreaProvider></ThemeProvider>;
 }

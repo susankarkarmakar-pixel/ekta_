@@ -72,7 +72,7 @@ The codebase, language system and data model are already written for the nationa
 | Discovery | Search across people, posts and hashtags | Demo ready |
 | Reels | Vertical full-screen video feed, muted autoplay, tap to pause, sound toggle | Demo ready (sample clips) |
 | Reel creation | Gallery or camera video up to 60 seconds, caption, hashtags, preview | Demo ready (session only) |
-| Sign-in | Phone number with SMS OTP (no password) | UI ready, live auth in progress |
+| Sign-in | Email OTP and Google OAuth (no password) | Existing Supabase flows; live sign-in requires provider configuration |
 | Safety | Report posts, confirmation flow | UI ready |
 | Languages | Bengali and English complete | Available |
 | Notifications | Basic placeholder | Planned |
@@ -108,7 +108,7 @@ The visual direction is *Bengal civic editorial*: warm ivory backgrounds, ink-na
 | Language | TypeScript |
 | Styling | NativeWind (Tailwind CSS for React Native) |
 | Platforms | Android, iOS, Web (Expo web export) |
-| Backend | [Supabase](https://supabase.com): Postgres, Auth (SMS OTP), Row Level Security, Storage |
+| Backend | [Supabase](https://supabase.com): Postgres, Auth (Email OTP and Google OAuth), Row Level Security, Storage |
 | Hosting (web) | Vercel (static export to `dist`) |
 | Video | `expo-video`, `expo-image-picker` |
 | Package manager | pnpm |
@@ -137,7 +137,7 @@ All data access goes through a single boundary: **`lib/apongram/repository.ts`**
 ## Project structure
 
 ```
-app/                      Screens and routes (Home, Reels, Discover, Create, Alerts, Profile, post detail, phone auth)
+app/                      Screens and routes (Home, Reels, Discover, Create, Alerts, Profile, post detail, email/Google auth)
 components/apongram/      Shared UI: headers, cards, chips, Reel components
 lib/apongram/             Types, languages, mock data, repository, Supabase client
 hooks/                    Reusable React hooks
@@ -172,7 +172,7 @@ pnpm dev:metro        # starts Expo web on http://localhost:8081
 
 Open `http://localhost:8081` in a browser, or scan the QR code in Expo Go on your phone.
 
-The app starts in **demo mode** with seeded data. No account or keys are needed.
+The normal app launch shows the eKta splash and email/Google sign-in. Live authentication requires the Supabase settings below; when those are absent, the app shows a setup message and does not pretend that sign-in succeeded. The repository has seeded community data for local preview builds; to enter those screens without auth during development only, temporarily enable `DEMO_MODE` in `lib/apongram/demo-mode.ts` and never ship that preview setting.
 
 ### Run on a device or emulator
 
@@ -201,9 +201,10 @@ Rules:
 1. Create a Supabase project.
 2. Apply the SQL files in `supabase/migrations/` in order (Supabase CLI or the SQL editor).
    The profile editor's pronouns, website and category fields need `005_profile_public_fields.sql` applied before those fields can sync remotely; local editing still works without it.
-3. Enable **Phone** auth under Authentication, and connect an SMS provider.
-4. Create Storage buckets as described in the migration notes (profile photos, post images, Reels).
-5. Confirm Row Level Security is enabled on every table before inviting users.
+3. Enable **Email OTP** under Authentication and configure email delivery (including SMTP for production-quality delivery).
+4. To use Google sign-in, enable the **Google** provider and add its OAuth client ID and secret in Supabase; register Supabase's OAuth callback URI with Google, and allow the app callback created by `Linking.createURL("oauth/callback")` in Supabase's redirect URL settings.
+5. Create Storage buckets as described in the migration notes (profile photos, post images, Reels).
+6. Confirm Row Level Security is enabled on every table before inviting users.
 
 ## Scripts
 
@@ -222,7 +223,7 @@ Rules:
 |---|-----------|-----------|
 | Needs Supabase keys | No | Yes |
 | Data | Seeded sample members and posts | Real database |
-| Sign-in | Preview only | Phone OTP via Supabase |
+| Sign-in | Not simulated; configure Supabase to authenticate | Email OTP and Google OAuth via Supabase |
 | Reels | Short licensed sample clips | Stored videos (once upload is built) |
 | Uploaded video | Lives only in the current session | Durable (planned) |
 | Settings > Region | Display only | Display only until region logic is built |
@@ -252,7 +253,7 @@ eKta Social is intended for the Indian public, so it must follow Indian law and 
 - **Grievance redressal.** A named grievance officer and contact process will be published, as expected under the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.
 - **Data protection.** The platform is being designed with the Digital Personal Data Protection Act, 2023 in mind: consent, purpose limitation, data minimisation, account deletion and data export.
 - **Sensitive identifiers.** eKta Social does **not** collect Aadhaar numbers or other government ID numbers.
-- **Phone numbers** are used only for sign-in and are not shown publicly.
+- **Email addresses** are used for one-time-code sign-in and are not displayed as public profile data.
 - **Minors.** Age-appropriate rules and parental-consent handling must be defined before any open launch.
 - **No hidden profiling.** Phase 1 has no recommendation algorithm and no ad targeting.
 
@@ -264,7 +265,7 @@ eKta Social is intended for the Indian public, so it must follow Indian law and 
 - Service-role keys stay on trusted servers only and never in the repository.
 - Production writes are protected by Supabase Auth and Row Level Security.
 - Test every RLS policy with at least two different test users before inviting real users.
-- Rate-limit OTP requests and posting to prevent abuse and SMS cost spikes.
+- Rate-limit email OTP requests, OAuth initiation and posting to prevent abuse and unexpected provider costs.
 
 To report a vulnerability, open a private security advisory on this repository instead of a public issue.
 
@@ -274,7 +275,7 @@ To report a vulnerability, open a private security advisory on this repository i
 - [x] Chronological feed, composer, search, profiles, follow, like, comment
 - [x] Reels viewing and creation (demo)
 - [x] Supabase schema, RLS definitions and repository boundary
-- [ ] Live phone OTP sign-in
+- [ ] Live email OTP and Google sign-in verification against configured providers
 - [ ] Live Supabase data for feed, posts, follows and comments
 - [ ] Durable image and video upload with Supabase Storage
 - [ ] Feed pagination, pull to refresh, offline-friendly behaviour
@@ -290,6 +291,8 @@ To report a vulnerability, open a private security advisory on this repository i
 ## Known limitations
 
 - Most data is **demo data** until Supabase is configured.
+- Live email OTP and Google sign-in are unavailable until `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, email delivery, and (for Google) the Supabase Google provider/redirect settings are configured. The app does not fake a successful login when these settings are missing.
+- The sign-in screen links to short pilot summaries for Community Guidelines and the Privacy Charter; complete legal policy documents are still a pre-launch requirement.
 - In live mode, original user videos are uploaded to the public `community-media` bucket; the 9:16 editor/player frame is a centered presentation crop, not a re-encoded file.
 - Hidden player controls remove an easy save action, but public video URLs can still be copied or screen-recorded. This is not DRM or download-proof storage.
 - Notifications are a placeholder.
@@ -334,12 +337,14 @@ License to be decided. Until a licence file is added, all rights are reserved by
 - **ভাষা:** বাংলা ও ইংরেজি সম্পূর্ণ। ভারতের সংবিধানের অষ্টম তফসিলের বাকি ভাষাগুলো ধাপে ধাপে, স্থানীয়ভাবে যাচাই করে যোগ হবে।
 - **ডেটাবেস:** শুরুতে ছোট, পরীক্ষার ফল দেখে ধাপে ধাপে বড় করা হবে (গাজোল, মালদা, পশ্চিমবঙ্গ, তারপর সারা ভারত)।
 - **নিরাপত্তা:** রিপোর্ট ও মডারেশন ব্যবস্থা, ডেটা সুরক্ষা আইন (DPDP Act, 2023) মাথায় রেখে নকশা। আধার নম্বর সংগ্রহ করা হয় না।
-- **চালানোর জন্য:** `pnpm install` তারপর `pnpm dev:metro`। Supabase কী না দিলে অ্যাপ ডেমো মোডে চলে।
+- **চালানোর জন্য:** `pnpm install` তারপর `pnpm dev:metro`। স্বাভাবিক launch-এ sign-in আসে; live auth-এর জন্য Supabase URL/publishable key এবং সংশ্লিষ্ট provider configure করতে হবে। key না থাকলে sign-in সফল বলে দেখানো হয় না।
 
-## Supabase Email OTP and push notifications
+## Supabase Email OTP, Google OAuth and push notifications
 
 The auth screen uses passwordless **Email OTP** rather than SMS, so it does not require a paid SMS provider. The project URL and publishable key are read from `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`; local development can use the ignored `.env.local` file. The app verifies the code with `type: "email"` and persists the returned session in SecureStore/localStorage.
 
 The Supabase built-in SMTP service is suitable for testing only: it currently delivers only to pre-authorized project team addresses and is limited to about 2 emails per hour. For public users, configure a free/low-cost custom SMTP provider such as Resend, Brevo, ZeptoMail, or SES; no service-role key belongs in the mobile app.
+
+Google sign-in uses Supabase's configured Google provider. Add the Google OAuth client credentials in Supabase, register the Supabase OAuth callback URI in the Google provider, and add the app redirect returned by `Linking.createURL("oauth/callback")` to Supabase's redirect allow-list. The public app bundle only needs the Supabase project URL and publishable/anon key; Google client secrets stay in Supabase configuration.
 
 The app also registers Expo Push Tokens on physical iOS/Android devices when permission is granted. Tokens are stored in `public.push_tokens` using `supabase/migrations/002_push_notifications.sql`, and `server/_core/expo-push.ts` provides the server-side Expo delivery helper. Native delivery requires an Expo/EAS project ID and a development/production build; web preview and simulators skip native token registration.
