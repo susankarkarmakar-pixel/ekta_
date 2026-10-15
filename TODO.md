@@ -69,3 +69,10 @@
 - The experience works on narrow mobile screens, tablets and desktop web as applicable; scrolling remains keyboard-aware, respects mobile safe areas, provides accessible labels and keyboard navigation, preserves contrast, and renders Bengali with the project’s readable Bengali fonts.
 - Missing/incomplete authentication configuration produces an honest setup/error state, never simulated production authentication. No credentials, OTPs, API secrets or service-role keys are hardcoded. Google/email functionality is not claimed as live unless verified against the configured provider.
 - Reuse existing framework/design system and animation dependencies; avoid unnecessary dependencies, heavyweight animation assets, layout shifts and needless rerenders. Existing app routes/features must continue to work; login/auth changes do not create a parallel authentication system.
+
+
+## 12. P0 Home first-fold density and feed discovery
+- Home’s initial toolbar is simplified from language, search, alerts, create, refresh and avatar to brand, search, alerts and avatar. No user capability is removed: post creation remains in the existing Create bottom tab, language remains available through the existing Profile → Settings language control, and feed refresh remains available by pull-to-refresh.
+- Keep Stories as a useful Home destination, while tightening the story-header/rail gaps. Make the local-community hero card materially shorter and more compact, with its copy and share action still readable and tappable.
+- Remove the standalone trending-topics masthead and put the topic chips directly alongside the feed-header controls in one horizontal, scrollable filter rail. Preserve both “For you” and “Latest” feed modes and keep each topic chip opening its existing Discover search route.
+- Keep the existing warm eKta design system, Bengali/English copy, bottom navigation and accessibility labels; avoid horizontal overflow. The first post must appear substantially higher in the initial phone viewport.
