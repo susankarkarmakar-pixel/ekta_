@@ -238,9 +238,12 @@ export default function PhoneAuthScreen() {
                 <View style={styles.brandRow}>
                   <Logo variant="horizontal" width={language === "bn" ? 190 : 220} height={46} />
                 </View>
-                <Text style={[styles.tagline, { fontFamily: bodyFont }]}>
-                  {language === "bn" ? "আপনার কমিউনিটি, একসঙ্গে" : "Your Community, Connected"}
-                </Text>
+                <View style={styles.tricolorUnderline} accessible={false}>
+                  <View style={styles.tricolorSaffron} />
+                  <View style={styles.tricolorDot} />
+                  <View style={styles.tricolorGreen} />
+                </View>
+                <Text style={[styles.tagline, { fontFamily: bodyFont }]}>Your Community, Connected</Text>
               </View>
 
               {!sent && !verified ? (
@@ -388,6 +391,10 @@ const styles = StyleSheet.create({
   sleeveGreen: { right: 5, backgroundColor: "#2D8A50", transform: [{ rotate: "30deg" }] },
   handshakeIconWrap: { width: 154, height: 118, borderRadius: 48, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,252,244,0.92)", transform: [{ rotate: "-2deg" }] },
   brandRow: { alignItems: "center", justifyContent: "center", marginTop: -5 },
+  tricolorUnderline: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 6 },
+  tricolorSaffron: { width: 42, height: 5, borderRadius: 3, backgroundColor: "#E97839" },
+  tricolorDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#E7AE3F" },
+  tricolorGreen: { width: 42, height: 5, borderRadius: 3, backgroundColor: "#27824D" },
   tagline: { color: "#676A72", textAlign: "center", lineHeight: 25, fontSize: 15, marginTop: 4, letterSpacing: 0.15 },
   googleButton: { minHeight: 58, backgroundColor: "rgba(255,255,255,0.92)", borderWidth: 1, borderColor: "#E5DED1", borderRadius: 16, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 14, paddingHorizontal: 18, marginTop: 1, shadowColor: "#5C4E40", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   googleButtonLabel: { color: "#172238", fontSize: 15, fontWeight: "800" },

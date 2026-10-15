@@ -8,7 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform, View } from "react-native";
+import { Animated, Easing, Platform, View } from "react-native";
 import Constants from "expo-constants";
 import { WebView } from "react-native-webview";
 import "@/lib/_core/nativewind-pressable";
@@ -61,7 +61,11 @@ export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 } } }));
   const [trpcClient] = useState(() => createTRPCClient());
   const [showLaunch, setShowLaunch] = useState(true);
-  const finishLaunch = useCallback(() => setShowLaunch(false), []);
+  const [contentTranslateY] = useState(() => new Animated.Value(14));
+  const finishLaunch = useCallback(() => {
+    Animated.timing(contentTranslateY, { toValue: 0, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }).start();
+    setShowLaunch(false);
+  }, [contentTranslateY]);
   const providerInitialMetrics = useMemo(() => { const metrics = initialWindowMetrics ?? { insets: initialInsets, frame: initialFrame }; return { ...metrics, insets: { ...metrics.insets, top: Math.max(metrics.insets.top, 16), bottom: Math.max(metrics.insets.bottom, 12) } }; }, [initialInsets, initialFrame]);
   const liveWebViewUrl = Constants.expoConfig?.extra?.liveWebViewUrl as string | undefined;
   if (Platform.OS === "android" && liveWebViewUrl) {
@@ -69,7 +73,7 @@ export default function RootLayout() {
   }
   const content = <GestureHandlerRootView style={{ flex: 1 }}><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><LanguageProvider><AccessibilityPreferencesProvider><FeedPreferencesProvider><NotificationPreferencesProvider><PushNotificationsProvider><Stack screenOptions={{ headerShown: false }}><Stack.Screen name="index" /><Stack.Screen name="(tabs)" /><Stack.Screen name="post/[id]" /><Stack.Screen name="report" options={{ presentation: "modal" }} /><Stack.Screen name="settings" /><Stack.Screen name="language" /><Stack.Screen name="profile-edit" /><Stack.Screen name="auth/phone" /><Stack.Screen name="auth/login" /><Stack.Screen name="oauth/callback" /></Stack><StatusBar style="dark" /></PushNotificationsProvider></NotificationPreferencesProvider></FeedPreferencesProvider></AccessibilityPreferencesProvider></LanguageProvider></QueryClientProvider></trpc.Provider></GestureHandlerRootView>;
   if (!fontsLoaded) return null;
-  const appSurface = <View style={{ flex: 1 }}>{content}{showLaunch ? <LaunchAnimation onFinished={finishLaunch} /> : null}</View>;
+  const appSurface = <View style={{ flex: 1, backgroundColor: "#FFFCF4" }}><Animated.View style={{ flex: 1, transform: [{ translateY: contentTranslateY }] }}>{content}</Animated.View>{showLaunch ? <LaunchAnimation onFinished={finishLaunch} /> : null}</View>;
   if (Platform.OS === "web") return <ThemeProvider><SafeAreaProvider initialMetrics={providerInitialMetrics}><SafeAreaFrameContext.Provider value={frame}><SafeAreaInsetsContext.Provider value={insets}>{appSurface}</SafeAreaInsetsContext.Provider></SafeAreaFrameContext.Provider></SafeAreaProvider></ThemeProvider>;
   return <ThemeProvider><SafeAreaProvider initialMetrics={providerInitialMetrics}>{appSurface}</SafeAreaProvider></ThemeProvider>;
 }
