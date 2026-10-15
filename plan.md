@@ -101,3 +101,11 @@ Metro/Web listens on the fixed 8081 port and the starter API on 3000. The Supaba
 - Google button বিদ্যমান Supabase Google provider-এ যাবে; Supabase URL ও publishable/anon key ছাড়া backend auth দাবি করা হবে না। Service-role key/secret client bundle বা commit-এ যোগ হবে না। Configuration অনুপস্থিত থাকলে README-তে exact app environment ও provider setup checklist থাকবে।
 - Community Guidelines ও Privacy Charter-এর স্পষ্ট link in-app summary খুলবে; README-তে পূর্ণ policy এখনও অসম্পূর্ণ বলে যে সীমাবদ্ধতা আছে তা UI-তেও গোপন/আইনি নিশ্চয়তা হিসেবে উপস্থাপন করা হবে না।
 - existing feed, Reels, navigation, logout, session refresh এবং provider callback-এর architecture অক্ষুণ্ণ থাকবে।
+
+
+## নতুন অনুরোধ: Home first-fold density (P0)
+
+- প্রথম viewport হালকা রাখতে Home toolbar-এ শুধু brand, search, alerts এবং avatar থাকবে। Create action bottom tab-এ আগের মতো থাকবে, language selector profile/settings-এর বিদ্যমান control-এ থাকবে, আর feed refresh pull-to-refresh-এ থাকবে—ফিচার বাদ পড়বে না।
+- Stories থাকবে, কিন্তু header/rail-এর vertical gaps সামান্য কমানো হবে। 194px minimum-height local-community hero-কে compact card-এ রূপান্তর করা হবে; desktop/mobile-এ text/action readable রেখে artwork-এর জন্য ছোট অংশ থাকবে।
+- আলাদা trending-topic heading/icon সরিয়ে feed title-এর সঙ্গে একই compact filter section-এ “For you”/“Latest” controls ও horizontally-scrollable topic chips থাকবে। Topic press-এর বর্তমান Discover search navigation অপরিবর্তিত থাকবে; label-এ accidental double `#`-ও এড়ানো হবে।
+- Warm ivory, existing type/colors এবং touch target বজায় রেখে প্রথম post-কে viewport-এর অনেক উপরে আনা হবে; নতুন dependency বা auth/data-flow change থাকবে না।

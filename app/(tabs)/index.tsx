@@ -19,7 +19,7 @@ import { useFeedController } from "@/lib/apongram/useFeedController";
 const C = { ...Colors.light, card: Colors.light.paper, ink: Colors.light.inkNavy, muted: Colors.light.slate, terra: Colors.light.terracotta, line: Colors.light.line, green: Colors.light.leafGreen };
 export default function HomeScreen() {
   const router = useRouter();
-  const { language, toggleLanguage, copy } = useLanguage();
+  const { language, copy } = useLanguage();
   const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
   const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
   const headingFont = language === "bn" ? "NotoSerifBengaliBold" : "Fraunces";
@@ -35,12 +35,9 @@ export default function HomeScreen() {
         <View style={styles.topbar}>
           <View style={styles.brandRow}><Logo variant="horizontal" width={126} height={30} /></View>
           <View style={styles.topActions}>
-            <Pressable onPress={toggleLanguage} style={styles.lang}><Text style={[styles.langText, { fontFamily: mediumFont }]}>{language === "bn" ? "EN" : "বাং"}</Text></Pressable>
-            <Pressable onPress={() => router.push("/(tabs)/discover")} accessibilityLabel={copy.discover}><MaterialIcons name="search" size={23} color={C.ink} /></Pressable>
-            <Pressable onPress={() => router.push("/(tabs)/alerts")} accessibilityLabel={copy.alerts}><MaterialIcons name="notifications-none" size={23} color={C.ink} /></Pressable>
-            <Pressable onPress={() => router.push("/(tabs)/create")} accessibilityRole="button" accessibilityLabel={language === "bn" ? "নতুন পোস্ট তৈরি করুন" : "Create a new post"} style={styles.createIcon}><MaterialIcons name="add" size={23} color={C.terra} /></Pressable>
-            {Platform.OS === "web" ? <Pressable onPress={() => void reloadFeed(true)} accessibilityRole="button" accessibilityLabel={copy.refreshFeed} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}><MaterialIcons name="refresh" size={21} color={C.terra} /></Pressable> : null}
-            <Pressable onPress={() => router.push("/(tabs)/profile")}><Avatar profile={currentUser} size={32} /></Pressable>
+            <Pressable onPress={() => router.push("/(tabs)/discover")} style={styles.iconAction} accessibilityRole="button" accessibilityLabel={copy.discover} hitSlop={8}><MaterialIcons name="search" size={22} color={C.ink} /></Pressable>
+            <Pressable onPress={() => router.push("/(tabs)/alerts")} style={styles.iconAction} accessibilityRole="button" accessibilityLabel={copy.alerts} hitSlop={8}><MaterialIcons name="notifications-none" size={22} color={C.ink} /></Pressable>
+            <Pressable onPress={() => router.push("/(tabs)/profile")} style={styles.avatarAction} accessibilityRole="button" accessibilityLabel={copy.profile} hitSlop={6}><Avatar profile={currentUser} size={32} /></Pressable>
           </View>
         </View>
 
@@ -64,21 +61,18 @@ export default function HomeScreen() {
         </View>
         {repositoryMode === "demo" && __DEV__ && <View style={styles.demoBanner}><MaterialIcons name="info-outline" size={17} color={C.terra} /><Text style={[styles.demoText, { fontFamily: bodyFont }]}>{copy.demoModeText}</Text></View>}
 
-        <View style={feedDecorationStyles.topicHeader}><View><Text style={[feedDecorationStyles.topicTitle, { fontFamily: headingFont }]}>{copy.trendingNow}</Text><Text style={[feedDecorationStyles.topicSubtitle, { fontFamily: bodyFont }]}>{copy.popularTopics}</Text></View><View style={feedDecorationStyles.trendingIcon}><MaterialIcons name="trending-up" size={18} color={C.terra} /></View></View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.topics}>
-          {topics.map((topic) => <TopicChip key={topic} label={topicLabels[topic]?.[language] ?? topic} onPress={() => router.push({ pathname: "/(tabs)/discover", params: { q: topic } })} />)}
-        </ScrollView>
         <View style={styles.feedHeader}>
-          <Text style={[styles.sectionTitle, { fontFamily: headingFont }]}>{language === "bn" ? "আপনার জন্য" : "For you"}</Text>
-          <View style={styles.feedModes}>
-            <Pressable onPress={() => setFeedMode("relevant")} style={[styles.feedMode, feedMode === "relevant" && styles.feedModeActive]} accessibilityLabel={language === "bn" ? "প্রাসঙ্গিক ফিড" : "Relevant feed"}>
+          <Text style={[styles.sectionTitle, { fontFamily: headingFont }]}>{language === "bn" ? "পাড়ার আপডেট" : "Community updates"}</Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.feedFilters} contentContainerStyle={styles.feedFilterContent}>
+            <Pressable onPress={() => setFeedMode("relevant")} style={[styles.feedMode, feedMode === "relevant" && styles.feedModeActive]} accessibilityRole="button" accessibilityState={{ selected: feedMode === "relevant" }} accessibilityLabel={language === "bn" ? "প্রাসঙ্গিক ফিড" : "For you feed"}>
               <Text style={[styles.feedModeText, { fontFamily: mediumFont }, feedMode === "relevant" && styles.feedModeTextActive]}>{language === "bn" ? "প্রাসঙ্গিক" : "For you"}</Text>
             </Pressable>
-            <Pressable onPress={() => setFeedMode("latest")} style={[styles.feedMode, feedMode === "latest" && styles.feedModeActive]} accessibilityLabel={copy.latest}>
+            <Pressable onPress={() => setFeedMode("latest")} style={[styles.feedMode, feedMode === "latest" && styles.feedModeActive]} accessibilityRole="button" accessibilityState={{ selected: feedMode === "latest" }} accessibilityLabel={copy.latest}>
               <Text style={[styles.feedModeText, { fontFamily: mediumFont }, feedMode === "latest" && styles.feedModeTextActive]}>{copy.latest}</Text>
             </Pressable>
-          </View>
-        </View>
+          {topics.map((topic) => <TopicChip key={topic} label={(topicLabels[topic]?.[language] ?? topic).replace(/^#/, "")} onPress={() => router.push({ pathname: "/(tabs)/discover", params: { q: topic } })} />)}
+        </ScrollView>
         {feedOffline ? <View style={styles.offlineBanner} accessibilityLiveRegion="polite"><MaterialIcons name="cloud-off" size={17} color={C.terra} /><Text style={[styles.offlineText, { fontFamily: bodyFont }]}>{copy.offlineBanner}</Text><Pressable onPress={() => void reloadFeed(true)} accessibilityRole="button" accessibilityLabel={copy.retry}><Text style={[styles.offlineRetry, { fontFamily: mediumFont }]}>{copy.retry}</Text></Pressable></View> : null}
         {feedError ? <View style={styles.errorCard} accessibilityRole="alert"><View style={styles.errorIcon}><MaterialIcons name="cloud-off" size={24} color={C.terra} /></View><View style={styles.errorCopy}><Text style={[styles.errorTitle, { fontFamily: mediumFont }]}>{copy.feedErrorTitle}</Text><Text style={[styles.errorBody, { fontFamily: bodyFont }]}>{copy.feedErrorBody}</Text></View><Pressable onPress={() => void reloadFeed(true)} style={styles.retryButton} accessibilityRole="button" accessibilityLabel={copy.retry}><Text style={[styles.retryText, { fontFamily: mediumFont }]}>{copy.retry}</Text></Pressable></View> : null}
         {refreshing && !feed.length ? <FeedSkeleton /> : null}
@@ -97,10 +91,9 @@ const styles = StyleSheet.create({
   topbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 10, paddingBottom: 4 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 9 },
   wordmarkWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
-  topActions: { flexDirection: "row", alignItems: "center", gap: 12 },
-  createIcon: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: C.primaryContainer, borderWidth: 1, borderColor: C.line },
-  lang: { borderWidth: 1, borderColor: C.line, borderRadius: 15, paddingHorizontal: 9, paddingVertical: 6, backgroundColor: C.card },
-  langText: { color: C.terra, fontSize: 11, fontWeight: "800" },
+  topActions: { flexDirection: "row", alignItems: "center", gap: 5 },
+  iconAction: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18 },
+  avatarAction: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18, marginLeft: 2 },
   hero: { paddingTop: 22, paddingBottom: 15 },
   heroTitle: { color: C.ink, fontSize: 26, lineHeight: 33, fontFamily: "Georgia", fontWeight: "700" },
   heroSub: { color: C.muted, fontSize: 13, lineHeight: 19, marginTop: 5 },
@@ -108,16 +101,14 @@ const styles = StyleSheet.create({
   demoText: { color: C.muted, fontSize: 11, lineHeight: 16, flex: 1 },
   composer: { backgroundColor: C.paper, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 13, flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 17, shadowColor: C.ink, shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
   composerText: { flex: 1, color: C.muted, fontSize: 13 },
-  topics: { marginBottom: 17, flexGrow: 0 },
-  feedHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 13, paddingTop: 2 },
+  feedHeader: { flexDirection: "row", alignItems: "center", minHeight: 24, marginBottom: 5, paddingTop: 1 },
+  feedFilters: { marginBottom: 10, flexGrow: 0 },
+  feedFilterContent: { alignItems: "center", paddingRight: 2 },
   sectionTitle: { color: C.ink, fontSize: 16, fontFamily: "Georgia", fontWeight: "700" },
-  feedModes: { flex: 1, flexDirection: "row", justifyContent: "flex-end", gap: 4 },
-  feedMode: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
-  feedModeActive: { backgroundColor: C.primaryContainer },
+  feedMode: { minHeight: 34, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: C.line, borderRadius: 999, backgroundColor: C.paper, paddingHorizontal: 11, paddingVertical: 6, marginRight: 6 },
+  feedModeActive: { backgroundColor: C.primaryContainer, borderColor: C.primaryContainer },
   feedModeText: { color: C.muted, fontSize: 10, fontWeight: "800" },
   feedModeTextActive: { color: C.terra },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: C.green, marginLeft: 5 },
-  liveText: { color: C.muted, fontSize: 10, fontWeight: "700" },
   toast: { position: "absolute", bottom: 28, left: 18, right: 18, backgroundColor: C.green, padding: 13, borderRadius: 14, flexDirection: "row", alignItems: "center", gap: 8 },
   toastText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
   feedFooter: { minHeight: 58, alignItems: "center", justifyContent: "center", gap: 6 },
@@ -136,24 +127,17 @@ const styles = StyleSheet.create({
 });
 
 const heroStyles = StyleSheet.create({
-  card: { minHeight: 194, backgroundColor: "#E7EFE8", borderRadius: 24, borderWidth: 1, borderColor: "#D3E1D5", padding: 17, marginTop: 4, marginBottom: 16, overflow: "hidden", position: "relative" },
+  card: { minHeight: 136, backgroundColor: "#E7EFE8", borderRadius: 20, borderWidth: 1, borderColor: "#D3E1D5", padding: 13, marginTop: 3, marginBottom: 10, overflow: "hidden", position: "relative" },
   copy: { width: "78%", position: "relative", zIndex: 1 },
-  eyebrow: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 8 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: C.green },
-  eyebrowText: { color: C.green, fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
-  title: { paddingTop: 0, paddingBottom: 0, fontSize: 25, lineHeight: 31 },
-  subtitle: { marginTop: 4, maxWidth: 245, fontSize: 12, lineHeight: 17 },
-  action: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 42, alignSelf: "flex-start", backgroundColor: C.terra, paddingHorizontal: 13, borderRadius: 999, marginTop: 12 },
-  actionText: { color: C.card, fontSize: 11, fontWeight: "900" },
-  illustration: { position: "absolute", right: 0, top: 0, bottom: 0, width: 125 },
-  sun: { position: "absolute", right: -11, top: -14, width: 91, height: 91, borderRadius: 46, backgroundColor: "#F0C66E", opacity: 0.72 },
-  bubble: { position: "absolute", right: 16, top: 70, width: 48, height: 48, borderRadius: 17, backgroundColor: "#FFF8EA", alignItems: "center", justifyContent: "center", transform: [{ rotate: "-8deg" }] },
-  people: { position: "absolute", right: 60, bottom: 14, width: 38, height: 38, borderRadius: 14, backgroundColor: "#D4E7D7", alignItems: "center", justifyContent: "center", transform: [{ rotate: "8deg" }] },
-});
-
-const feedDecorationStyles = StyleSheet.create({
-  topicHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 1, marginBottom: 8 },
-  topicTitle: { color: C.ink, fontSize: 15, fontWeight: "800" },
-  topicSubtitle: { color: C.muted, fontSize: 10, marginTop: 2 },
-  trendingIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.primaryContainer, alignItems: "center", justifyContent: "center" },
+  eyebrow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.green },
+  eyebrowText: { color: C.green, fontSize: 8, fontWeight: "900", letterSpacing: 0.7 },
+  title: { paddingTop: 0, paddingBottom: 0, fontSize: 21, lineHeight: 26 },
+  subtitle: { marginTop: 2, maxWidth: 218, fontSize: 11, lineHeight: 15 },
+  action: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, minHeight: 34, alignSelf: "flex-start", backgroundColor: C.terra, paddingHorizontal: 10, borderRadius: 999, marginTop: 7 },
+  actionText: { color: C.card, fontSize: 10, fontWeight: "900" },
+  illustration: { position: "absolute", right: 0, top: 0, bottom: 0, width: 108 },
+  sun: { position: "absolute", right: -12, top: -12, width: 72, height: 72, borderRadius: 36, backgroundColor: "#F0C66E", opacity: 0.72 },
+  bubble: { position: "absolute", right: 11, top: 48, width: 40, height: 40, borderRadius: 15, backgroundColor: "#FFF8EA", alignItems: "center", justifyContent: "center", transform: [{ rotate: "-8deg" }] },
+  people: { position: "absolute", right: 51, bottom: 9, width: 32, height: 32, borderRadius: 12, backgroundColor: "#D4E7D7", alignItems: "center", justifyContent: "center", transform: [{ rotate: "8deg" }] },
 });
