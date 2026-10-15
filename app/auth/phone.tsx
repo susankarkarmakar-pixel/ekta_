@@ -1,9 +1,10 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { Logo } from "@/components/Logo";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
@@ -14,11 +15,42 @@ import { useLanguage } from "@/lib/apongram/LanguageContext";
 
 const LIGHT = Colors.light;
 
+function AuthBackdrop({ width, height }: { width: number; height: number }) {
+  const w = Math.max(width, 1);
+  const h = Math.max(height, 1);
+  return (
+    <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Path d={`M0 0 H${w * 0.48} C${w * 0.38} ${h * 0.1}, ${w * 0.15} ${h * 0.12}, 0 ${h * 0.27} Z`} fill="#F6B66D" />
+      <Path d={`M0 ${h * 0.06} C${w * 0.18} ${h * 0.17}, ${w * 0.3} ${h * 0.12}, ${w * 0.47} 0 H${w * 0.7} C${w * 0.53} ${h * 0.12}, ${w * 0.25} ${h * 0.19}, 0 ${h * 0.34} Z`} fill="#FBE6C6" />
+      <Path d={`M0 ${h * 0.9} C${w * 0.18} ${h * 0.87}, ${w * 0.37} ${h * 0.93}, ${w * 0.57} ${h * 0.86} C${w * 0.78} ${h * 0.8}, ${w * 0.9} ${h * 0.74}, ${w} ${h * 0.7} V${h} H0 Z`} fill="#E5EFDB" />
+      <Path d={`M0 ${h * 0.96} C${w * 0.2} ${h * 0.9}, ${w * 0.42} ${h * 0.98}, ${w * 0.63} ${h * 0.9} C${w * 0.82} ${h * 0.84}, ${w * 0.93} ${h * 0.79}, ${w} ${h * 0.76} V${h} H0 Z`} fill="#B7D9AA" />
+      <Path d={`M0 ${h} C${w * 0.22} ${h * 0.95}, ${w * 0.42} ${h * 1.01}, ${w * 0.65} ${h * 0.95} C${w * 0.82} ${h * 0.9}, ${w * 0.93} ${h * 0.84}, ${w} ${h * 0.82} V${h} Z`} fill="#58A963" />
+    </Svg>
+  );
+}
+
+function HandshakeArtwork({ compact }: { compact: boolean }) {
+  return (
+    <View style={[styles.artwork, compact && styles.artworkCompact]} accessible={false}>
+      <View style={[styles.ray, styles.rayOrange]} />
+      <View style={[styles.ray, styles.rayOchre]} />
+      <View style={[styles.ray, styles.rayGreen]} />
+      <View style={[styles.sleeve, styles.sleeveOrange]} />
+      <View style={[styles.sleeve, styles.sleeveGreen]} />
+      <View style={styles.handshakeIconWrap}>
+        <MaterialIcons name="handshake" size={compact ? 108 : 132} color="#17231E" />
+      </View>
+    </View>
+  );
+}
+
 export default function PhoneAuthScreen() {
   const router = useRouter();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { copy, language, toggleLanguage } = useLanguage();
   const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
   const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
+  const compact = windowHeight < 760 || windowWidth < 360;
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
@@ -140,132 +172,213 @@ export default function PhoneAuthScreen() {
   };
   const canSend = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const canVerify = otp.replace(/\D/g, "").length === 6;
+  const pageMaxWidth = Math.min(Math.max(windowWidth - 36, 280), 520);
 
   return (
     <ScreenContainer safeAreaClassName="bg-ivory" className="bg-ivory">
-      <View style={styles.container}>
-        <View style={styles.top}>
-          <Pressable onPress={() => router.back()} style={styles.back} accessibilityLabel={copy.back}>
-            <MaterialIcons name="arrow-back" size={22} color={LIGHT.slate} />
-            <Text style={[styles.backText, { fontFamily: mediumFont }]}>{copy.back}</Text>
-          </Pressable>
-          <Pressable onPress={toggleLanguage} style={styles.language} accessibilityLabel="Switch language">
-            <Text style={[styles.languageText, { fontFamily: mediumFont }]}>{language === "bn" ? "বাং · EN" : "EN · বাং"}</Text>
-          </Pressable>
-        </View>
-        <View style={styles.hero}>
-          <View style={styles.landscape}><View style={styles.landscapeSun} /><View style={styles.landscapeHillBack} /><View style={styles.landscapeHillFront} /></View>
-          <View style={styles.brandRow}><Logo variant="horizontal" width={148} height={36} /></View>
-          <Text style={[styles.tagline, { fontFamily: bodyFont }]}>{language === "bn" ? "একতায় আমরা · আপনার কমিউনিটি, একসঙ্গে" : "Your community, connected"}</Text>
-          <View style={styles.localPill}><View style={styles.dot} /><Text style={[styles.localText, { fontFamily: bodyFont }]}>{language === "bn" ? "ইমেইল OTP দিয়ে নিরাপদে সাইন ইন" : "Secure sign-in with email OTP"}</Text></View>
-        </View>
-        {!verified && <Pressable onPress={signInWithGoogle} disabled={busy} style={[styles.googleButton, busy && styles.disabled]}><Text style={[styles.googleButtonText, { fontFamily: mediumFont }]}>G</Text><Text style={[styles.googleButtonLabel, { fontFamily: mediumFont }]}>{language === "bn" ? "Google দিয়ে চালিয়ে যান" : "Continue with Google"}</Text></Pressable>}
-        {verified ? (
-          <View style={styles.verified}>
-            <MaterialIcons name="check-circle" size={48} color={LIGHT.leafGreen} />
-            <Text style={[styles.verifiedTitle, { fontFamily: language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold" }]}>{copy.verifiedMessage}</Text>
-            <Pressable onPress={() => router.replace("/")} style={styles.button}><Text style={[styles.buttonText, { fontFamily: mediumFont }]}>{copy.home}</Text></Pressable>
-          </View>
-        ) : (
-          <View style={styles.form}>
-            <Text style={[styles.label, { fontFamily: mediumFont }]}>{sent ? copy.otpLabel : (language === "bn" ? "ইমেইল ঠিকানা" : "Email address")}</Text>
-            {sent ? <View style={styles.otpRow} accessibilityRole="none">
-              {Array.from({ length: 6 }, (_, index) => <TextInput
-                key={index}
-                ref={(ref) => { otpRefs.current[index] = ref; }}
-                value={otpDigits[index] ?? ""}
-                onChangeText={(value) => setOtpDigit(index, value)}
-                onKeyPress={({ nativeEvent }) => handleOtpKeyPress(index, nativeEvent.key)}
-                keyboardType="number-pad"
-                inputMode="numeric"
-                maxLength={6}
-                autoFocus={index === 0}
-                editable={!busy}
-                selectTextOnFocus
-                accessibilityLabel={`${copy.otpDigit} ${index + 1}`}
-                style={[styles.otpBox, { fontFamily: mediumFont }, otpDigits[index] && styles.otpBoxFilled, index === otpDigits.length && styles.otpBoxActive]}
-              />)}
-            </View> : <View style={styles.inputWrap}>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                placeholder="you@example.com"
-                placeholderTextColor="#9A9080"
-                style={[styles.input, { fontFamily: bodyFont }]}
-                maxLength={120}
-                autoFocus
-                editable={!busy}
-                accessibilityLabel={language === "bn" ? "ইমেইল ঠিকানা" : "Email address"}
-              />
-            </View>}
-            <Pressable
-              onPress={sent ? verifyOtp : sendOtp}
-              disabled={busy || (sent ? !canVerify : !canSend) || (!sent && resendIn > 0)}
-              style={[styles.button, (busy || (sent ? !canVerify : !canSend) || (!sent && resendIn > 0)) && styles.disabled]}
-            >
-              <Text style={[styles.buttonText, { fontFamily: mediumFont }]}>{busy ? (language === "bn" ? "অপেক্ষা করুন..." : "Please wait...") : sent ? copy.verify : resendIn ? `${copy.resend} (${resendIn}s)` : copy.sendOtp}</Text>
-              <MaterialIcons name="arrow-forward" size={20} color={LIGHT.ivory} />
-            </Pressable>
-            {sent && <View style={styles.resendActions}>
-              <Pressable onPress={() => void resendOtp()} disabled={busy || resendIn > 0} accessibilityRole="button">
-                <Text style={[styles.resend, { fontFamily: mediumFont }, (busy || resendIn > 0) && styles.resendDisabled]}>{resendIn > 0 ? `${copy.resend} (${resendIn}s)` : copy.resend}</Text>
-              </Pressable>
-              <Pressable onPress={() => { setSent(false); setOtp(""); setError(""); }} disabled={busy} accessibilityRole="button">
-                <Text style={[styles.resend, { fontFamily: mediumFont }, busy && styles.resendDisabled]}>{language === "bn" ? "ইমেইল পরিবর্তন করুন" : "Change email"}</Text>
-              </Pressable>
-            </View>}
-            {error ? <Text style={[styles.error, { fontFamily: bodyFont }]}>{error}</Text> : null}
-            {!supabaseConfig.isConfigured && <Text style={[styles.demoNote, { fontFamily: bodyFont }]}>{copy.demoModeText}</Text>}
-            <Text style={[styles.disclaimer, { fontFamily: bodyFont }]}>{language === "bn" ? "সাইন ইন করে আপনি আমাদের কমিউনিটি নির্দেশিকা ও প্রতিবেশীর গোপনীয়তা নীতিতে সম্মতি দিচ্ছেন।" : "By signing in, you agree to our community guidelines and neighborhood privacy charter."}</Text>
-          </View>
-        )}
+      <View style={styles.root}>
+        <AuthBackdrop width={windowWidth} height={windowHeight} />
+        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <ScrollView
+            style={styles.flex}
+            contentContainerStyle={[styles.scrollContent, { minHeight: Math.max(windowHeight - 28, 600) }]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={[styles.page, { width: pageMaxWidth }]}>
+              <View style={styles.top}>
+                <Pressable onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel={copy.back}>
+                  <MaterialIcons name="arrow-back" size={20} color={LIGHT.inkNavy} />
+                  <Text style={[styles.backText, { fontFamily: mediumFont }]}>{copy.back}</Text>
+                </Pressable>
+                <Pressable onPress={toggleLanguage} style={styles.language} accessibilityRole="button" accessibilityLabel="Switch language">
+                  <Text style={[styles.languageText, { fontFamily: mediumFont }]}>{language === "bn" ? "বাং · EN" : "EN · বাং"}</Text>
+                </Pressable>
+              </View>
+
+              <View style={[styles.hero, compact && styles.heroCompact]}>
+                <HandshakeArtwork compact={compact} />
+                <View style={styles.brandRow}>
+                  <Logo variant="horizontal" width={language === "bn" ? 190 : 220} height={46} />
+                </View>
+                <Text style={[styles.tagline, { fontFamily: bodyFont }]}>
+                  {language === "bn" ? "আপনার কমিউনিটি, একসঙ্গে" : "Your Community, Connected"}
+                </Text>
+              </View>
+
+              {!sent && !verified ? (
+                <>
+                  <Pressable
+                    onPress={signInWithGoogle}
+                    disabled={busy}
+                    style={({ pressed }) => [styles.googleButton, busy && styles.disabled, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel={language === "bn" ? "Google দিয়ে চালিয়ে যান" : "Continue with Google"}
+                  >
+                    <MaterialCommunityIcons name="google" size={25} color="#4285F4" />
+                    <Text style={[styles.googleButtonLabel, { fontFamily: mediumFont }]}>{language === "bn" ? "Google দিয়ে চালিয়ে যান" : "Continue with Google"}</Text>
+                  </Pressable>
+                  <View style={styles.separator}>
+                    <View style={styles.separatorLine} />
+                    <Text style={[styles.separatorText, { fontFamily: bodyFont }]}>{language === "bn" ? "অথবা" : "OR"}</Text>
+                    <View style={styles.separatorLine} />
+                  </View>
+                </>
+              ) : null}
+
+              {verified ? (
+                <View style={styles.verified}>
+                  <View style={styles.successIcon}><MaterialIcons name="check" size={28} color="#FFF" /></View>
+                  <Text style={[styles.verifiedTitle, { fontFamily: mediumFont }]}>{copy.verifiedMessage}</Text>
+                  <Pressable onPress={() => router.replace("/")} style={styles.button} accessibilityRole="button">
+                    <Text style={[styles.buttonText, { fontFamily: mediumFont }]}>{copy.home}</Text>
+                    <MaterialIcons name="arrow-forward" size={21} color="#FFF" />
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.form}>
+                  <Text style={[styles.label, { fontFamily: mediumFont }]}>{sent ? copy.otpLabel : (language === "bn" ? "ইমেইল ঠিকানা" : "Email address")}</Text>
+                  {sent ? (
+                    <>
+                      <Text style={[styles.otpHint, { fontFamily: bodyFont }]}>
+                        {language === "bn" ? `${email} ঠিকানায় পাঠানো ৬ সংখ্যার কোড লিখুন।` : `Enter the 6-digit code sent to ${email}.`}
+                      </Text>
+                      <View style={styles.otpRow} accessibilityRole="none">
+                        {Array.from({ length: 6 }, (_, index) => (
+                          <TextInput
+                            key={index}
+                            ref={(ref) => { otpRefs.current[index] = ref; }}
+                            value={otpDigits[index] ?? ""}
+                            onChangeText={(value) => setOtpDigit(index, value)}
+                            onKeyPress={({ nativeEvent }) => handleOtpKeyPress(index, nativeEvent.key)}
+                            keyboardType="number-pad"
+                            inputMode="numeric"
+                            maxLength={6}
+                            autoFocus={index === 0}
+                            editable={!busy}
+                            selectTextOnFocus
+                            accessibilityLabel={`${copy.otpDigit} ${index + 1}`}
+                            style={[styles.otpBox, { fontFamily: mediumFont }, otpDigits[index] && styles.otpBoxFilled, index === otpDigits.length && styles.otpBoxActive]}
+                          />
+                        ))}
+                      </View>
+                    </>
+                  ) : (
+                    <View style={styles.inputWrap}>
+                      <MaterialIcons name="mail-outline" size={22} color="#8B8A86" style={styles.mailIcon} />
+                      <TextInput
+                        value={email}
+                        onChangeText={setEmail}
+                        onSubmitEditing={() => { if (canSend) void sendOtp(); }}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoComplete="email"
+                        textContentType="emailAddress"
+                        returnKeyType="send"
+                        placeholder="you@example.com"
+                        placeholderTextColor="#9A9A96"
+                        style={[styles.input, { fontFamily: bodyFont }]}
+                        maxLength={120}
+                        editable={!busy}
+                        accessibilityLabel={language === "bn" ? "ইমেইল ঠিকানা" : "Email address"}
+                      />
+                    </View>
+                  )}
+
+                  <Pressable
+                    onPress={sent ? verifyOtp : sendOtp}
+                    disabled={busy || (sent ? !canVerify : !canSend) || (!sent && resendIn > 0)}
+                    style={({ pressed }) => [styles.button, (busy || (sent ? !canVerify : !canSend) || (!sent && resendIn > 0)) && styles.disabled, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel={sent ? copy.verify : copy.sendOtp}
+                  >
+                    <Text style={[styles.buttonText, { fontFamily: mediumFont }]}>
+                      {busy ? (language === "bn" ? "অপেক্ষা করুন…" : "Please wait…") : sent ? copy.verify : resendIn ? `${copy.resend} (${resendIn}s)` : copy.sendOtp}
+                    </Text>
+                    <MaterialIcons name="arrow-forward" size={22} color="#FFF" />
+                  </Pressable>
+
+                  {sent ? (
+                    <View style={styles.resendActions}>
+                      <Pressable onPress={() => void resendOtp()} disabled={busy || resendIn > 0} accessibilityRole="button">
+                        <Text style={[styles.resend, { fontFamily: mediumFont }, (busy || resendIn > 0) && styles.resendDisabled]}>{resendIn > 0 ? `${copy.resend} (${resendIn}s)` : copy.resend}</Text>
+                      </Pressable>
+                      <Pressable onPress={() => { setSent(false); setOtp(""); setError(""); }} disabled={busy} accessibilityRole="button">
+                        <Text style={[styles.resend, { fontFamily: mediumFont }, busy && styles.resendDisabled]}>{language === "bn" ? "ইমেইল পরিবর্তন করুন" : "Change email"}</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+
+                  {error ? <Text accessibilityRole="alert" style={[styles.error, { fontFamily: bodyFont }]}>{error}</Text> : null}
+                  {!supabaseConfig.isConfigured ? <Text style={[styles.demoNote, { fontFamily: bodyFont }]}>{copy.demoModeText}</Text> : null}
+                  <Text style={[styles.disclaimer, { fontFamily: bodyFont }]}>
+                    {language === "bn" ? (
+                      <>সাইন ইন করে আপনি আমাদের <Text style={styles.disclaimerEmphasis}>কমিউনিটি নির্দেশিকা</Text> ও <Text style={styles.disclaimerEmphasis}>প্রতিবেশীর গোপনীয়তা নীতি</Text>-তে সম্মতি দিচ্ছেন।</>
+                    ) : (
+                      <>By signing in, you agree to our <Text style={styles.disclaimerEmphasis}>Community Guidelines</Text> and <Text style={styles.disclaimerEmphasis}>Neighborhood Privacy Charter</Text>.</>
+                    )}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </View>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 22 },
-  top: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 14 },
-  back: { flexDirection: "row", alignItems: "center", gap: 6 },
-  backText: { color: LIGHT.slate, fontSize: 12, fontWeight: "700" },
-  language: { backgroundColor: LIGHT.paper, borderWidth: 1, borderColor: LIGHT.line, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  root: { flex: 1, backgroundColor: "#FFFCF4", overflow: "hidden" },
+  flex: { flex: 1 },
+  scrollContent: { flexGrow: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 18, paddingTop: 6, paddingBottom: 26 },
+  page: { flexGrow: 1, alignSelf: "center", justifyContent: "center" },
+  top: { minHeight: 42, flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 2 },
+  back: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 42, paddingRight: 10 },
+  backText: { color: LIGHT.inkNavy, fontSize: 12, fontWeight: "700" },
+  language: { minHeight: 38, justifyContent: "center", backgroundColor: "rgba(255,255,255,0.74)", borderWidth: 1, borderColor: "#EAE1D3", borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
   languageText: { color: LIGHT.terracotta, fontSize: 11, fontWeight: "800" },
-  hero: { alignItems: "center", paddingTop: 70 },
-  landscape: { width: "100%", height: 150, borderRadius: 20, backgroundColor: LIGHT.primaryContainer, overflow: "hidden", position: "relative" },
-  landscapeSun: { position: "absolute", right: 48, top: 24, width: 40, height: 40, borderRadius: 20, backgroundColor: LIGHT.ochre },
-  landscapeHillBack: { position: "absolute", left: -20, right: -20, bottom: -42, height: 94, borderRadius: 90, backgroundColor: LIGHT.leafGreen, transform: [{ scaleX: 1.25 }] },
-  landscapeHillFront: { position: "absolute", left: -20, right: -20, bottom: -64, height: 100, borderRadius: 90, backgroundColor: Colors.dark.leafGreen, transform: [{ scaleX: 1.15 }] },
-  brandRow: { flexDirection: "row", alignItems: "center", marginTop: 16 },
-  tagline: { color: LIGHT.slate, textAlign: "center", lineHeight: 23, fontSize: 15, marginTop: 7 },
-  localPill: { borderWidth: 1, borderColor: LIGHT.line, borderRadius: 999, backgroundColor: LIGHT.paper, paddingHorizontal: 13, paddingVertical: 8, marginTop: 22, flexDirection: "row", alignItems: "center", gap: 7 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: LIGHT.leafGreen },
-  localText: { color: LIGHT.slate, fontSize: 11 },
-  googleButton: { backgroundColor: LIGHT.paper, borderWidth: 1, borderColor: LIGHT.line, borderRadius: 12, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 10, paddingVertical: 14, marginTop: 18 },
-  googleButtonText: { color: "#4285F4", fontSize: 18, fontWeight: "900" },
-  googleButtonLabel: { color: LIGHT.inkNavy, fontSize: 13, fontWeight: "800" },
-  form: { marginTop: "auto", paddingBottom: 24 },
-  label: { color: LIGHT.inkNavy, fontWeight: "800", fontSize: 13, marginBottom: 8 },
-  inputWrap: { backgroundColor: LIGHT.paper, borderWidth: 1, borderColor: LIGHT.line, borderRadius: 14, height: 54, flexDirection: "row", alignItems: "center", marginBottom: 15 },
-  prefix: { height: "100%", justifyContent: "center", paddingHorizontal: 15, borderRightWidth: 1, borderRightColor: LIGHT.line },
-  prefixText: { color: LIGHT.inkNavy, fontSize: 15, fontWeight: "700" },
-  input: { flex: 1, color: LIGHT.inkNavy, fontSize: 16, paddingHorizontal: 14 },
+  hero: { alignItems: "center", paddingTop: 1, marginBottom: 19 },
+  heroCompact: { marginBottom: 13 },
+  artwork: { width: 260, height: 184, alignItems: "center", justifyContent: "center", position: "relative" },
+  artworkCompact: { width: 226, height: 148 },
+  ray: { position: "absolute", width: 12, height: 46, top: 5, borderRadius: 6 },
+  rayOrange: { left: 57, top: 27, height: 38, backgroundColor: "#E86E32", transform: [{ rotate: "-43deg" }] },
+  rayOchre: { left: 124, top: 4, height: 45, backgroundColor: "#E7AE3F", transform: [{ rotate: "-4deg" }] },
+  rayGreen: { right: 55, top: 27, height: 38, backgroundColor: "#2E8B57", transform: [{ rotate: "43deg" }] },
+  sleeve: { position: "absolute", bottom: 11, width: 104, height: 34, borderRadius: 10 },
+  sleeveOrange: { left: 5, backgroundColor: "#E77B39", transform: [{ rotate: "-30deg" }] },
+  sleeveGreen: { right: 5, backgroundColor: "#2D8A50", transform: [{ rotate: "30deg" }] },
+  handshakeIconWrap: { width: 154, height: 118, borderRadius: 48, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,252,244,0.92)", transform: [{ rotate: "-2deg" }] },
+  brandRow: { alignItems: "center", justifyContent: "center", marginTop: -5 },
+  tagline: { color: "#676A72", textAlign: "center", lineHeight: 25, fontSize: 15, marginTop: 4, letterSpacing: 0.15 },
+  googleButton: { minHeight: 58, backgroundColor: "rgba(255,255,255,0.92)", borderWidth: 1, borderColor: "#E5DED1", borderRadius: 16, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 14, paddingHorizontal: 18, marginTop: 1, shadowColor: "#5C4E40", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  googleButtonLabel: { color: "#172238", fontSize: 15, fontWeight: "800" },
+  separator: { flexDirection: "row", alignItems: "center", gap: 17, marginTop: 19, marginBottom: 18, paddingHorizontal: 6 },
+  separatorLine: { flex: 1, height: 1, backgroundColor: "#DED9D0" },
+  separatorText: { color: "#73747A", fontSize: 13, fontWeight: "700" },
+  form: { paddingBottom: 6 },
+  label: { color: "#30394A", fontWeight: "800", fontSize: 14, marginBottom: 9, marginLeft: 2 },
+  inputWrap: { backgroundColor: "rgba(255,255,255,0.94)", borderWidth: 1, borderColor: "#E4DED4", borderRadius: 17, minHeight: 58, flexDirection: "row", alignItems: "center", marginBottom: 15, paddingHorizontal: 16 },
+  mailIcon: { marginRight: 13 },
+  input: { flex: 1, color: LIGHT.inkNavy, fontSize: 16, paddingVertical: 13 },
+  otpHint: { color: LIGHT.slate, fontSize: 12, lineHeight: 18, marginTop: -3, marginBottom: 12 },
   otpRow: { flexDirection: "row", gap: 8, marginBottom: 15 },
-  otpBox: { width: 46, height: 56, padding: 0, borderWidth: 1.5, borderColor: LIGHT.line, borderRadius: 12, backgroundColor: LIGHT.paper, color: LIGHT.inkNavy, fontSize: 24, fontWeight: "600", textAlign: "center" },
+  otpBox: { flex: 1, minWidth: 0, height: 56, padding: 0, borderWidth: 1.5, borderColor: "#E4DED4", borderRadius: 13, backgroundColor: "rgba(255,255,255,0.94)", color: LIGHT.inkNavy, fontSize: 23, fontWeight: "600", textAlign: "center" },
   otpBoxFilled: { borderColor: LIGHT.inkNavy },
-  otpBoxActive: { borderWidth: 2, borderColor: LIGHT.terracotta },
-  button: { backgroundColor: LIGHT.terracotta, borderRadius: 12, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 9, paddingVertical: 15 },
-  disabled: { opacity: 0.42 },
-  buttonText: { color: LIGHT.ivory, fontWeight: "800", fontSize: 14 },
-  resendActions: { flexDirection: "row", justifyContent: "center", gap: 22, marginTop: 15 },
-  resend: { color: LIGHT.terracotta, textAlign: "center", fontSize: 12, fontWeight: "800" },
+  otpBoxActive: { borderWidth: 2, borderColor: "#D6815B" },
+  button: { minHeight: 60, backgroundColor: "#D9825A", borderRadius: 17, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 11, paddingVertical: 14, paddingHorizontal: 18, shadowColor: "#A94E33", shadowOpacity: 0.16, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  disabled: { opacity: 0.48 },
+  pressed: { opacity: 0.84 },
+  buttonText: { color: "#FFFDF8", fontWeight: "800", fontSize: 16 },
+  resendActions: { flexDirection: "row", justifyContent: "center", gap: 24, marginTop: 13 },
+  resend: { color: LIGHT.terracotta, textAlign: "center", fontSize: 12, fontWeight: "800", paddingVertical: 5 },
   resendDisabled: { opacity: 0.45 },
-  error: { color: LIGHT.error, textAlign: "center", lineHeight: 18, fontSize: 11, marginTop: 12 },
-  demoNote: { color: LIGHT.slate, backgroundColor: LIGHT.primaryContainer, borderRadius: 10, padding: 9, textAlign: "center", lineHeight: 16, fontSize: 10, marginTop: 12 },
-  disclaimer: { color: LIGHT.slate, textAlign: "center", lineHeight: 18, fontSize: 11, marginTop: 18, paddingHorizontal: 8 },
-  verified: { alignItems: "center", paddingTop: 52 },
-  verifiedTitle: { color: LIGHT.inkNavy, fontSize: 16, fontWeight: "800", textAlign: "center", maxWidth: 250, marginTop: 14 },
+  error: { color: LIGHT.error, textAlign: "center", lineHeight: 18, fontSize: 11, marginTop: 11 },
+  demoNote: { color: LIGHT.slate, backgroundColor: "rgba(255,255,255,0.7)", borderWidth: 1, borderColor: "#EAE1D3", borderRadius: 12, padding: 10, textAlign: "center", lineHeight: 17, fontSize: 11, marginTop: 12 },
+  disclaimer: { color: "#73747A", textAlign: "center", lineHeight: 20, fontSize: 11, marginTop: 20, paddingHorizontal: 8 },
+  disclaimerEmphasis: { color: "#354356", fontWeight: "700" },
+  verified: { alignItems: "center", paddingTop: 30, gap: 14 },
+  successIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: LIGHT.leafGreen, alignItems: "center", justifyContent: "center" },
+  verifiedTitle: { color: LIGHT.inkNavy, fontSize: 16, textAlign: "center", maxWidth: 300, marginBottom: 4 },
 });
