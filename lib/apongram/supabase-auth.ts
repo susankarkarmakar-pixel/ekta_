@@ -1,5 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { isValidEmailAddress } from "./email-validation";
 import { supabaseConfig } from "./supabase-config";
 
 const SESSION_KEY = "ekta.supabase.session";
@@ -63,7 +64,7 @@ function normalizePhone(phone: string): string {
 
 function normalizeEmail(emailInput: string): string {
   const email = emailInput.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!isValidEmailAddress(email)) {
     throw new SupabaseAuthError("Enter a valid email address");
   }
   return email;

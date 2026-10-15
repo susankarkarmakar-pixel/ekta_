@@ -23,10 +23,10 @@
 - Basic search can discover users, posts and hashtags, and tapping a hashtag opens a filtered topic view.
 - Users, posts and comments have an accessible report/moderation affordance with a controlled confirmation/success state.
 
-## 5. Phone OTP authentication flow
-- The app includes phone-number entry and OTP verification screens suitable for Supabase Auth.
-- The flow includes verification, retry and clear error states without requiring a password.
-- When Supabase credentials are unavailable, the app remains usable in seeded demo mode rather than crashing.
+## 5. Passwordless Email OTP and Google authentication
+- The app includes email entry/validation, OTP verification, retry and resend cooldown states without requiring a password.
+- Google authentication reuses the existing Supabase OAuth flow when its provider is configured; session persistence, logout and authenticated navigation remain intact.
+- When Supabase credentials/providers are unavailable, normal app launch shows a clear setup/error state and never simulates production sign-in; seeded demo navigation is an explicit developer-only toggle.
 
 ## 6. Supabase data and storage integration
 - The app uses `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` as protected runtime configuration; no service-role key is placed in source or the mobile bundle.
@@ -53,3 +53,19 @@
 - A successful demo publish appears in the Reels feed for the current app session and returns the creator to Reels; regular posts continue to reject video media.
 - Supabase schema supports `video_path` and Story distinction/indexing for Reel queries without placing a service-role key in client code; the demo does not pretend a local device URI is a remotely hosted upload.
 - The finished walkthrough demo video is playable as an MP4 and shows the real implemented Reels feed and key viewer/creator interactions.
+
+
+## 10. Animated eKta splash-to-login opening
+- The app opens on a warm cream/ivory background; saffron and green flowing waves appear with a subtle slide/fade, and saffron/gold/green dots enter in staggered motion.
+- A hand-drawn illustration of two hands clasping firmly for unity/solidarity draws or fades/scales into view; the Bengali wordmark “একতা” then moves gently upward into view, followed by a tricolor underline and the exact tagline “Your Community, Connected”.
+- Three loading dots animate subtly, then the splash transitions smoothly to the login screen; the complete intro targets approximately 2–3 seconds and uses restrained opacity/translation/scale, with no excessive bounce, flashing or distracting movement.
+- The illustration and interface are real reusable application assets/components, not the uploaded storyboard displayed as a flat screenshot. Use warm ivory, saffron, white and Indian-tricolor green accents, elegant top/bottom waves and the developer credit “Sanket Pixel Technologies”; include no political leaders, party symbols or unnecessary decoration.
+- Reduced-motion preference receives a simple, short fade. Navigating back to login does not replay the complete intro unnecessarily, and the splash overlay never traps the user on a blank/infinite-loading screen.
+
+## 11. Responsive eKta email/Google login and secure auth integration
+- The login screen includes the eKta Social/Bengali logo and tagline, a prominent “Continue with Google” action, an “OR” divider, an email-address input with validation, and a prominent “Send OTP” action.
+- Email OTP has an OTP-entry/verification state, clear loading/success/error feedback, and a resend-OTP action with an appropriate cooldown. The Google and email flows reuse the existing configured authentication provider/services and keep session persistence, logout and authenticated navigation intact.
+- Community-guidelines and privacy-charter links are clear and open useful content; the UI does not represent unpublished pilot policy summaries as complete legal terms.
+- The experience works on narrow mobile screens, tablets and desktop web as applicable; scrolling remains keyboard-aware, respects mobile safe areas, provides accessible labels and keyboard navigation, preserves contrast, and renders Bengali with the project’s readable Bengali fonts.
+- Missing/incomplete authentication configuration produces an honest setup/error state, never simulated production authentication. No credentials, OTPs, API secrets or service-role keys are hardcoded. Google/email functionality is not claimed as live unless verified against the configured provider.
+- Reuse existing framework/design system and animation dependencies; avoid unnecessary dependencies, heavyweight animation assets, layout shifts and needless rerenders. Existing app routes/features must continue to work; login/auth changes do not create a parallel authentication system.

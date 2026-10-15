@@ -1,101 +1,248 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  AccessibilityInfo,
+  Animated,
+  Easing,
+  Image,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomBrandWave, TopBrandWave } from "@/components/brand/BrandWaves";
 
-/* Animated.Value refs are intentionally stable animation handles. */
-/* eslint-disable react-hooks/refs */
-import { AccessibilityInfo, Animated, Easing, Image, Platform, StyleSheet, Text, View } from "react-native";
-import { useLanguage } from "@/lib/apongram/LanguageContext";
-
+/* eslint-disable react-hooks/refs -- Animated.Value refs are stable animation handles. */
 type LaunchAnimationProps = {
   onFinished: () => void;
 };
 
-const C = {
+const COLORS = {
   background: "#FBF7F0",
   ink: "#1E1B16",
   muted: "#6B6153",
-  terra: "#C85A3A",
-  green: "#1F6F6B",
+  saffron: "#E96B35",
+  gold: "#F4B83F",
+  green: "#27864F",
 };
+const useNativeDriver = Platform.OS !== "web";
 
 export function LaunchAnimation({ onFinished }: LaunchAnimationProps) {
-  const { language } = useLanguage();
-  const brandName = language === "bn" ? "একতা" : "eKta Social";
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const logoScale = useRef(new Animated.Value(0.86)).current;
-  const nameOpacity = useRef(new Animated.Value(0)).current;
-  const nameY = useRef(new Animated.Value(10)).current;
-  const companyOpacity = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
+  const [reducedMotion, setReducedMotion] = useState<boolean | null>(() => {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    }
+    return null;
+  });
+  const waveOpacity = useRef(new Animated.Value(0)).current;
+  const topWaveY = useRef(new Animated.Value(-12)).current;
+  const bottomWaveY = useRef(new Animated.Value(12)).current;
+  const sparkOpacity = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
+  const sparkScale = useRef([0, 1, 2].map(() => new Animated.Value(0.55))).current;
+  const illustrationOpacity = useRef(new Animated.Value(0)).current;
+  const illustrationScale = useRef(new Animated.Value(0.92)).current;
+  const wordmarkOpacity = useRef(new Animated.Value(0)).current;
+  const wordmarkY = useRef(new Animated.Value(9)).current;
+  const detailsOpacity = useRef(new Animated.Value(0)).current;
+  const detailsY = useRef(new Animated.Value(6)).current;
+  const loaderOpacity = useRef([0, 1, 2].map(() => new Animated.Value(1))).current;
   const overlayOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    let active = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (active) setReducedMotion(enabled);
-    });
-    return () => { active = false; };
-  }, []);
+    if (reducedMotion !== null) return;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(setReducedMotion)
+      .catch(() => setReducedMotion(false));
+  }, [reducedMotion]);
 
   useEffect(() => {
-    const duration = reducedMotion ? 240 : 420;
+    if (reducedMotion === null) return;
+
+    const timing = (value: Animated.Value, toValue: number, duration: number) =>
+      Animated.timing(value, {
+        toValue,
+        duration,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver,
+      });
+
+    const loaderLoop = Animated.loop(
+      Animated.stagger(
+        115,
+        loaderOpacity.map((value) =>
+          Animated.sequence([
+            Animated.timing(value, { toValue: 0.35, duration: 210, useNativeDriver }),
+            Animated.timing(value, { toValue: 1, duration: 210, useNativeDriver }),
+          ]),
+        ),
+      ),
+    );
+    if (!reducedMotion) loaderLoop.start();
+
     const sequence = reducedMotion
       ? Animated.sequence([
           Animated.parallel([
-            Animated.timing(logoOpacity, { toValue: 1, duration, useNativeDriver: Platform.OS !== "web" }),
-            Animated.timing(nameOpacity, { toValue: 1, duration, useNativeDriver: Platform.OS !== "web" }),
-            Animated.timing(companyOpacity, { toValue: 1, duration, useNativeDriver: Platform.OS !== "web" }),
+            timing(waveOpacity, 1, 240),
+            timing(illustrationOpacity, 1, 260),
+            timing(illustrationScale, 1, 260),
+            timing(wordmarkOpacity, 1, 260),
+            timing(wordmarkY, 0, 260),
+            timing(detailsOpacity, 1, 280),
+            ...sparkOpacity.map((value) => timing(value, 1, 240)),
           ]),
-          Animated.delay(220),
-          Animated.timing(overlayOpacity, { toValue: 0, duration: 260, useNativeDriver: Platform.OS !== "web" }),
+          Animated.delay(90),
+          Animated.timing(overlayOpacity, { toValue: 0, duration: 210, useNativeDriver }),
         ])
       : Animated.sequence([
           Animated.parallel([
-            Animated.timing(logoOpacity, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
-            Animated.spring(logoScale, { toValue: 1, friction: 8, tension: 55, useNativeDriver: Platform.OS !== "web" }),
+            timing(waveOpacity, 1, 440),
+            timing(topWaveY, 0, 520),
+            timing(bottomWaveY, 0, 520),
+            Animated.stagger(
+              90,
+              sparkOpacity.map((value, index) =>
+                Animated.parallel([
+                  timing(value, 1, 250),
+                  timing(sparkScale[index]!, 1, 250),
+                ]),
+              ),
+            ),
           ]),
           Animated.parallel([
-            Animated.timing(nameOpacity, { toValue: 1, duration: 360, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
-            Animated.timing(nameY, { toValue: 0, duration: 360, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
+            timing(illustrationOpacity, 1, 440),
+            timing(illustrationScale, 1, 440),
           ]),
-          Animated.timing(companyOpacity, { toValue: 1, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
-          Animated.delay(520),
-          Animated.timing(overlayOpacity, { toValue: 0, duration: 420, easing: Easing.inOut(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
+          Animated.parallel([
+            timing(wordmarkOpacity, 1, 320),
+            timing(wordmarkY, 0, 320),
+          ]),
+          Animated.parallel([
+            timing(detailsOpacity, 1, 270),
+            timing(detailsY, 0, 270),
+          ]),
+          Animated.delay(420),
+          Animated.timing(overlayOpacity, {
+            toValue: 0,
+            duration: 350,
+            easing: Easing.inOut(Easing.cubic),
+            useNativeDriver,
+          }),
         ]);
 
     sequence.start(({ finished }) => {
+      loaderLoop.stop();
       if (finished) onFinished();
     });
-    return () => sequence.stop();
-  }, [companyOpacity, logoOpacity, logoScale, nameOpacity, nameY, onFinished, overlayOpacity, reducedMotion]);
+
+    return () => {
+      sequence.stop();
+      loaderLoop.stop();
+    };
+  }, [
+    bottomWaveY,
+    detailsOpacity,
+    detailsY,
+    illustrationOpacity,
+    illustrationScale,
+    loaderOpacity,
+    onFinished,
+    overlayOpacity,
+    reducedMotion,
+    sparkOpacity,
+    sparkScale,
+    topWaveY,
+    waveOpacity,
+    wordmarkOpacity,
+    wordmarkY,
+  ]);
 
   return (
-    <Animated.View accessibilityRole="alert" accessibilityLabel={`${brandName}. Sanket Pixel Technologies.`} style={[styles.overlay, { opacity: overlayOpacity }]}>
+    <Animated.View
+      accessible
+      accessibilityRole="alert"
+      accessibilityLabel="eKta Social, একতা. Your Community, Connected. Sanket Pixel Technologies."
+      style={[styles.overlay, { opacity: overlayOpacity }]}
+    >
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.topWave, { opacity: waveOpacity, transform: [{ translateY: topWaveY }] }]}
+      >
+        <TopBrandWave />
+      </Animated.View>
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.bottomWave, { opacity: waveOpacity, transform: [{ translateY: bottomWaveY }] }]}
+      >
+        <BottomBrandWave />
+      </Animated.View>
+
       <View style={styles.brandLockup}>
-        <View style={styles.logoHalo}>
-          <Animated.View style={{ opacity: logoOpacity, transform: [{ scale: logoScale }] }}>
-            <Image source={require("@/assets/images/splash-icon.png")} style={styles.logo} resizeMode="contain" />
+        <View style={styles.illustrationArea}>
+          <Animated.View
+            accessible={false}
+            style={{ opacity: illustrationOpacity, transform: [{ scale: illustrationScale }] }}
+          >
+            <Image
+              source={require("@/assets/brand/handshake-unity-final.png")}
+              style={styles.illustration}
+              resizeMode="contain"
+              accessibilityIgnoresInvertColors
+            />
           </Animated.View>
-          <View style={[styles.dot, styles.dotTerra]} />
-          <View style={[styles.dot, styles.dotGreen]} />
+          <Animated.View style={[styles.spark, styles.sparkSaffron, { opacity: sparkOpacity[0], transform: [{ translateY: sparkScale[0]!.interpolate({ inputRange: [0.55, 1], outputRange: [8, 0] }) }, { scale: sparkScale[0]! }] }]} />
+          <Animated.View style={[styles.spark, styles.sparkGold, { opacity: sparkOpacity[1], transform: [{ translateY: sparkScale[1]!.interpolate({ inputRange: [0.55, 1], outputRange: [8, 0] }) }, { scale: sparkScale[1]! }] }]} />
+          <Animated.View style={[styles.spark, styles.sparkGreen, { opacity: sparkOpacity[2], transform: [{ translateY: sparkScale[2]!.interpolate({ inputRange: [0.55, 1], outputRange: [8, 0] }) }, { scale: sparkScale[2]! }] }]} />
         </View>
-        <Animated.View style={{ opacity: nameOpacity, transform: [{ translateY: nameY }] }}>
-          <Text style={[styles.name, language === "bn" && styles.nameBn]}>{brandName}</Text>
+
+        <Animated.View style={{ opacity: wordmarkOpacity, transform: [{ translateY: wordmarkY }] }}>
+          <Text style={styles.wordmark}>একতা</Text>
+        </Animated.View>
+        <Animated.View style={[styles.brandDetails, { opacity: detailsOpacity, transform: [{ translateY: detailsY }] }]}>
+          <View style={styles.tricolorUnderline} accessibilityElementsHidden>
+            <View style={[styles.underlineSegment, { backgroundColor: COLORS.saffron }]} />
+            <View style={[styles.underlineSegment, { backgroundColor: COLORS.gold }]} />
+            <View style={[styles.underlineSegment, { backgroundColor: COLORS.green }]} />
+          </View>
+          <Text style={styles.tagline}>Your Community, Connected</Text>
+          <View style={styles.loadingDots} accessibilityLabel="Loading">
+            {loaderOpacity.map((opacity, index) => (
+              <Animated.View key={index} style={[styles.loadingDot, { opacity, backgroundColor: [COLORS.saffron, COLORS.gold, COLORS.green][index] }]} />
+            ))}
+          </View>
         </Animated.View>
       </View>
-      <Animated.Text style={[styles.footer, { opacity: companyOpacity }]}>Sanket Pixel Technologies</Animated.Text>
+
+      <Text style={[styles.footer, { bottom: Math.max(insets.bottom + 18, 28) }]}>Sanket Pixel Technologies</Text>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFill, zIndex: 999, elevation: 999, backgroundColor: C.background, alignItems: "center", justifyContent: "center" },
-  brandLockup: { alignItems: "center", justifyContent: "center", marginTop: -30 },
-  logoHalo: { width: 142, height: 142, alignItems: "center", justifyContent: "center", position: "relative" },
-  logo: { width: 112, height: 112 },
-  dot: { position: "absolute", width: 14, height: 14, borderRadius: 7 },
-  dotTerra: { top: 11, right: 15, backgroundColor: C.terra },
-  dotGreen: { bottom: 15, left: 13, backgroundColor: C.green },
-  name: { color: C.ink, fontFamily: "Georgia", fontSize: 31, fontWeight: "700", letterSpacing: -0.5, marginTop: 4 },
-  nameBn: { fontFamily: "NotoSerifBengaliBold", letterSpacing: 0, fontSize: 29 },
-  footer: { position: "absolute", bottom: 28, color: C.muted, fontSize: 11, fontWeight: "700", letterSpacing: 0.7 },
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 999,
+    elevation: 999,
+    backgroundColor: COLORS.background,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  topWave: { position: "absolute", top: 0, left: 0, right: 0, height: 190 },
+  bottomWave: { position: "absolute", left: 0, right: 0, bottom: 0, height: 190 },
+  brandLockup: { alignItems: "center", justifyContent: "center", marginTop: -14, paddingHorizontal: 20 },
+  illustrationArea: { width: 236, height: 177, alignItems: "center", justifyContent: "center", position: "relative" },
+  illustration: { width: 236, height: 177 },
+  spark: { position: "absolute", width: 10, height: 10, borderRadius: 5 },
+  sparkSaffron: { top: 31, left: 13, backgroundColor: COLORS.saffron },
+  sparkGold: { top: 11, right: 47, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.gold },
+  sparkGreen: { bottom: 40, right: 8, width: 9, height: 9, borderRadius: 5, backgroundColor: COLORS.green },
+  wordmark: { color: COLORS.ink, fontFamily: "NotoSerifBengaliBold", fontSize: 39, lineHeight: 54, textAlign: "center", marginTop: -1 },
+  brandDetails: { alignItems: "center" },
+  tricolorUnderline: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 1 },
+  underlineSegment: { width: 24, height: 3, borderRadius: 2 },
+  tagline: { color: COLORS.muted, fontFamily: "HindSiliguriLatin", fontSize: 13, marginTop: 8, letterSpacing: 0.15 },
+  loadingDots: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 19 },
+  loadingDot: { width: 8, height: 8, borderRadius: 4 },
+  footer: { position: "absolute", color: COLORS.muted, fontFamily: "HindSiliguriLatin", fontSize: 10, letterSpacing: 0.35 },
 });
