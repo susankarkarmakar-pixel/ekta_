@@ -17,6 +17,19 @@ Do not add Supabase service-role credentials to the client bundle. If a live bac
 
 Add `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` to Vercel's Production and Preview environments before building. These values are embedded in the static web bundle, so create a fresh deployment after adding or changing them. Enable Email in Supabase Auth; configure custom SMTP for reliable delivery to users outside the Supabase project's test recipients.
 
+## Email confirmation-link redirects
+
+In Supabase **Authentication → URL Configuration**, set **Site URL** to `https://ekta-pied.vercel.app`. Add these destinations to **Redirect URLs**:
+
+```text
+https://ekta-pied.vercel.app/auth/phone
+https://*-susankarkarmakar-pixel.vercel.app/**
+http://localhost:8081/auth/phone
+manus024053646483784://auth/phone
+```
+
+The app sends the current web origin as Supabase's `redirect_to` destination, so production links return to the production host and local development links return to the local app. For the Supabase Magic Link/OTP email template, link with `{{ .ConfirmationURL }}`. If a custom template builds its own confirmation URL, use `{{ .RedirectTo }}` rather than hardcoding `{{ .SiteURL }}`; otherwise the template can ignore the per-request destination and keep opening the Site URL. The email link callback then completes sign-in and returns the user to the community feed.
+
 ## Git author for deployments
 
 Vercel must be able to associate each pushed commit with this GitHub account. If the author-email check fails, configure this repository (not your whole machine) with the valid GitHub noreply address and push a new commit:
