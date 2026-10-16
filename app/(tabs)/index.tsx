@@ -183,6 +183,8 @@ export default function HomeScreen() {
         paused={story.paused}
         reply={story.reply}
         replySent={story.replySent}
+        reaction={story.reaction}
+        reactionPickerOpen={story.reactionPickerOpen}
         language={language}
         bodyFont={bodyFont}
         mediumFont={mediumFont}
@@ -194,6 +196,8 @@ export default function HomeScreen() {
         onMove={story.move}
         onReplyChange={story.setReply}
         onSendReply={story.sendReply}
+        onReaction={story.toggleReaction}
+        onReactionPickerChange={story.setReactionPickerOpen}
         onShare={story.share}
         onReport={() => {
           story.close();

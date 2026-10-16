@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Share } from "react-native";
 import { currentUser, demoStories, profiles } from "./mock-data";
 import { getViewedStoryIds, markStoryViewed } from "./story-view-state";
+import { getStoryReactions, saveStoryReaction, type StoryReaction } from "./story-reactions";
 import type { Post, Profile } from "./types";
 
 type StoryControllerOptions = { onCreateStory: () => void };
@@ -12,6 +13,8 @@ export function useStoryController({ onCreateStory }: StoryControllerOptions) {
   const [paused, setPaused] = useState(false);
   const [reply, setReply] = useState("");
   const [replySent, setReplySent] = useState(false);
+  const [reactionMap, setReactionMap] = useState<Record<string, StoryReaction>>({});
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
   const [storyIndex, setStoryIndex] = useState(0);
   const [storyNow] = useState(() => Date.now());
   const people = useMemo(
@@ -42,6 +45,10 @@ export function useStoryController({ onCreateStory }: StoryControllerOptions) {
     };
   }, []);
 
+  useEffect(() => {
+    void getStoryReactions().then(setReactionMap);
+  }, []);
+
   const rememberViewed = useCallback((personId: string) => {
     setViewedIds((ids) => (ids.includes(personId) ? ids : [...ids, personId]));
     void markStoryViewed(personId);
@@ -56,6 +63,7 @@ export function useStoryController({ onCreateStory }: StoryControllerOptions) {
       setPaused(false);
       setReply("");
       setReplySent(false);
+      setReactionPickerOpen(false);
       setStoryIndex(0);
       setViewerId(personId);
     },
@@ -66,6 +74,7 @@ export function useStoryController({ onCreateStory }: StoryControllerOptions) {
     setPaused(false);
     setReply("");
     setReplySent(false);
+    setReactionPickerOpen(false);
   }, []);
   const viewer = people.find((person) => person.id === viewerId);
   const viewerStories = viewer
@@ -122,6 +131,17 @@ export function useStoryController({ onCreateStory }: StoryControllerOptions) {
     setReply("");
     setReplySent(true);
   }, [reply]);
+  const toggleReaction = useCallback((reaction: StoryReaction) => {
+    if (!post) return;
+    setReactionMap((current) => {
+      const next = { ...current };
+      if (next[post.id] === reaction) delete next[post.id];
+      else next[post.id] = reaction;
+      void saveStoryReaction(post.id, next[post.id] ?? null);
+      return next;
+    });
+    setReactionPickerOpen(false);
+  }, [post]);
   const share = useCallback(async () => {
     if (!viewer) return;
     const message = `${post?.body ?? `A community update from ${viewer.region}`}\n@${viewer.handle} · ${viewer.region}\nhttps://ekta.app/story/${encodeURIComponent(viewer.id)}`;
@@ -181,9 +201,13 @@ export function useStoryController({ onCreateStory }: StoryControllerOptions) {
     paused,
     reply,
     replySent,
+    reaction: post ? reactionMap[post.id] ?? null : null,
+    reactionPickerOpen,
     setPaused: () => setPaused((value) => !value),
     setReply,
     sendReply,
+    toggleReaction,
+    setReactionPickerOpen,
     share,
     close,
     move,
@@ -200,9 +224,13 @@ export function useStoryController({ onCreateStory }: StoryControllerOptions) {
     paused: boolean;
     reply: string;
     replySent: boolean;
+    reaction: StoryReaction | null;
+    reactionPickerOpen: boolean;
     setPaused: () => void;
     setReply: (value: string) => void;
     sendReply: () => void;
+    toggleReaction: (reaction: StoryReaction) => void;
+    setReactionPickerOpen: (open: boolean) => void;
     share: () => Promise<void>;
     close: () => void;
     move: (direction: -1 | 1) => void;

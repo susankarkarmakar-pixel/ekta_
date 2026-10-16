@@ -17,6 +17,7 @@ import {
 import { Avatar } from "./Avatar";
 import { Colors } from "@/constants/theme";
 import type { Post, Profile } from "@/lib/apongram/types";
+import type { StoryReaction } from "@/lib/apongram/story-reactions";
 
 const C = {
   ...Colors.light,
@@ -42,6 +43,8 @@ type StoryState = {
   paused: boolean;
   reply: string;
   replySent: boolean;
+  reaction: StoryReaction | null;
+  reactionPickerOpen: boolean;
 };
 type StoryRailProps = StoryState & {
   language: "bn" | "en";
@@ -55,6 +58,8 @@ type StoryRailProps = StoryState & {
   onMove: (direction: -1 | 1) => void;
   onReplyChange: (value: string) => void;
   onSendReply: () => void;
+  onReaction: (reaction: StoryReaction) => void;
+  onReactionPickerChange: (open: boolean) => void;
   onShare: () => void;
   onReport: () => void;
   onWatchReels: () => void;
@@ -180,6 +185,8 @@ export function StoryRail({
   paused,
   reply,
   replySent,
+  reaction,
+  reactionPickerOpen,
   language,
   bodyFont,
   mediumFont,
@@ -191,11 +198,14 @@ export function StoryRail({
   onMove,
   onReplyChange,
   onSendReply,
+  onReaction,
+  onReactionPickerChange,
   onShare,
   onReport,
   onWatchReels,
 }: StoryRailProps) {
   const touchStartX = useRef<number | null>(null);
+  const replyInputRef = useRef<TextInput>(null);
   const handleTouchStart = (event: NativeSyntheticEvent<NativeTouchEvent>) => {
     touchStartX.current = event.nativeEvent.pageX;
   };
@@ -415,7 +425,7 @@ export function StoryRail({
           </View>
           <View style={styles.storyActions}>
             <Pressable
-              onPress={onPause}
+              onPress={() => replyInputRef.current?.focus()}
               style={styles.storyAction}
               accessibilityRole="button"
               accessibilityLabel={
@@ -431,6 +441,21 @@ export function StoryRail({
                 style={[styles.storyActionText, { fontFamily: mediumFont }]}
               >
                 {language === "bn" ? "উত্তর" : "Reply"}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => onReactionPickerChange(!reactionPickerOpen)}
+              style={[styles.storyAction, reaction ? styles.storyActionActive : null]}
+              accessibilityRole="button"
+              accessibilityLabel={language === "bn" ? "স্টোরিতে প্রতিক্রিয়া দিন" : "React to story"}
+            >
+              <MaterialIcons
+                name={reaction === "love" ? "favorite" : reaction === "support" ? "volunteer-activism" : reaction === "celebrate" ? "celebration" : "thumb-up"}
+                size={19}
+                color={reaction ? C.ochre : C.ivory}
+              />
+              <Text style={[styles.storyActionText, { fontFamily: mediumFont }]}>
+                {language === "bn" ? "প্রতিক্রিয়া" : "React"}
               </Text>
             </Pressable>
             <Pressable
@@ -464,6 +489,27 @@ export function StoryRail({
               </Text>
             </Pressable>
           </View>
+          {reactionPickerOpen ? (
+            <View style={styles.storyReactionPicker}>
+              {([
+                ["like", "thumb-up", language === "bn" ? "ভালো" : "Like"],
+                ["love", "favorite", language === "bn" ? "ভালোবাসা" : "Love"],
+                ["support", "volunteer-activism", language === "bn" ? "সমর্থন" : "Support"],
+                ["celebrate", "celebration", language === "bn" ? "উদযাপন" : "Celebrate"],
+              ] as const).map(([value, icon, label]) => (
+                <Pressable
+                  key={value}
+                  onPress={() => onReaction(value)}
+                  style={[styles.storyReactionOption, reaction === value && styles.storyReactionSelected]}
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                >
+                  <MaterialIcons name={icon} size={18} color={reaction === value ? C.ochre : C.ivory} />
+                  <Text style={[styles.storyReactionLabel, { fontFamily: bodyFont }]}>{label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
           {replySent ? (
             <Text style={[styles.storyReplySent, { fontFamily: bodyFont }]}>
               {language === "bn"
@@ -473,6 +519,7 @@ export function StoryRail({
           ) : (
             <View style={styles.storyReplyRow}>
               <TextInput
+                ref={replyInputRef}
                 value={reply}
                 onChangeText={onReplyChange}
                 placeholder={
@@ -708,7 +755,27 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 10,
   },
+  storyActionActive: { backgroundColor: "rgba(244, 187, 73, 0.14)" },
   storyActionText: { color: C.ivory, fontSize: 11 },
+  storyReactionPicker: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    padding: 6,
+    marginBottom: 10,
+  },
+  storyReactionOption: {
+    flex: 1,
+    minHeight: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    gap: 2,
+  },
+  storyReactionSelected: { backgroundColor: "rgba(244, 187, 73, 0.18)" },
+  storyReactionLabel: { color: C.ivory, fontSize: 9 },
   storyReplyRow: {
     minHeight: 46,
     borderWidth: 1,
