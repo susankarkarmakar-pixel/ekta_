@@ -3,6 +3,7 @@ import { useAudioPlayer } from "expo-audio";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -35,6 +36,7 @@ import type {
   VideoCompression,
 } from "@/lib/apongram/types";
 import { musicTracks } from "@/lib/apongram/music";
+import { clearStoryDraft, getStoryDraft, saveStoryDraft } from "@/lib/apongram/story-draft";
 
 /* Expo Video trim preview uses its imperative currentTime API. */
 /* eslint-disable react-hooks/immutability */
@@ -51,6 +53,14 @@ const C = {
 type PublishMode = "post" | "reel" | "story";
 type CaptureSource = "gallery" | "camera";
 type MediaType = "image" | "video";
+
+export function validateStoryAsset(asset: ImagePicker.ImagePickerAsset, language: "bn" | "en"): string | null {
+  if (asset.type !== "image" && asset.type !== "video") return language === "bn" ? "স্টোরির জন্য ছবি বা ভিডিও বাছুন।" : "Choose an image or video for your Story.";
+  if (asset.type === "video" && asset.duration && asset.duration > 60_000) return language === "bn" ? "স্টোরির ভিডিও ৬০ সেকেন্ডের মধ্যে রাখুন।" : "Story videos must be 60 seconds or shorter.";
+  const maxBytes = asset.type === "video" ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+  if (asset.fileSize && asset.fileSize > maxBytes) return language === "bn" ? `এই ${asset.type === "video" ? "ভিডিও" : "ছবিটি"} খুব বড়। সর্বোচ্চ ${asset.type === "video" ? "৫০ MB" : "১০ MB"} রাখুন।` : `This ${asset.type === "video" ? "video" : "image"} is too large. Keep it under ${asset.type === "video" ? "50 MB" : "10 MB"}.`;
+  return null;
+}
 
 function VideoPreview({
   uri,
@@ -161,6 +171,7 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
 
   const canPublish =
     mode === "reel"
@@ -172,6 +183,34 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
     musicPlayer.volume = musicVolume;
     if (!selectedTrack) musicPlayer.pause();
   }, [musicPlayer, musicVolume, selectedTrack]);
+
+  useEffect(() => {
+    if (mode !== "story") return;
+    void getStoryDraft().then((draft) => {
+      if (!draft) return;
+      setBody(draft.body); setMediaUri(draft.mediaUri); setMediaType(draft.mediaType); setActiveFilter(draft.activeFilter);
+      setVideoDuration(draft.videoDuration); setTrimStart(draft.trimStart); setTrimEnd(draft.trimEnd); setCompression(draft.compression);
+      setMusicTrackId(draft.musicTrackId); setMusicVolume(draft.musicVolume); setOriginalVolume(draft.originalVolume);
+      setOverlayText(draft.overlayText); setOverlaySticker(draft.overlaySticker); setOverlayPosition(draft.overlayPosition); setDraftSaved(true);
+    });
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "story" || (!body.trim() && !mediaUri)) return;
+    const timer = setTimeout(() => {
+      void saveStoryDraft({ body, mediaUri, mediaType, activeFilter, videoDuration, trimStart, trimEnd, compression, musicTrackId, musicVolume, originalVolume, overlayText, overlaySticker, overlayPosition }).then(() => setDraftSaved(true));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [activeFilter, body, compression, mediaType, mediaUri, mode, musicTrackId, musicVolume, originalVolume, overlayPosition, overlaySticker, overlayText, trimEnd, trimStart, videoDuration]);
+
+  const hasDraftContent = mode === "story" && Boolean(body.trim() || mediaUri);
+  const handleClose = () => {
+    if (!hasDraftContent) { router.back(); return; }
+    Alert.alert(language === "bn" ? "স্টোরির খসড়া আছে" : "You have a Story draft", language === "bn" ? "খসড়াটি এই ডিভাইসে সংরক্ষিত থাকবে।" : "Your draft is saved on this device.", [
+      { text: language === "bn" ? "লিখতে থাকুন" : "Keep editing", style: "cancel" },
+      { text: language === "bn" ? "খসড়া মুছুন" : "Discard draft", style: "destructive", onPress: () => { void clearStoryDraft(); router.back(); } },
+    ]);
+  };
 
   const chooseMedia = async (source: CaptureSource) => {
     setError("");
@@ -212,6 +251,10 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
             });
       const asset = !result.canceled ? result.assets[0] : undefined;
       if (!asset?.uri) return;
+      if (mode === "story") {
+        const validationError = validateStoryAsset(asset, language);
+        if (validationError) { setError(validationError); return; }
+      }
       if (mode === "reel" && asset.type !== "video") {
         setError(
           language === "bn"
@@ -373,6 +416,7 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
             }
           : undefined,
       );
+      if (mode === "story") await clearStoryDraft();
       setSaved(true);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(
@@ -439,10 +483,7 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Pressable
-              onPress={() => router.back()}
-              accessibilityLabel={copy.back}
-            >
+            <Pressable onPress={handleClose} accessibilityLabel={copy.back}>
               <MaterialIcons name="close" size={24} color={C.ink} />
             </Pressable>
             <Text style={[styles.title, { fontFamily: headingFont }]}>
@@ -552,6 +593,14 @@ function CreateComposer({ initialMode }: { initialMode: PublishMode }) {
               {modeDescription}
             </Text>
           </View>
+          {mode === "story" && draftSaved ? (
+            <View style={styles.draftBadge} accessibilityLiveRegion="polite">
+              <MaterialIcons name="cloud-done" size={15} color={C.green} />
+              <Text style={[styles.draftBadgeText, { fontFamily: bodyFont }]}>
+                {language === "bn" ? "খসড়া এই ডিভাইসে সংরক্ষিত" : "Draft saved on this device"}
+              </Text>
+            </View>
+          ) : null}
 
           {reviewing && mode === "reel" ? (
             <View style={styles.reviewCard}>
@@ -1348,6 +1397,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   modeHintText: { flex: 1, color: C.muted, fontSize: 11, lineHeight: 16 },
+  draftBadge: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", backgroundColor: "#E7F3EF", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, marginTop: -7, marginBottom: 12 },
+  draftBadgeText: { color: C.green, fontSize: 10, fontWeight: "700" },
   author: { flexDirection: "row", alignItems: "center", gap: 10 },
   name: { color: C.ink, fontWeight: "800", fontSize: 14 },
   meta: { color: C.muted, fontSize: 11, marginTop: 3 },
