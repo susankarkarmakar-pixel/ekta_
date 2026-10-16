@@ -148,6 +148,15 @@ export default function HomeScreen() {
             <MaterialIcons name="search" size={22} color={C.ink} />
           </Pressable>
           <Pressable
+            onPress={() => router.push("/messages" as never)}
+            style={styles.iconAction}
+            accessibilityRole="button"
+            accessibilityLabel={language === "bn" ? "বার্তা" : "Messages"}
+            hitSlop={8}
+          >
+            <MaterialIcons name="chat-bubble-outline" size={21} color={C.ink} />
+          </Pressable>
+          <Pressable
             onPress={() => router.push("/(tabs)/alerts")}
             style={styles.iconAction}
             accessibilityRole="button"

@@ -107,6 +107,8 @@ export default function RootLayout() {
                   <Stack.Screen name="index" />
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="post/[id]" />
+                  <Stack.Screen name="messages/index" />
+                  <Stack.Screen name="messages/[id]" />
                   <Stack.Screen
                     name="report"
                     options={{ presentation: "modal" }}
