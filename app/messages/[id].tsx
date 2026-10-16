@@ -1,12 +1,13 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Avatar } from "@/components/apongram/Avatar";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
 import { currentUser } from "@/lib/apongram/mock-data";
-import { getMessageParticipant, getMessageThread, markMessageThreadRead, sendDirectMessage, type DirectMessage } from "@/lib/apongram/messages";
+import { flushMessageQueue, getMessageParticipant, getMessageThread, markMessageThreadRead, sendDirectMessage, type DirectMessage } from "@/lib/apongram/messages";
+import { subscribeToIncomingMessages } from "@/lib/apongram/message-realtime";
 import { useLanguage } from "@/lib/apongram/LanguageContext";
 
 const C = Colors.light;
@@ -19,6 +20,7 @@ export default function MessageThreadScreen() {
   const { language } = useLanguage();
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [body, setBody] = useState("");
+  const [syncing, setSyncing] = useState(false);
   const bodyFont = language === "bn" ? "HindSiliguri" : "HindSiliguriLatin";
   const mediumFont = language === "bn" ? "HindSiliguriSemiBold" : "HindSiliguriLatinSemiBold";
 
@@ -26,13 +28,40 @@ export default function MessageThreadScreen() {
     if (!participantId) return;
     void getMessageThread(participantId).then((thread) => setMessages(thread.messages));
     void markMessageThreadRead(participantId);
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+    void flushMessageQueue().then(() => getMessageThread(participantId)).then((thread) => {
+      if (active) setMessages(thread.messages);
+    });
+    void subscribeToIncomingMessages((message) => {
+      if (active && message.senderId === participantId) {
+        setMessages((items) => items.some((item) => item.id === message.id) ? items : [...items, message]);
+        void markMessageThreadRead(participantId);
+      }
+    }).then((cleanup) => {
+      if (active) unsubscribe = cleanup;
+      else cleanup();
+    });
+    const appState = AppState.addEventListener("change", (nextState) => {
+      if (nextState !== "active") return;
+      void flushMessageQueue().then(() => getMessageThread(participantId)).then((thread) => {
+        if (active) setMessages(thread.messages);
+      });
+    });
+    return () => {
+      active = false;
+      unsubscribe?.();
+      appState.remove();
+    };
   }, [participantId]);
 
   const send = async () => {
     if (!body.trim() || !participantId) return;
+    setSyncing(true);
     const message = await sendDirectMessage(participantId, body);
     setMessages((items) => [...items, message]);
     setBody("");
+    setSyncing(false);
   };
 
   if (!participant) {
@@ -52,10 +81,10 @@ export default function MessageThreadScreen() {
           <View style={styles.intro}><View style={styles.introAvatar}><Avatar profile={participant} size={56} /></View><Text style={[styles.introTitle, { fontFamily: mediumFont }]}>{participant.name}</Text><Text style={[styles.introText, { fontFamily: bodyFont }]}>{language === "bn" ? "এই conversation শুধু আপনারা দুজন দেখতে পারবেন।" : "Only you and this person can see this conversation."}</Text></View>
           {messages.map((message) => {
             const mine = message.senderId === currentUser.id;
-            return <View key={message.id} style={[styles.messageRow, mine && styles.messageRowMine]}><View style={[styles.bubble, mine ? styles.myBubble : styles.theirBubble]}><Text style={[styles.bubbleText, mine && styles.myBubbleText, { fontFamily: bodyFont }]}>{message.body}</Text><Text style={[styles.messageTime, mine && styles.myMessageTime, { fontFamily: bodyFont }]}>{message.createdAt}</Text></View></View>;
+            return <View key={message.id} style={[styles.messageRow, mine && styles.messageRowMine]}><View style={[styles.bubble, mine ? styles.myBubble : styles.theirBubble]}><Text style={[styles.bubbleText, mine && styles.myBubbleText, { fontFamily: bodyFont }]}>{message.body}</Text><Text style={[styles.messageTime, mine && styles.myMessageTime, { fontFamily: bodyFont }]}>{message.syncStatus === "pending" ? (language === "bn" ? "অফলাইনে রাখা হয়েছে" : "Queued offline") : message.createdAt}</Text></View></View>;
           })}
         </ScrollView>
-        <View style={styles.composer}><TextInput value={body} onChangeText={setBody} placeholder={language === "bn" ? "একটি message লিখুন…" : "Write a message…"} placeholderTextColor={C.slate} style={[styles.input, { fontFamily: bodyFont }]} multiline maxLength={500} onSubmitEditing={() => { if (Platform.OS === "web") void send(); }} /><Pressable onPress={() => void send()} disabled={!body.trim()} style={[styles.sendButton, !body.trim() && styles.sendDisabled]} accessibilityLabel={language === "bn" ? "Message পাঠান" : "Send message"}><MaterialIcons name="send" size={19} color={C.ivory} /></Pressable></View>
+        <View style={styles.composer}><TextInput value={body} onChangeText={setBody} placeholder={syncing ? (language === "bn" ? "message sync হচ্ছে…" : "Syncing message…") : language === "bn" ? "একটি message লিখুন…" : "Write a message…"} placeholderTextColor={C.slate} style={[styles.input, { fontFamily: bodyFont }]} multiline maxLength={500} onSubmitEditing={() => { if (Platform.OS === "web") void send(); }} /><Pressable onPress={() => void send()} disabled={!body.trim() || syncing} style={[styles.sendButton, (!body.trim() || syncing) && styles.sendDisabled]} accessibilityLabel={language === "bn" ? "Message পাঠান" : "Send message"}><MaterialIcons name="send" size={19} color={C.ivory} /></Pressable></View>
       </KeyboardAvoidingView>
     </ScreenContainer>
   );
