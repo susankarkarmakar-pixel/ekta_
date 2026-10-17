@@ -116,6 +116,7 @@ export default function RootLayout() {
                   <Stack.Screen name="settings" />
                   <Stack.Screen name="language" />
                   <Stack.Screen name="profile-edit" />
+                  <Stack.Screen name="connections" />
                   <Stack.Screen name="auth/phone" />
                   <Stack.Screen name="auth/login" />
                   <Stack.Screen name="oauth/callback" />
