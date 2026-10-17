@@ -21,6 +21,7 @@ import { BrandWaves } from "@/components/brand/BrandWaves";
 import { ScreenContainer } from "@/components/screen-container";
 import { Colors } from "@/constants/theme";
 import {
+  completeSupabaseRedirect,
   completeGoogleOAuthRedirect,
   getGoogleOAuthUrl,
   getSupabaseAccessToken,
@@ -38,6 +39,13 @@ type BusyAction = "google" | "send" | "verify" | "resend" | null;
 
 const LIGHT = Colors.light;
 
+function getEmailAuthRedirectUrl(): string {
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    return new URL("/auth/phone", window.location.origin).toString();
+  }
+  return Linking.createURL("auth/phone");
+}
+
 export default function PhoneAuthScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -54,6 +62,7 @@ export default function PhoneAuthScreen() {
   const [resendIn, setResendIn] = useState(0);
   const [openPolicy, setOpenPolicy] = useState<PolicyKind>(null);
   const otpRefs = useRef<(TextInput | null)[]>([]);
+  const handledAuthRedirect = useRef<string | null>(null);
   const busy = busyAction !== null;
   const normalizedEmail = email.trim();
   const canSend = isValidEmailAddress(normalizedEmail);
@@ -77,6 +86,35 @@ export default function PhoneAuthScreen() {
   }, [router]);
 
   useEffect(() => {
+    const handleAuthRedirect = async (url: string | null) => {
+      if (!url || !/(?:access_token|refresh_token|error|error_description|error_code)=/.test(url)) return;
+      if (handledAuthRedirect.current === url) return;
+      handledAuthRedirect.current = url;
+      setBusyAction("verify");
+      setError("");
+      try {
+        await completeSupabaseRedirect(url);
+        const profile = await getStoredProfile();
+        await syncProfileToSupabase(profile);
+        router.replace("/(tabs)");
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : (language === "bn" ? "ইমেইল লিংক দিয়ে সাইন ইন সম্পূর্ণ করা যায়নি।" : "Email-link sign-in could not be completed."));
+      } finally {
+        setBusyAction(null);
+      }
+    };
+
+    let subscription: ReturnType<typeof Linking.addEventListener> | undefined;
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      void handleAuthRedirect(window.location.href);
+    } else {
+      void Linking.getInitialURL().then(handleAuthRedirect).catch(() => undefined);
+      subscription = Linking.addEventListener("url", ({ url }) => void handleAuthRedirect(url));
+    }
+    return () => subscription?.remove();
+  }, [language, router]);
+
+  useEffect(() => {
     if (resendIn <= 0) return;
     const timer = setInterval(() => setResendIn((value) => Math.max(0, value - 1)), 1000);
     return () => clearInterval(timer);
@@ -89,7 +127,7 @@ export default function PhoneAuthScreen() {
     setError("");
     try {
       if (!supabaseConfig.isConfigured) throw new SupabaseAuthError(configurationMessage);
-      await sendEmailOtp(normalizedEmail);
+      await sendEmailOtp(normalizedEmail, getEmailAuthRedirectUrl());
       setSent(true);
       setOtp("");
       setResendIn(30);
@@ -106,7 +144,7 @@ export default function PhoneAuthScreen() {
     setError("");
     try {
       if (!supabaseConfig.isConfigured) throw new SupabaseAuthError(configurationMessage);
-      await sendEmailOtp(normalizedEmail);
+      await sendEmailOtp(normalizedEmail, getEmailAuthRedirectUrl());
       setOtp("");
       setResendIn(30);
     } catch (cause) {
