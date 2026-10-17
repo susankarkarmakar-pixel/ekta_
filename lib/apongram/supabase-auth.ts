@@ -70,9 +70,11 @@ function normalizeEmail(emailInput: string): string {
   return email;
 }
 
-async function authRequest<T>(path: string, init: RequestInit): Promise<T> {
+async function authRequest<T>(path: string, init: RequestInit, redirectTo?: string): Promise<T> {
   requireConfigured();
-  const response = await fetch(`${supabaseConfig.url}/auth/v1/${path}`, {
+  const requestUrl = new URL(`/auth/v1/${path}`, `${supabaseConfig.url.replace(/\/+$/, "")}/`);
+  if (redirectTo) requestUrl.searchParams.set("redirect_to", redirectTo);
+  const response = await fetch(requestUrl.toString(), {
     ...init,
     headers: {
       apikey: supabaseConfig.anonKey,
@@ -94,12 +96,13 @@ async function authRequest<T>(path: string, init: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export async function sendEmailOtp(emailInput: string): Promise<void> {
+export async function sendEmailOtp(emailInput: string, redirectTo: string): Promise<void> {
   const email = normalizeEmail(emailInput);
+  if (!redirectTo.trim()) throw new SupabaseAuthError("Email sign-in redirect URL is missing");
   await authRequest("otp", {
     method: "POST",
     body: JSON.stringify({ email, create_user: true }),
-  });
+  }, redirectTo);
   await writeValue(OTP_EMAIL_KEY, email);
 }
 
@@ -122,21 +125,25 @@ export function getGoogleOAuthUrl(redirectTo: string): string {
   return `${supabaseConfig.url}/auth/v1/authorize?${params.toString()}`;
 }
 
-export async function completeGoogleOAuthRedirect(callbackUrl: string): Promise<SupabaseSession> {
+export async function completeSupabaseRedirect(callbackUrl: string): Promise<SupabaseSession> {
   const parsed = new URL(callbackUrl);
   const fragment = new URLSearchParams(parsed.hash.replace(/^#/, ""));
   const query = parsed.searchParams;
-  const error = fragment.get("error_description") ?? query.get("error_description") ?? fragment.get("error") ?? query.get("error");
+  const error = fragment.get("error_description") ?? query.get("error_description") ?? fragment.get("error") ?? query.get("error") ?? fragment.get("error_code") ?? query.get("error_code");
   if (error) throw new SupabaseAuthError(error);
   const accessToken = fragment.get("access_token") ?? query.get("access_token");
   const refreshToken = fragment.get("refresh_token") ?? query.get("refresh_token");
-  if (!accessToken || !refreshToken) throw new SupabaseAuthError("Google sign-in did not return a session");
+  if (!accessToken || !refreshToken) throw new SupabaseAuthError("Supabase sign-in did not return a session");
   const user = await authRequest<SupabaseUser>("user", { method: "GET", headers: { Authorization: `Bearer ${accessToken}` } });
   const expiresIn = Number(fragment.get("expires_in") ?? query.get("expires_in") ?? 3600);
   const expiresAt = Number(fragment.get("expires_at") ?? query.get("expires_at") ?? Math.floor(Date.now() / 1000) + expiresIn);
   const session: SupabaseSession = { access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn, expires_at: expiresAt, token_type: fragment.get("token_type") ?? "bearer", user };
   await saveSupabaseSession(session);
   return session;
+}
+
+export async function completeGoogleOAuthRedirect(callbackUrl: string): Promise<SupabaseSession> {
+  return completeSupabaseRedirect(callbackUrl);
 }
 
 export async function sendPhoneOtp(phoneInput: string): Promise<void> {
