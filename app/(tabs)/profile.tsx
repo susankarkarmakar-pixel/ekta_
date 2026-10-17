@@ -8,6 +8,7 @@ import { Colors } from "@/constants/theme";
 import { ScreenContainer } from "@/components/screen-container";
 import { currentUser, demoStories, posts, profiles } from "@/lib/apongram/mock-data";
 import { getStoredProfile } from "@/lib/apongram/profile-store";
+import { getProfileWithLocalCounts, getRelationship, setRelationship, type Relationship } from "@/lib/apongram/follows";
 import { getStoryHighlights, saveStoryHighlight, type StoryHighlight } from "@/lib/apongram/story-highlights";
 import { demoProfileAlbums, type ProfileAlbum } from "@/lib/apongram/profile-albums";
 import { demoProfilePosts, demoTaggedPosts } from "@/lib/apongram/profile-demo-data";
@@ -24,7 +25,7 @@ export default function ProfileScreen() {
   const viewedId = typeof params.id === "string" ? params.id : currentUser.id;
   const { language, copy } = useLanguage();
   const [profile, setProfile] = useState<Profile>(profiles.find((item) => item.id === viewedId) ?? currentUser);
-  const [relationship, setRelationship] = useState<"none" | "following" | "requested">("none");
+  const [relationship, setRelationshipState] = useState<Relationship>("none");
   const [selected, setSelected] = useState<ProfileTab>("posts");
   const [highlights, setHighlights] = useState<StoryHighlight[]>([]);
   const [highlightModal, setHighlightModal] = useState(false);
@@ -42,18 +43,26 @@ export default function ProfileScreen() {
   const videoPosts = profilePosts.filter((post) => Boolean(post.videoUrl));
 
   useFocusEffect(useCallback(() => {
-    if (viewedId === currentUser.id) {
-      void Promise.all([getStoredProfile(), getStoryHighlights()]).then(([stored, items]) => { setProfile(stored); setHighlights(items); });
-    } else {
-      setProfile(profiles.find((item) => item.id === viewedId) ?? currentUser);
-      setHighlights([]);
-    }
-    setRelationship("none");
+    let active = true;
+    const baseProfile = viewedId === currentUser.id ? getStoredProfile() : Promise.resolve(profiles.find((item) => item.id === viewedId) ?? currentUser);
+    void Promise.all([baseProfile, getStoryHighlights(), getRelationship(viewedId)]).then(async ([stored, items, savedRelationship]) => {
+      const withCounts = await getProfileWithLocalCounts(stored);
+      if (!active) return;
+      setProfile(withCounts);
+      setHighlights(viewedId === currentUser.id ? items : []);
+      setRelationshipState(savedRelationship);
+    });
+    return () => { active = false; };
   }, [viewedId]));
 
   const isOwnProfile = profile.id === currentUser.id;
-  const toggleFollow = () => setRelationship((value) => value === "following" ? "none" : "following");
-  const sendRequest = () => setRelationship((value) => value === "requested" ? "none" : "requested");
+  const reloadRelationship = async (next: Relationship) => {
+    setRelationshipState(next);
+    await setRelationship(profile.id, next);
+    setProfile(await getProfileWithLocalCounts(profile));
+  };
+  const handleFollow = () => { void reloadRelationship(relationship === "following" ? "none" : "following"); };
+  const sendRequest = () => { void reloadRelationship(relationship === "requested" ? "none" : "requested"); };
 
   const createHighlight = async () => {
     if (!highlightTitle.trim() || !storyPosts.length) return;
@@ -72,7 +81,7 @@ export default function ProfileScreen() {
       <Text style={[styles.bio, { fontFamily: bodyFont }]}>{profile.bio}</Text>
       {profile.website ? <Pressable onPress={() => void Linking.openURL(profile.website!.startsWith("http") ? profile.website! : `https://${profile.website}`)} style={profileExtraStyles.website} accessibilityRole="link"><MaterialIcons name="link" size={15} color={C.terracotta} /><Text numberOfLines={1} style={[profileExtraStyles.websiteText, { fontFamily: mediumFont }]}>{profile.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</Text></Pressable> : null}
       <View style={styles.stats}><Stat value={String(profilePosts.length)} label={copy.posts} font={mediumFont} bodyFont={bodyFont} /><Stat value={String(profile.followers)} label={copy.followers} font={mediumFont} bodyFont={bodyFont} /><Stat value={String(profile.following)} label={copy.following} font={mediumFont} bodyFont={bodyFont} /></View>
-      {isOwnProfile ? <Pressable onPress={() => router.push("/profile-edit")} style={styles.edit} accessibilityRole="button" accessibilityLabel={copy.editProfile}><MaterialIcons name="edit" size={16} color={C.terracotta} /><Text style={[styles.editText, { fontFamily: mediumFont }]}>{copy.editProfile}</Text></Pressable> : <View style={styles.profileActions}><Pressable onPress={() => router.push({ pathname: "/messages/[id]" as never, params: { id: profile.id } })} style={styles.requestButton} accessibilityRole="button" accessibilityLabel={language === "bn" ? "বার্তা পাঠান" : "Message"}><MaterialIcons name="chat-bubble-outline" size={16} color={C.terracotta} /><Text style={[styles.requestText, { fontFamily: mediumFont }]}>{language === "bn" ? "বার্তা" : "Message"}</Text></Pressable><Pressable onPress={toggleFollow} style={[styles.followButton, relationship === "following" && styles.followingButton]} accessibilityRole="button"><MaterialIcons name={relationship === "following" ? "check" : "person-add"} size={16} color={relationship === "following" ? C.leafGreen : C.ivory} /><Text style={[styles.followText, { fontFamily: mediumFont }, relationship === "following" && styles.followingText]}>{relationship === "following" ? (language === "bn" ? "ফলো করছেন" : "Following") : (language === "bn" ? "ফলো করুন" : "Follow")}</Text></Pressable><Pressable onPress={sendRequest} style={[styles.requestButton, relationship === "requested" && styles.requestedButton]} accessibilityRole="button"><MaterialIcons name={relationship === "requested" ? "schedule" : "person-add-alt-1"} size={16} color={C.terracotta} /><Text style={[styles.requestText, { fontFamily: mediumFont }]}>{relationship === "requested" ? (language === "bn" ? "রিকোয়েস্ট পাঠানো হয়েছে" : "Request sent") : (language === "bn" ? "রিকোয়েস্ট পাঠান" : "Send request")}</Text></Pressable></View>}
+      {isOwnProfile ? <Pressable onPress={() => router.push("/profile-edit")} style={styles.edit} accessibilityRole="button" accessibilityLabel={copy.editProfile}><MaterialIcons name="edit" size={16} color={C.terracotta} /><Text style={[styles.editText, { fontFamily: mediumFont }]}>{copy.editProfile}</Text></Pressable> : <View style={styles.profileActions}><Pressable onPress={() => router.push({ pathname: "/messages/[id]" as never, params: { id: profile.id } })} style={styles.requestButton} accessibilityRole="button" accessibilityLabel={language === "bn" ? "বার্তা পাঠান" : "Message"}><MaterialIcons name="chat-bubble-outline" size={16} color={C.terracotta} /><Text style={[styles.requestText, { fontFamily: mediumFont }]}>{language === "bn" ? "বার্তা" : "Message"}</Text></Pressable><Pressable onPress={handleFollow} style={[styles.followButton, relationship === "following" && styles.followingButton]} accessibilityRole="button" accessibilityState={{ selected: relationship === "following" }}><MaterialIcons name={relationship === "following" ? "check" : "person-add"} size={16} color={relationship === "following" ? C.leafGreen : C.ivory} /><Text style={[styles.followText, { fontFamily: mediumFont }, relationship === "following" && styles.followingText]}>{relationship === "following" ? (language === "bn" ? "আনফলো" : "Unfollow") : (language === "bn" ? "ফলো করুন" : "Follow")}</Text></Pressable><Pressable onPress={sendRequest} style={[styles.requestButton, relationship === "requested" && styles.requestedButton]} accessibilityRole="button" accessibilityState={{ selected: relationship === "requested" }}><MaterialIcons name={relationship === "requested" ? "schedule" : "person-add-alt-1"} size={16} color={C.terracotta} /><Text style={[styles.requestText, { fontFamily: mediumFont }]}>{relationship === "requested" ? (language === "bn" ? "রিকোয়েস্ট বাতিল" : "Cancel request") : (language === "bn" ? "রিকোয়েস্ট পাঠান" : "Request" )}</Text></Pressable></View>}
     </View>
     <View style={styles.highlightSection}><View style={styles.sectionHeader}><Text style={[styles.sectionTitle, { fontFamily: headingFont }]}>{copy.profileHighlights}</Text><Text style={[styles.sectionHint, { fontFamily: bodyFont }]}>{language === "bn" ? "আপনার গল্প" : "Your stories"}</Text></View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.highlightRail}><Pressable onPress={() => setHighlightModal(true)} style={styles.highlightItem} accessibilityLabel={copy.addHighlight}><View style={[styles.highlightCircle, styles.addCircle]}><MaterialIcons name="add" size={25} color={C.terracotta} /></View><Text style={[styles.highlightLabel, { fontFamily: bodyFont }]}>{copy.addHighlight}</Text></Pressable>{highlights.map((item) => <Pressable key={item.id} onPress={() => setViewer(item)} style={styles.highlightItem}><View style={styles.highlightCircle}><MaterialIcons name="collections-bookmark" size={23} color={C.leafGreen} /></View><Text numberOfLines={1} style={[styles.highlightLabel, { fontFamily: bodyFont }]}>{item.title}</Text></Pressable>)}</ScrollView></View>
     <View style={styles.tabs}>{(["posts", "reels", "albums", "tagged"] as ProfileTab[]).map((tab) => <Pressable key={tab} onPress={() => setSelected(tab)} style={[styles.tab, selected === tab && styles.activeTab]} accessibilityRole="tab" accessibilityState={{ selected: selected === tab }}><MaterialIcons name={tab === "posts" ? "grid-on" : tab === "reels" ? "movie" : tab === "albums" ? "photo-library" : "person-pin"} size={17} color={selected === tab ? C.terracotta : C.slate} /><Text style={[styles.tabText, { fontFamily: mediumFont }, selected === tab && styles.activeTabText]}>{tab === "posts" ? copy.posts : tab === "reels" ? copy.reels : tab === "albums" ? copy.album : copy.tagged}</Text></Pressable>)}</View>
