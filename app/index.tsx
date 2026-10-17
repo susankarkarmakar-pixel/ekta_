@@ -19,9 +19,9 @@ export default function EntryScreen() {
 
       try {
         const accessToken = await getSupabaseAccessToken();
-        if (active) router.replace(accessToken ? "/(tabs)" : "/auth/phone");
+        if (active) router.replace(accessToken ? "/(tabs)" : "/auth/login");
       } catch {
-        if (active) router.replace("/auth/phone");
+        if (active) router.replace("/auth/login");
       }
     };
 

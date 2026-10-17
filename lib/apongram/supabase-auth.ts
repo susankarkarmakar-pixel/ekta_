@@ -23,6 +23,11 @@ export type SupabaseSession = {
   user: SupabaseUser;
 };
 
+export type SupabaseAuthResponse = Partial<SupabaseSession> & {
+  user?: SupabaseUser;
+  msg?: string;
+};
+
 export class SupabaseAuthError extends Error {
   constructor(message: string, readonly status?: number) {
     super(message);
@@ -117,6 +122,38 @@ export async function verifyEmailOtp(otpInput: string, emailInput?: string): Pro
   await saveSupabaseSession(session);
   await removeValue(OTP_EMAIL_KEY);
   return session;
+}
+
+export async function signUpWithEmail(emailInput: string, password: string, fullName: string): Promise<SupabaseAuthResponse> {
+  const email = normalizeEmail(emailInput);
+  if (password.length < 8) throw new SupabaseAuthError("Password must be at least 8 characters");
+  const response = await authRequest<SupabaseAuthResponse>("signup", {
+    method: "POST",
+    body: JSON.stringify({ email, password, data: { full_name: fullName.trim() } }),
+  });
+  if (response.access_token && response.refresh_token && response.user) {
+    await saveSupabaseSession(response as SupabaseSession);
+  }
+  return response;
+}
+
+export async function signInWithEmail(emailInput: string, password: string): Promise<SupabaseSession> {
+  const email = normalizeEmail(emailInput);
+  if (!password) throw new SupabaseAuthError("Enter your password");
+  const session = await authRequest<SupabaseSession>("token?grant_type=password", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  await saveSupabaseSession(session);
+  return session;
+}
+
+export async function resendSignupVerification(emailInput: string): Promise<void> {
+  const email = normalizeEmail(emailInput);
+  await authRequest("resend", {
+    method: "POST",
+    body: JSON.stringify({ type: "signup", email }),
+  });
 }
 
 export function getGoogleOAuthUrl(redirectTo: string): string {
