@@ -28,7 +28,15 @@ http://localhost:8081/auth/phone
 manus024053646483784://auth/phone
 ```
 
-The app sends the current web origin as Supabase's `redirect_to` destination, so production links return to the production host and local development links return to the local app. For the Supabase Magic Link/OTP email template, link with `{{ .ConfirmationURL }}`. If a custom template builds its own confirmation URL, use `{{ .RedirectTo }}` rather than hardcoding `{{ .SiteURL }}`; otherwise the template can ignore the per-request destination and keep opening the Site URL. The email link callback then completes sign-in and returns the user to the community feed.
+The app's current email login asks the user to enter a six-digit code and verifies it with Supabase's email OTP endpoint. In **Authentication → Email Templates → Magic Link**, include `{{ .Token }}` in the message body, for example:
+
+```html
+<p>Your eKta Social sign-in code is:</p>
+<p style="font-size: 24px; font-weight: bold; letter-spacing: 6px;">{{ .Token }}</p>
+<p>If you did not request this code, you can ignore this email.</p>
+```
+
+`{{ .ConfirmationURL }}` is a clickable confirmation link, not a six-digit code. Use it only if the product is intentionally configured for link-based sign-in. The app also sends the current web origin as Supabase's `redirect_to` destination; ensure that exact production destination is in the **Redirect URLs** allow-list. Set **Site URL** to the production host as the safe default when a request does not supply a redirect. If a custom template builds its own confirmation URL, use `{{ .RedirectTo }}` rather than hardcoding `{{ .SiteURL }}`, or the link can ignore the per-request destination.
 
 ## Git author for deployments
 
